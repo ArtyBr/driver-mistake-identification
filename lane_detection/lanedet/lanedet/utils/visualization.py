@@ -19,3 +19,4 @@ def imshow_lanes(img, lanes, show=False, out_file=None):
             os.makedirs(osp.dirname(out_file))
         cv2.imwrite(out_file, img)
 
+    return img
