@@ -102,27 +102,80 @@ def process_image(args, cfg):
         det.run(p)
 
 # added
-def visualize_tracked_lanes(ori_img, lanes_coeffs, cfg, show=False, out_file=None):
+def visualize_tracked_lanes(ori_img, lanes_coeffs, show=False, out_file=None):
     vis_img = ori_img.copy()
     
     # Define the y-values to evaluate the polynomial at
     y_points = np.linspace(2*vis_img.shape[0]//3, vis_img.shape[0] - 1, 100)
     
     for coeffs in lanes_coeffs:
-        (a, b, c), id = coeffs
+        (a, b, c), id, misses = coeffs
         this_color = LANE_COLORS[id % len(LANE_COLORS)]
 
-        # Calculate x for each y: x = ay^2 + by + c
         x_points = a * y_points**2 + b * y_points + c
-        
-        # Create (x, y) points
         points = np.vstack((x_points, y_points)).T
-        
-        # Filter out points outside the image width
         points = points[(points[:, 0] >= 0) & (points[:, 0] < vis_img.shape[1])]
-        
-        # Draw the lane as a polyline
+
         cv2.polylines(vis_img, [points.astype(np.int32)], isClosed=False, color=this_color, thickness=2)
+        
+        # Add text annotations for lane ID and misses near the middle of the lane
+        if len(points) > 0:
+            # Find the middle point of the lane
+            middle_idx = len(points) // 2
+            text_x = int(points[middle_idx, 0])
+            text_y = int(points[middle_idx, 1])
+            
+            # Define text properties
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            font_scale = 0.6
+            thickness = 2
+            
+            # Create text strings
+            lane_text = f'lane: {id}'
+            misses_text = f'misses: {misses}'
+            
+            # Calculate text sizes for background rectangles
+            (lane_width, lane_height), baseline = cv2.getTextSize(lane_text, font, font_scale, thickness)
+            (misses_width, misses_height), baseline = cv2.getTextSize(misses_text, font, font_scale, thickness)
+            
+            # Use the maximum width for both background rectangles
+            max_width = max(lane_width, misses_width)
+            
+            # Calculate background rectangle coordinates
+            padding = 5
+            total_height = lane_height + misses_height + padding + 5
+            
+            # Position the background rectangle centered at the middle point
+            rect_x1 = text_x - padding
+            rect_y1 = text_y - total_height // 2
+            rect_x2 = text_x + max_width + padding
+            rect_y2 = text_y + total_height // 2
+            
+            # Draw semi-transparent background rectangle
+            overlay = vis_img.copy()
+            cv2.rectangle(overlay, 
+                         (rect_x1, rect_y1), 
+                         (rect_x2, rect_y2), 
+                         (0, 0, 0), -1)  # Black background
+            
+            # Blend the overlay
+            alpha = 0.6  # Transparency factor
+            cv2.addWeighted(overlay, alpha, vis_img, 1 - alpha, 0, vis_img)
+            
+            # Calculate text positions (centered within the background)
+            lane_text_x = text_x
+            lane_text_y = text_y - misses_height - 2
+            misses_text_x = text_x
+            misses_text_y = text_y + lane_height - 2
+            
+            # Draw the text
+            cv2.putText(vis_img, lane_text, 
+                       (lane_text_x, lane_text_y), 
+                       font, font_scale, (255, 255, 255), thickness)  # White text
+            
+            cv2.putText(vis_img, misses_text,
+                       (misses_text_x, misses_text_y),
+                       font, font_scale, (255, 255, 255), thickness)  # White text
 
     if show:
         cv2.imshow('Tracked Lanes', vis_img)
@@ -141,94 +194,98 @@ def process_video(args, cfg):
     cap = cv2.VideoCapture(args.video)
     if not cap.isOpened(): raise Exception(f"Cannot open {args.video}")
     fps, out_w, out_h = cap.get(cv2.CAP_PROP_FPS), cfg.ori_img_w, cfg.ori_img_h
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
+    # --- New timestamp logic ---
+    start_frame = max(0, int(args.start_seconds * fps))
+    
+    if args.end_seconds is not None:
+        end_frame = min(total_frames, int(args.end_seconds * fps))
+    else:
+        end_frame = total_frames
+        
+    if start_frame >= end_frame:
+        print(f"Error: Start time ({args.start_seconds}s) is after or at end time ({args.end_seconds}s). Nothing to process.")
+        cap.release()
+        cv2.destroyAllWindows()
+        return
+
+    # Set the video capture to the starting frame
+    cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+    num_frames_to_process = end_frame - start_frame
+
+    out_writer = None # Initialize out_writer to None
     if args.savedir:
         os.makedirs(args.savedir, exist_ok=True)
         out_path = os.path.join(args.savedir, f"{Path(args.video).stem}_output.mp4")
         out_writer = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (out_w, out_h))
         print(f"Saving to: {out_path}")
     
-    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     skip = max(1, args.skip_frame)
-    frame_idx = 0
+    # Initialize frame_idx to the *actual* starting frame number for skip logic
+    frame_idx = start_frame 
 
-    for _ in tqdm(range(total), desc=f"Video {Path(args.video).name}"):
+    # Loop for the specific number of frames we calculated
+    for _ in tqdm(range(num_frames_to_process), desc=f"Video {Path(args.video).name}"):
         ret, frame = cap.read()
-        if not ret: break
+        if not ret: 
+            print("\nWarning: Video stream ended unexpectedly before reaching the specified end frame.")
+            break
+        
+        # Skip logic based on the absolute frame index
         if frame_idx % skip != 0:
             frame_idx += 1
             continue
-        frame_idx += 1
+        # Only increment frame_idx when we *don't* skip
+        frame_idx += 1 
 
-        # 1. Get polynomial detections
         detected_coeffs, ori_img = det.get_lane_detections(frame)
-        
-        # 2. Update tracker
         filtered_lane_coeffs = tracker.update(detected_coeffs)
-        
-        # 3. Visualize the filtered lanes
-        vis = visualize_tracked_lanes(ori_img, filtered_lane_coeffs, cfg, show=args.show)
+        vis = visualize_tracked_lanes(ori_img, filtered_lane_coeffs, show=args.show)
         
         if args.show and vis is None: # Quit signal
+             print("\n'q' pressed, stopping.")
              break
 
         if out_writer: out_writer.write(vis)
 
+    print(f"\nFinished processing. Processed up to frame {frame_idx-1}.")
     cap.release()
-    if out_writer: out_writer.release()
+    if out_writer: 
+        out_writer.release()
+        print("Output video saved.")
     cv2.destroyAllWindows()
-
-# def process_video(args, cfg):
-#     det = Detect(cfg)
-#     cap = cv2.VideoCapture(args.video)
-#     if not cap.isOpened(): raise Exception(f"Cannot open {args.video}")
-#     fps, out_w, out_h = cap.get(cv2.CAP_PROP_FPS), cfg.ori_img_w, cfg.ori_img_h
-
-#     out_writer = None
-#     if args.savedir:
-#         os.makedirs(args.savedir, exist_ok=True)
-#         out_path = os.path.join(args.savedir, f"{Path(args.video).stem}_output.mp4")
-#         out_writer = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (out_w, out_h))
-#         print(f"Saving to: {out_path}")
-
-#     total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-#     skip = max(1, args.skip_frame)
-#     frame_idx = 0
-
-#     for _ in tqdm(range(total), desc=f"Video {Path(args.video).name}"):
-#         ret, frame = cap.read()
-#         if not ret: break
-#         if frame_idx % skip != 0:
-#             frame_idx += 1
-#             continue
-#         frame_idx += 1
-
-#         vis = det.run_on_frame(frame)
-#         if args.show:
-#             cv2.imshow('Lane Detection', vis)
-#             if cv2.waitKey(1) & 0xFF == ord('q'): break
-#         if out_writer: out_writer.write(vis)
-
-#     cap.release()
-#     if out_writer: out_writer.release()
-#     cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
-    ap = argparse.ArgumentParser()
-    ap.add_argument('config')
-    ap.add_argument('--img', help='Path to image or folder')
-    ap.add_argument('--video', help='Path to video file')
-    ap.add_argument('--show', action='store_true')
-    ap.add_argument('--savedir')
-    ap.add_argument('--load_from', default='best.pth')
+    ap = argparse.ArgumentParser(description="Lane Detection and Tracking")
+    ap.add_argument('config', help='Path to the config file')
+    ap.add_argument('--img', help='Path to image or folder for image processing')
+    ap.add_argument('--video', help='Path to video file for video processing')
+    ap.add_argument('--show', action='store_true', help='Show processing window')
+    ap.add_argument('--savedir', help='Directory to save output video')
+    ap.add_argument('--load_from', default='best.pth', help='Path to load model weights from')
     ap.add_argument('--skip_frame', type=int, default=1,
-                    help='Process one in every N frames (default: 1 = all frames)')
+                     help='Process one in every N frames (default: 1 = all frames)')
+    
+    # --- New arguments ---
+    ap.add_argument('--start_seconds', type=float, default=0.0,
+                     help='Start processing time in seconds (default: 0.0)')
+    ap.add_argument('--end_seconds', type=float, default=None,
+                     help='End processing time in seconds (default: None = end of video)')
+    # --- End new arguments ---
+
     a = ap.parse_args()
 
     cfg = Config.fromfile(a.config)
+    # Update config with command-line arguments
     cfg.show, cfg.savedir, cfg.load_from = a.show, a.savedir, a.load_from
 
-    if a.video: process_video(a, cfg)
-    elif a.img: process_image(a, cfg)
-    else: ap.print_help()
+    if a.video: 
+        # Pass the whole args object 'a' which contains all arguments
+        process_video(a, cfg) 
+    elif a.img: 
+        process_image(a, cfg)
+    else: 
+        print("No video or image path provided. Use --video or --img.")
+        ap.print_help()
