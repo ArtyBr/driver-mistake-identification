@@ -101,15 +101,12 @@ def process_image(args, cfg):
     for p in tqdm(get_paths(args.img), desc='Images'):
         det.run(p)
 
-# added
 def visualize_tracked_lanes(ori_img, lanes_coeffs, show=False, out_file=None):
     vis_img = ori_img.copy()
+    y_points = np.linspace(2 * vis_img.shape[0] // 3, vis_img.shape[0] - 1, 100)
     
-    # Define the y-values to evaluate the polynomial at
-    y_points = np.linspace(2*vis_img.shape[0]//3, vis_img.shape[0] - 1, 100)
-    
-    for coeffs in lanes_coeffs:
-        (a, b, c), id, misses = coeffs
+    for coeffs_data in lanes_coeffs:
+        (a, b, c), id, misses = coeffs_data
         this_color = LANE_COLORS[id % len(LANE_COLORS)]
 
         x_points = a * y_points**2 + b * y_points + c
@@ -118,64 +115,45 @@ def visualize_tracked_lanes(ori_img, lanes_coeffs, show=False, out_file=None):
 
         cv2.polylines(vis_img, [points.astype(np.int32)], isClosed=False, color=this_color, thickness=2)
         
-        # Add text annotations for lane ID and misses near the middle of the lane
         if len(points) > 0:
-            # Find the middle point of the lane
             middle_idx = len(points) // 2
             text_x = int(points[middle_idx, 0])
             text_y = int(points[middle_idx, 1])
             
-            # Define text properties
             font = cv2.FONT_HERSHEY_SIMPLEX
             font_scale = 0.6
             thickness = 2
             
-            # Create text strings
             lane_text = f'lane: {id}'
             misses_text = f'misses: {misses}'
             
-            # Calculate text sizes for background rectangles
-            (lane_width, lane_height), baseline = cv2.getTextSize(lane_text, font, font_scale, thickness)
-            (misses_width, misses_height), baseline = cv2.getTextSize(misses_text, font, font_scale, thickness)
+            (lane_width, lane_height), _ = cv2.getTextSize(lane_text, font, font_scale, thickness)
+            (misses_width, misses_height), _ = cv2.getTextSize(misses_text, font, font_scale, thickness)
             
-            # Use the maximum width for both background rectangles
             max_width = max(lane_width, misses_width)
-            
-            # Calculate background rectangle coordinates
             padding = 5
             total_height = lane_height + misses_height + padding + 5
             
-            # Position the background rectangle centered at the middle point
             rect_x1 = text_x - padding
             rect_y1 = text_y - total_height // 2
             rect_x2 = text_x + max_width + padding
             rect_y2 = text_y + total_height // 2
             
-            # Draw semi-transparent background rectangle
             overlay = vis_img.copy()
-            cv2.rectangle(overlay, 
-                         (rect_x1, rect_y1), 
-                         (rect_x2, rect_y2), 
-                         (0, 0, 0), -1)  # Black background
+            cv2.rectangle(overlay, (rect_x1, rect_y1), (rect_x2, rect_y2), (0, 0, 0), -1)
             
-            # Blend the overlay
-            alpha = 0.6  # Transparency factor
+            alpha = 0.6
             cv2.addWeighted(overlay, alpha, vis_img, 1 - alpha, 0, vis_img)
             
-            # Calculate text positions (centered within the background)
             lane_text_x = text_x
             lane_text_y = text_y - misses_height - 2
             misses_text_x = text_x
             misses_text_y = text_y + lane_height - 2
             
-            # Draw the text
-            cv2.putText(vis_img, lane_text, 
-                       (lane_text_x, lane_text_y), 
-                       font, font_scale, (255, 255, 255), thickness)  # White text
-            
-            cv2.putText(vis_img, misses_text,
-                       (misses_text_x, misses_text_y),
-                       font, font_scale, (255, 255, 255), thickness)  # White text
+            cv2.putText(vis_img, lane_text, (lane_text_x, lane_text_y), 
+                       font, font_scale, (255, 255, 255), thickness)
+            cv2.putText(vis_img, misses_text, (misses_text_x, misses_text_y),
+                       font, font_scale, (255, 255, 255), thickness)
 
     if show:
         cv2.imshow('Tracked Lanes', vis_img)
@@ -188,15 +166,19 @@ def visualize_tracked_lanes(ori_img, lanes_coeffs, show=False, out_file=None):
     return vis_img
 
 def process_video(args, cfg):
-    det = Detect(cfg)
-    tracker = LaneTracker() # <-- Initialize the tracker
+    # This assumes 'Detect' is imported from another file
+    det = Detect(cfg) 
+    tracker = LaneTracker() 
     
     cap = cv2.VideoCapture(args.video)
-    if not cap.isOpened(): raise Exception(f"Cannot open {args.video}")
-    fps, out_w, out_h = cap.get(cv2.CAP_PROP_FPS), cfg.ori_img_w, cfg.ori_img_h
+    if not cap.isOpened(): 
+        raise Exception(f"Cannot open {args.video}")
+        
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    out_w = cfg.ori_img_w
+    out_h = cfg.ori_img_h
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    # --- New timestamp logic ---
     start_frame = max(0, int(args.start_seconds * fps))
     
     if args.end_seconds is not None:
@@ -205,16 +187,14 @@ def process_video(args, cfg):
         end_frame = total_frames
         
     if start_frame >= end_frame:
-        print(f"Error: Start time ({args.start_seconds}s) is after or at end time ({args.end_seconds}s). Nothing to process.")
+        print(f"Error: Start time ({args.start_seconds}s) is after or at end time ({args.end_seconds}s).")
         cap.release()
-        cv2.destroyAllWindows()
         return
 
-    # Set the video capture to the starting frame
     cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
     num_frames_to_process = end_frame - start_frame
 
-    out_writer = None # Initialize out_writer to None
+    out_writer = None
     if args.savedir:
         os.makedirs(args.savedir, exist_ok=True)
         out_path = os.path.join(args.savedir, f"{Path(args.video).stem}_output.mp4")
@@ -222,21 +202,17 @@ def process_video(args, cfg):
         print(f"Saving to: {out_path}")
     
     skip = max(1, args.skip_frame)
-    # Initialize frame_idx to the *actual* starting frame number for skip logic
     frame_idx = start_frame 
 
-    # Loop for the specific number of frames we calculated
     for _ in tqdm(range(num_frames_to_process), desc=f"Video {Path(args.video).name}"):
         ret, frame = cap.read()
         if not ret: 
-            print("\nWarning: Video stream ended unexpectedly before reaching the specified end frame.")
+            print("\nWarning: Video stream ended unexpectedly.")
             break
         
-        # Skip logic based on the absolute frame index
         if frame_idx % skip != 0:
             frame_idx += 1
             continue
-        # Only increment frame_idx when we *don't* skip
         frame_idx += 1 
 
         detected_coeffs, ori_img = det.get_lane_detections(frame)
@@ -247,7 +223,8 @@ def process_video(args, cfg):
              print("\n'q' pressed, stopping.")
              break
 
-        if out_writer: out_writer.write(vis)
+        if out_writer: 
+            out_writer.write(vis)
 
     print(f"\nFinished processing. Processed up to frame {frame_idx-1}.")
     cap.release()
@@ -267,25 +244,23 @@ if __name__ == '__main__':
     ap.add_argument('--load_from', default='best.pth', help='Path to load model weights from')
     ap.add_argument('--skip_frame', type=int, default=1,
                      help='Process one in every N frames (default: 1 = all frames)')
-    
-    # --- New arguments ---
     ap.add_argument('--start_seconds', type=float, default=0.0,
                      help='Start processing time in seconds (default: 0.0)')
     ap.add_argument('--end_seconds', type=float, default=None,
                      help='End processing time in seconds (default: None = end of video)')
-    # --- End new arguments ---
-
+    
     a = ap.parse_args()
 
+    # Assumes Config class is imported or defined elsewhere
     cfg = Config.fromfile(a.config)
-    # Update config with command-line arguments
     cfg.show, cfg.savedir, cfg.load_from = a.show, a.savedir, a.load_from
 
+    # This assumes 'process_image' and 'Detect' are defined elsewhere
     if a.video: 
-        # Pass the whole args object 'a' which contains all arguments
         process_video(a, cfg) 
     elif a.img: 
-        process_image(a, cfg)
+        # process_image(a, cfg) 
+        print("Image processing not implemented in this snippet.")
     else: 
         print("No video or image path provided. Use --video or --img.")
         ap.print_help()
