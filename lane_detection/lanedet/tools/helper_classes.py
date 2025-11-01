@@ -4,16 +4,20 @@ import math
 from scipy.optimize import linear_sum_assignment
 
 class LaneTrack:
-    """
-    Represents a single tracked lane, using a Kalman Filter to smooth
-    the 2nd-order polynomial coefficients (a, b, c) over time.
-    """
-    def __init__(self, detection_coeffs, track_id):
+    def __init__(self, detection_coeffs, track_id, img_height, img_width):
         self.id = track_id
         self.kf = self.init_kalman_filter(detection_coeffs)
         self.hits = 1
         self.misses = 0
         self.age = 1
+        
+        self.img_height = img_height
+        self.img_width = img_width
+        self.middle_x = img_width / 2.0
+        
+        self.previous_base_x = None
+        
+        self.lane_change_events = []
 
     def init_kalman_filter(self, initial_coeffs):
         # State: [a, b, c, da, db, dc], Measurement: [a, b, c]
@@ -31,7 +35,7 @@ class LaneTrack:
 
         q = np.eye(6, dtype=np.float32)
         q[:3, :3] *= 1e-4
-        q[3:, 3:] *= 1e-9
+        q[3:, 3:] *= 1e-8
         kf.processNoiseCov = q
         
         kf.measurementNoiseCov = np.eye(3, dtype=np.float32) * 1e-1
@@ -42,51 +46,88 @@ class LaneTrack:
         kf.errorCovPost = np.eye(6, dtype=np.float32) * 1.0 
         
         return kf
+    
+    def update_lane_change_events(self):
+        # Decrease the countdown for each event and remove if it reaches zero
+        self.lane_change_events = [(countdown - 1, direction) for countdown, direction in self.lane_change_events if countdown > 1]
 
     def predict(self):
-        """Predicts the next state and increments miss counter."""
         prediction = self.kf.predict()
         self.age += 1
         self.misses += 1
+        self.update_lane_change_events()
         return prediction[:3].reshape(3)
 
     def update(self, detection_coeffs):
-        """Updates the filter with a new measurement and resets miss counter."""
         self.kf.correct(detection_coeffs.astype(np.float32))
         self.misses = 0
         self.hits += 1
+        self.update_lane_change_events()
 
     @property
     def coeffs(self):
-        """Returns the current best estimate for the coefficients."""
         state = self.kf.statePost if self.misses == 0 else self.kf.statePre
         return state[:3].ravel()
 
     @property
     def confidence(self):
-        """A simple confidence metric based on track history."""
         if self.age == 0: return 0.0
         return round(max(0.0, min(1.0, (self.hits - self.misses) / self.age)), 2)
+        
+    @property
+    def state_vector(self):
+        return (self.kf.statePost if self.misses == 0 else self.kf.statePre).ravel()
+
+    def check_lane_cross(self):
+        if self.confidence <= 0.7 or self.age <= 90:
+            return None
+
+        state = self.state_vector
+        a, b, c = state[:3]
+        da, db, dc = state[3:]
+
+        y = self.img_height
+        current_base_x = a * y**2 + b * y + c
+
+        base_x_velocity = da * y**2 + db * y + dc
+
+        velocity_threshold = 1.0
+        if abs(base_x_velocity) < velocity_threshold:
+            return None
+
+        direction = None
+        if self.previous_base_x is not None:
+            if (self.previous_base_x < self.middle_x) and (current_base_x >= self.middle_x):
+                if base_x_velocity > 0:
+                    direction = "right-to-left"
+                    self.lane_change_events.append((90, direction))
+            elif (self.previous_base_x >= self.middle_x) and (current_base_x < self.middle_x):
+                if base_x_velocity < 0:
+                    direction = "left-to-right"
+                    self.lane_change_events.append((90, direction))
+
+        self.previous_base_x = current_base_x
+
+        return direction
+
 
 class LaneTracker:
-    """
-    Manages multiple LaneTrack objects, handling detection-to-track
-    assignment using the Hungarian algorithm and managing track lifecycle.
-    """
-    def __init__(self, miss_threshold=30, img_height=590, num_y_samples=20):
+    def __init__(self, miss_threshold=180, img_height=590, img_width=1640, num_y_samples=20):
         self.tracks = []
         self.next_id = 0
         self.miss_threshold = miss_threshold
-        # Y-points to sample for cost calculation
+        
+        self.img_height = img_height
+        self.img_width = img_width
+        
         self.y_eval_points = np.linspace(0, img_height - 1, num_y_samples)
+        self.cross_events = []
 
     def _get_x_values(self, coeffs):
-        """Evaluates the polynomial at the pre-defined y-sample points."""
         a, b, c = coeffs
         return a * self.y_eval_points**2 + b * self.y_eval_points + c
 
     def _calculate_cost_matrix(self, predictions, detections):
-        """Calculates the cost matrix based on average L1 distance in x."""
         pred_x_vals = [self._get_x_values(p) for p in predictions]
         det_x_vals = [self._get_x_values(d) for d in detections]
         
@@ -98,33 +139,34 @@ class LaneTracker:
         return cost_matrix
 
     def _create_new_tracks(self, detections):
-        """Creates new LaneTrack objects for a list of detections."""
         for det in detections:
-            new_track = LaneTrack(det, self.next_id)
+            new_track = LaneTrack(det, self.next_id, self.img_height, self.img_width)
             self.tracks.append(new_track)
             self.next_id += 1
 
     def _prune_tracks(self):
-        """Removes tracks that have been missed for too long."""
-        self.tracks = [t for t in self.tracks if t.misses <= self.miss_threshold * math.log(t.age)]
+        self.tracks = [t for t in self.tracks if t.misses <= self.miss_threshold * t.confidence]
 
     def update(self, detections):
-        """
-        Main update loop: predict, associate, update, and manage tracks.
-        'detections' is a list of [a, b, c] coefficient arrays.
-        """
         # Kalman filter predictions of where tracks are expected to be
         predicted_coeffs = [track.predict() for track in self.tracks]
 
-        # If no detections from model, use/return just previously predicted tracks
         if not detections:
             self._prune_tracks()
-            return [(t.coeffs, t.id, t.misses) for t in self.tracks]
+            
+            self.cross_events = []
+            for track in self.tracks:
+                direction = track.check_lane_cross()
+                if direction:
+                    self.cross_events.append({"track_id": track.id, "direction": direction})
+
+            return [(t.coeffs, t.id, t.confidence, t.age, t.lane_change_events) for t in self.tracks]
 
         # If no previously predicted tracks, create new ones for all detections
         if not self.tracks:
             self._create_new_tracks(detections)
-            return [(t.coeffs, t.id, t.misses) for t in self.tracks]
+            # New tracks can't have crossing events yet, so no check needed here
+            return [(t.coeffs, t.id, t.confidence, t.age, t.lane_change_events) for t in self.tracks]
 
         # Cost matrix represents the "distance" between predicted tracks and new detections
         # This helps match currently predicted/stored tracks to the detections
@@ -151,8 +193,6 @@ class LaneTracker:
         # r corresponds to the track index, c to the detection index
         matched_det_indices = set()
         for r, c in zip(row_ind, col_ind):
-            # print("Matched track {} with detection {}, cost {:.2f}".format(
-            #     self.tracks[r].id, c, cost_matrix[r, c]))
             self.tracks[r].update(detections[c])
             matched_det_indices.add(c)
         
@@ -162,4 +202,18 @@ class LaneTracker:
 
         self._prune_tracks()
 
-        return [(t.coeffs, t.id, round(math.log(t.age), 2)) for t in self.tracks]
+        self.cross_events = []
+        for track in self.tracks:
+            direction = track.check_lane_cross()
+            if direction:
+                event = {
+                    "track_id": track.id,
+                    "direction": direction,
+                    "age": track.age,
+                    "confidence": track.confidence
+                }
+                self.cross_events.append(event)
+        if self.cross_events:
+            print("Lane Change Detected:", self.cross_events)
+
+        return [(t.coeffs, t.id, t.confidence, t.age, t.lane_change_events) for t in self.tracks]

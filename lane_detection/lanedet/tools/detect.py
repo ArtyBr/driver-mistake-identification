@@ -87,7 +87,6 @@ class Detect:
                 
         return detected_lanes_coeffs, d['ori_img']
 
-
 def get_paths(p):
     p = str(Path(p).absolute())
     if '*' in p: return sorted(glob.glob(p, recursive=True))
@@ -106,7 +105,33 @@ def visualize_tracked_lanes(ori_img, lanes_coeffs, show=False, out_file=None):
     y_points = np.linspace(2 * vis_img.shape[0] // 3, vis_img.shape[0] - 1, 100)
     
     for coeffs_data in lanes_coeffs:
-        (a, b, c), id, misses = coeffs_data
+        (a, b, c), id, conf, age, lane_change_events = coeffs_data
+        if age < 30:
+            break
+
+        if lane_change_events:
+            this_text = "Lane Change: " + ", ".join([d for _, d in lane_change_events if d is not None])
+            # show text in using same style as below with transparent background 
+            # above the lane itself in the middle of the height of the image
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            font_scale = 0.6
+            thickness = 2
+            (text_width, text_height), _ = cv2.getTextSize(this_text, font, font_scale, thickness)
+            # x position above the lane at mid height
+            x_pos = vis_img.shape[1] - int(a * (vis_img.shape[0] // 2)**2 + b * (vis_img.shape[0] // 2) + c)
+            # x_pos = 10
+            y_pos = 2*vis_img.shape[0] // 3 - text_height - 20
+            rect_x1 = x_pos - 5
+            rect_y1 = y_pos - 5
+            rect_x2 = x_pos + text_width + 5
+            rect_y2 = y_pos + text_height + 5
+            overlay = vis_img.copy()
+            cv2.rectangle(overlay, (rect_x1, rect_y1), (rect_x2, rect_y2), (0, 0, 0), -1)
+            alpha = 0.6
+            cv2.addWeighted(overlay, alpha, vis_img, 1 - alpha, 0, vis_img)
+            cv2.putText(vis_img, this_text, (x_pos, y_pos + text_height), 
+                       font, font_scale, (255, 255, 255), thickness)
+
         this_color = LANE_COLORS[id % len(LANE_COLORS)]
 
         x_points = a * y_points**2 + b * y_points + c
@@ -125,14 +150,14 @@ def visualize_tracked_lanes(ori_img, lanes_coeffs, show=False, out_file=None):
             thickness = 2
             
             lane_text = f'lane: {id}'
-            misses_text = f'misses: {misses}'
+            conf_text = f'confidence: {conf}'
             
             (lane_width, lane_height), _ = cv2.getTextSize(lane_text, font, font_scale, thickness)
-            (misses_width, misses_height), _ = cv2.getTextSize(misses_text, font, font_scale, thickness)
+            (conf_width, conf_height), _ = cv2.getTextSize(conf_text, font, font_scale, thickness)
             
-            max_width = max(lane_width, misses_width)
+            max_width = max(lane_width, conf_width)
             padding = 5
-            total_height = lane_height + misses_height + padding + 5
+            total_height = lane_height + conf_height + padding + 5
             
             rect_x1 = text_x - padding
             rect_y1 = text_y - total_height // 2
@@ -146,13 +171,13 @@ def visualize_tracked_lanes(ori_img, lanes_coeffs, show=False, out_file=None):
             cv2.addWeighted(overlay, alpha, vis_img, 1 - alpha, 0, vis_img)
             
             lane_text_x = text_x
-            lane_text_y = text_y - misses_height - 2
-            misses_text_x = text_x
-            misses_text_y = text_y + lane_height - 2
+            lane_text_y = text_y - conf_height - 2
+            conf_text_x = text_x
+            conf_text_y = text_y + lane_height - 2
             
             cv2.putText(vis_img, lane_text, (lane_text_x, lane_text_y), 
                        font, font_scale, (255, 255, 255), thickness)
-            cv2.putText(vis_img, misses_text, (misses_text_x, misses_text_y),
+            cv2.putText(vis_img, conf_text, (conf_text_x, conf_text_y),
                        font, font_scale, (255, 255, 255), thickness)
 
     if show:

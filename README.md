@@ -10,4 +10,4 @@ In order for lane_detection to work:
 `pip install -e .`
 
 3. Run inference
-`python tools/detect.py {CONFIG_DIR e.g. configs/resa/resa34_culane.py} --img {IMAGE_DIR} --load_from {WEIGHTS.pth} --savedir ./vis`
+`python tools/detect.py {CONFIG_DIR e.g. configs/resa/resa34_culane.py} (--img {IMAGE_DIR} OR --vid {VID_DIR}) --load_from {WEIGHTS.pth} --savedir ./vis`
