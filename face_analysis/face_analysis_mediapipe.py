@@ -5,6 +5,7 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
+import csv
 
 model_path = './models/face_landmarker.task'
 BaseOptions = mp.tasks.BaseOptions
@@ -24,6 +25,8 @@ def draw_landmarks_on_image(rgb_image, detection_result):
   focal_length = img_w
   principal_point = (img_w / 2, img_h / 2)
   dist_coeffs = np.zeros((4, 1), dtype=np.float32)
+  
+  all_poses_in_frame = []
 
   K = np.array([
     [focal_length, 0, principal_point[0]],
@@ -31,11 +34,9 @@ def draw_landmarks_on_image(rgb_image, detection_result):
     [0, 0, 1]
 ], dtype=np.float32)
 
-  # Loop through the detected faces to visualize.
   for idx in range(len(face_landmarks_list)):
     face_landmarks = face_landmarks_list[idx]
 
-    # Draw the face landmarks.
     face_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
     face_landmarks_proto.landmark.extend([
       landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in face_landmarks
@@ -69,6 +70,8 @@ def draw_landmarks_on_image(rgb_image, detection_result):
     pitch_deg = np.degrees(pitch_rad)
     yaw_deg = np.degrees(yaw_rad)
     roll_deg = np.degrees(roll_rad)
+    
+    all_poses_in_frame.append((pitch_deg, yaw_deg, roll_deg))
 
     cv2.putText(annotated_image, f'Pitch: {pitch_deg:.2f}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
     cv2.putText(annotated_image, f'Yaw: {yaw_deg:.2f}', (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
@@ -125,24 +128,44 @@ def draw_landmarks_on_image(rgb_image, detection_result):
     cv2.fillPoly(overlay, [pts], FILL_COLOR)
     cv2.addWeighted(overlay, OPACITY_ALPHA, annotated_image, 1 - OPACITY_ALPHA, 0, annotated_image)
 
-  return annotated_image
+  return annotated_image, all_poses_in_frame
 
-video_path = "/media/arty/3A30-14F9/Videos/"
+video_path = "/media/arty/3A30-14F9/Videos/13_09_25_me_to_lem_day/directions_cut.mp4"
 
-# Display webcam footage
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(video_path)
+
+head_pose_data = []
+head_pose_data.append(['frame', 'face_id', 'pitch', 'yaw', 'roll'])
+frame_number = 0
 
 while True:
     ret, frame = cap.read()
     if not ret:
         break
+    
+    height, width, _ = frame.shape
+    frame = frame[0:2*height//4, 0:2*width//4]
 
-    image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
+    image = mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), cv2.COLOR_BGR2RGB))
     detection_result = detector.detect(image)
-    annotated_frame = draw_landmarks_on_image(image.numpy_view(), detection_result)
+    annotated_frame, frame_poses = draw_landmarks_on_image(image.numpy_view(), detection_result)
+    
+    if frame_poses:
+        for face_id, (pitch, yaw, roll) in enumerate(frame_poses):
+            head_pose_data.append([frame_number, face_id, pitch, yaw, roll])
+    else:
+        head_pose_data.append([frame_number, None, None, None, None])
+    
+    frame_number += 1
+    
     cv2.imshow("Webcam", annotated_frame)
-    if cv2.waitKey(1) & 0xFF == ord("q"):
+    if cv2.waitKey(0) & 0xFF == ord("q"):
         break
 
 cap.release()
 cv2.destroyAllWindows()
+
+output_filename = 'head_pose_data'
+with open(output_filename + '_01.csv', 'w', newline='') as f:
+    writer = csv.writer(f)
+    writer.writerows(head_pose_data)
