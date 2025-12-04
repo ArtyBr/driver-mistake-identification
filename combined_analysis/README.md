@@ -1,0 +1,1 @@
+`python3 ./combined_analysis/combined_video.py ./lane_detection/lanedet/configs/laneatt/resnet18_culane.py --video_base /media/arty/3A30-14F9/Videos/01_09_25_me_to_wp_night/2025_0901_211242_004616 --load_from ./lane_detection/lanedet/weights/laneatt_r18_culane.pth --savedir ./combined_analysis/data/output/ --show`
