@@ -1,0 +1,30 @@
+{
+  "meta": {
+    "duration": 180.0,
+    "fps": 30.0
+  },
+  "timeline_events": [
+    {
+      "timestamp": 5.5,
+      "type": "safety_alert",
+      "severity": "CRITICAL",
+      "message": "Unsafe Lane Change: No Mirror Check",
+      "duration": 2.0
+    },
+    {
+      "timestamp": 12.0,
+      "type": "safety_alert",
+      "severity": "WARNING",
+      "message": "Distracted: Looking down for 2s",
+      "duration": 2.0
+    },
+    {
+      "timestamp": 45.0,
+      "type": "safety_alert",
+      "severity": "INFO",
+      "message": "Safe Lane Change",
+      "duration": 2.0
+    }
+  ],
+  "frame_data": []
+}
