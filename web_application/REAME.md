@@ -1,0 +1,1 @@
+kill $(cat web_application/backend/server.pid) || pkill -f "python main.py"; cd web_application/backend && ./start_server.sh
