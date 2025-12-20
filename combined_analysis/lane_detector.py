@@ -31,5 +31,6 @@ class LaneDetectorWrapper:
         )
         
         vis_road = visualize_tracked_lanes(vis_road, scaled_tracks, show=False)
+        # vis_road = draw_lanes_fancy(vis_road, scaled_tracks)
         
         return vis_road, filtered_coeffs

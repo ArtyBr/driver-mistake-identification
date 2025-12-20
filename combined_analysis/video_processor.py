@@ -3,7 +3,7 @@ import numpy as np
 import config
 from tqdm import tqdm
 from pathlib import Path
-from utils import setup_video_paths, draw_fading_text
+from utils import setup_video_paths, draw_fading_text, draw_hud_panel, draw_styled_text
 import gc
 import torch
 
@@ -86,42 +86,74 @@ class VideoProcessor:
                 self.state_history = [s for s in self.state_history if (current_time - s['timestamp']) <= config.HISTORY_DURATION]
                 if not self.state_history: self.last_state = None
 
-                # --- OVERLAY FACE ON ROAD ---
+                # --- VISUALIZATION & UI ---
                 h_r, w_r = vis_road.shape[:2]
-                h_f, w_f = vis_face.shape[:2]
                 
+                # 1. Face Overlay (Top Right)
+                h_f, w_f = vis_face.shape[:2]
                 new_w_f = int(w_r * config.OVERLAY_SCALE)
                 new_h_f = int(new_w_f * (h_f / w_f))
                 vis_face_resized = cv2.resize(vis_face, (new_w_f, new_h_f))
                 
-                margin = 20
-                x_off = w_r - new_w_f - margin
-                y_off = margin
+                margin = 30
+                face_x = w_r - new_w_f - margin
+                face_y = margin
                 
-                # Border and Overlay
-                cv2.rectangle(vis_road, (x_off-2, y_off-2), (x_off+new_w_f+2, y_off+new_h_f+2), (0,0,0), 2)
-                vis_road[y_off:y_off+new_h_f, x_off:x_off+new_w_f] = vis_face_resized
+                # Draw Panel Background for Face
+                draw_hud_panel(vis_road, face_x - 5, face_y - 30, new_w_f + 10, new_h_f + 40, alpha=0.5)
+                draw_styled_text(vis_road, "DRIVER FEED", (face_x, face_y - 10), 0.6, (220, 220, 220), 1)
+                
+                # Place Face Image
+                if face_y + new_h_f < h_r and face_x + new_w_f < w_r:
+                    vis_road[face_y:face_y+new_h_f, face_x:face_x+new_w_f] = vis_face_resized
+                    # Add a thin tech-cyan border
+                    cv2.rectangle(vis_road, (face_x, face_y), (face_x + new_w_f, face_y + new_h_f), (255, 255, 0), 1)
 
-                # --- TEXT OVERLAYS ---
+                # 2. Status Panel (Top Left)
+                status_w = 380
+                status_h = 140
+                status_x = margin
+                status_y = margin
+                
+                draw_hud_panel(vis_road, status_x, status_y, status_w, status_h, alpha=0.6)
+                draw_styled_text(vis_road, "DRIVER STATUS", (status_x + 15, status_y + 25), 0.6, (200, 200, 200), 1)
+                
                 if face_info:
-                    color = (0, 255, 0) if face_info['conf'] > 0.7 else (0, 165, 255)
-                    stats = f"Head Pose: Y:{face_info['yaw']} P:{face_info['pitch']} R:{face_info['roll']}"
-                    label_txt = f"Current: {face_info['label']} ({face_info['conf']:.2f})"
+                    # Determine Status Color
+                    label = face_info['label']
+                    if "Left" in label or "Right" in label:
+                        status_color = (0, 165, 255) # Orange for mirrors
+                    elif "Looking Ahead" in label:
+                        status_color = (0, 255, 0) # Green
+                    else:
+                        status_color = (0, 0, 255) # Red for unknown/other
+                        
+                    label_text = label.upper()
+                    conf_text = f"Confidence: {face_info['conf']:.2f}"
+                    pose_text = f"Yaw: {face_info['yaw']}  Pitch: {face_info['pitch']}"
                     
-                    cv2.putText(vis_road, stats, (30, 60), config.FONT, 0.8, (255, 255, 255), 1)
-                    cv2.putText(vis_road, label_txt, (30, 100), config.FONT, 1, color, 2)
+                    draw_styled_text(vis_road, label_text, (status_x + 15, status_y + 70), 1.1, status_color, 2)
+                    draw_styled_text(vis_road, conf_text, (status_x + 15, status_y + 100), 0.6, (180, 180, 180), 1)
+                    draw_styled_text(vis_road, pose_text, (status_x + 15, status_y + 125), 0.6, (180, 180, 180), 1)
 
-                # Draw History
-                hist_y = 40
-                cv2.putText(vis_road, "State history (last 5s):", ((w_r//2)-100, hist_y), config.FONT, 0.6, (200,200,200), 1)
-                
-                for i, item in enumerate(self.state_history):
-                    age = current_time - item['timestamp']
-                    alpha = max(0, 1.0 - (age / config.HISTORY_DURATION))
-                    txt = f"- {item['state']} ({age:.1f}s ago)"
+                # 3. History Panel (Bottom Center)
+                if self.state_history:
+                    # Filter history to show only last 4 items to keep UI clean
+                    display_history = self.state_history[-4:]
                     
-                    (tw, th), _ = cv2.getTextSize(txt, config.FONT, 0.7, 2)
-                    draw_fading_text(vis_road, txt, ((w_r//2)-(tw//2), hist_y + 30 + (i * 30)), 0.7, (0, 255, 255), 2, alpha)
+                    hist_w = 400
+                    hist_h = 30 + (len(display_history) * 25)
+                    hist_x = (w_r - hist_w) // 2
+                    hist_y = h_r - hist_h - 40 # 40px from bottom
+                    
+                    draw_hud_panel(vis_road, hist_x, hist_y, hist_w, hist_h, alpha=0.6, color=(20, 20, 20))
+                    draw_styled_text(vis_road, "FACE DIRECTION EVENT LOG", (hist_x + 15, hist_y + 20), 0.5, (255, 255, 0), 1)
+                    
+                    for i, item in enumerate(display_history):
+                        age = current_time - item['timestamp']
+                        txt = f"> {item['state']} ({age:.1f}s ago)"
+                        y_pos = hist_y + 45 + (i * 25)
+                        draw_styled_text(vis_road, txt, (hist_x + 20, y_pos), 0.6, (230, 230, 230), 1)
 
                 if self.args.show:
                     cv2.imshow('Combined Analysis', vis_road)
