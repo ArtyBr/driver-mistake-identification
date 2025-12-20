@@ -1,353 +1,219 @@
-import argparse
-import gc
-import os
-import pickle
-import re
-import sys
-import warnings
-from pathlib import Path
-
-import cv2
 import numpy as np
-import pandas as pd
-import torch
-from tqdm import tqdm
+import cv2
+import math
+from scipy.optimize import linear_sum_assignment
 
-# Filter specific warnings
-warnings.filterwarnings("ignore", category=FutureWarning, message="`rcond` parameter")
-
-# --- PATH SETUP ---
-CURRENT_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = CURRENT_DIR.parent
-LANE_DET_PATH = PROJECT_ROOT / 'lane_detection'
-
-sys.path.extend([str(PROJECT_ROOT), str(LANE_DET_PATH)])
-
-# --- MODULE IMPORTS ---
-try:
-    from insightface.app import FaceAnalysis
-    from lane_detection.lanedet.tools.detect import Detect, visualize_tracked_lanes
-    from lane_detection.lanedet.lanedet.utils.config import Config
-    from helper_classes import LaneTracker
-except ImportError as e:
-    sys.exit(f"Error importing modules: {e}\nEnsure 'lane_detection' is in the python path.")
-
-# --- CONSTANTS ---
-CLASS_NAMES = {0: 'Left Mirror', 1: 'Right Mirror', 2: 'Looking Ahead'}
-HISTORY_DURATION = 5.0  # Seconds
-OVERLAY_SCALE = 0.35
-FONT = cv2.FONT_HERSHEY_SIMPLEX
-
-# --- RESIZING CONSTANTS ---
-MODEL_WIDTH = 1640
-MODEL_HEIGHT = 590
-TARGET_WIDTH = 1920
-TARGET_HEIGHT = 1080
-
-
-class FaceAnalyzer:
-    def __init__(self, models_dir: Path):
-        self.app = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
-        self.app.prepare(ctx_id=0, det_size=(640, 640))
+class LaneTrack:
+    def __init__(self, detection_coeffs, track_id, img_height, img_width):
+        self.id = track_id
+        self.kf = self.init_kalman_filter(detection_coeffs)
+        self.hits = 1
+        self.misses = 0
+        self.age = 1
         
-        print("Loading Face Analysis Models...")
-        self.svm = self._load_model(models_dir / 'svm_head_pose_model.pkl')
-        self.pca = self._load_model(models_dir / 'pca_head_pose_model.pkl')
-
-    @staticmethod
-    def _load_model(path: Path):
-        if path.exists():
-            with open(path, 'rb') as f:
-                return pickle.load(f)
-        print(f"Warning: Model not found at {path}")
-        return None
-
-    def process_frame(self, frame):
-        faces = self.app.get(frame)
-        if not faces:
-            return frame, None
-
-        face = faces[0]
-        pitch, yaw, roll = face.pose if hasattr(face, 'pose') and face.pose is not None else (0.0, 0.0, 0.0)
+        self.img_height = img_height
+        self.img_width = img_width
+        self.middle_x = img_width / 2.0
         
-        # Keypoints processing
-        kps = face.kps.astype(int)
-        if len(kps) >= 3:
-            nose_2d = tuple(kps[2])
-        else:
-            bbox = face.bbox.astype(int)
-            nose_2d = ((bbox[0] + bbox[2]) // 2, (bbox[1] + bbox[3]) // 2)
-
-        # Classification
-        svm_label, svm_conf = "N/A", 0.0
-        if self.svm and self.pca:
-            input_data = pd.DataFrame([[yaw, pitch, roll]], columns=['yaw', 'pitch', 'roll'])
-            pca_input = self.pca.transform(input_data)
-            svm_pred_idx = self.svm.predict(pca_input)[0]
-            svm_probs = self.svm.predict_proba(pca_input)[0]
-            svm_conf = svm_probs[svm_pred_idx]
-            svm_label = CLASS_NAMES.get(svm_pred_idx, "Unknown")
-
-        analysis_data = {
-            'yaw': int(yaw), 'pitch': int(pitch), 'roll': int(roll),
-            'label': svm_label, 'conf': svm_conf
-        }
-
-        # Visualization
-        bbox = face.bbox.astype(int)
-        cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 255, 0), 2)
-        for kp in kps:
-            cv2.circle(frame, tuple(kp), 2, (0, 255, 0), -1)
+        self.previous_base_x = None
         
-        p2 = (int(nose_2d[0] + yaw * 10), int(nose_2d[1] - pitch * 10))
-        cv2.line(frame, nose_2d, p2, (255, 0, 0), 3)
+        self.lane_change_events = []
 
-        return frame, analysis_data
-
-
-def draw_fading_text(img, text, pos, font_scale, color, thickness, alpha):
-    x, y = pos
-    (w, h), _ = cv2.getTextSize(text, FONT, font_scale, thickness)
-    
-    # Boundary checks
-    if y - h - 5 < 0 or y + 5 > img.shape[0] or x + w > img.shape[1] or x < 0:
-        return
-
-    roi = img[y-h-5:y+5, x:x+w]
-    overlay = roi.copy()
-    cv2.putText(overlay, text, (0, h), FONT, font_scale, color, thickness)
-    cv2.addWeighted(overlay, alpha, roi, 1 - alpha, 0, roi)
-    img[y-h-5:y+5, x:x+w] = roi
-
-
-def setup_video_paths(base_path_str):
-    """Determines the paths for road (F) and face (I) videos."""
-    path_road = base_path_str + "F.mp4"
-    
-    # Logic to increment trailing number for the face video
-    match = re.search(r'(\d+)$', base_path_str)
-    if match:
-        num_str = match.group(1)
-        new_num_str = str(int(num_str) + 1).zfill(len(num_str))
-        path_face = base_path_str[:-len(num_str)] + new_num_str + "I.mp4"
-    else:
-        path_face = base_path_str + "I.mp4"
+    def init_kalman_filter(self, initial_coeffs):
+        # State: [a, b, c, da, db, dc], Measurement: [a, b, c]
+        kf = cv2.KalmanFilter(6, 3) 
         
-    return path_road, path_face
+        dt = 1.0
+        kf.transitionMatrix = np.array([
+            [1, 0, 0, dt, 0, 0], [0, 1, 0, 0, dt, 0], [0, 0, 1, 0, 0, dt],
+            [0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 1]
+        ], dtype=np.float32)
 
+        kf.measurementMatrix = np.array([
+            [1, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0]
+        ], dtype=np.float32)
 
-def fix_anchor_path(heads_cfg, lanedet_dir):
-    """Corrects relative paths in the lane detection config."""
-    if hasattr(heads_cfg, 'anchors_freq_path') and heads_cfg.anchors_freq_path:
-        if not os.path.isabs(heads_cfg.anchors_freq_path):
-            potential = os.path.join(lanedet_dir, heads_cfg.anchors_freq_path)
-            if os.path.exists(potential):
-                heads_cfg.anchors_freq_path = potential
-
-
-def scale_lane_coeffs(tracks, src_w, src_h, dst_w, dst_h):
-    """
-    Scales polynomial coefficients from source resolution to destination resolution.
-    Equation: x = ay^2 + by + c
-    """
-    sx = dst_w / src_w
-    sy = dst_h / src_h
+        q = np.eye(6, dtype=np.float32)
+        q[:3, :3] *= 1e-4
+        q[3:, 3:] *= 1e-8
+        kf.processNoiseCov = q
+        
+        kf.measurementNoiseCov = np.eye(3, dtype=np.float32) * 1e-1
+        
+        kf.statePost = np.zeros(6, dtype=np.float32).reshape(6, 1)
+        kf.statePost[:3] = initial_coeffs.astype(np.float32).reshape(3, 1)
+        
+        kf.errorCovPost = np.eye(6, dtype=np.float32) * 1.0 
+        
+        return kf
     
-    scaled_tracks = []
-    
-    for track in tracks:
-        # Unpack the tuple from LaneTracker.update
-        # (t.coeffs, t.id, t.confidence, t.age, t.lane_change_events)
-        coeffs, t_id, conf, age, events = track
+    def update_lane_change_events(self):
+        # Decrease the countdown for each event and remove if it reaches zero
+        self.lane_change_events = [(countdown - 1, direction) for countdown, direction in self.lane_change_events if countdown > 1]
+
+    def predict(self):
+        prediction = self.kf.predict()
+        self.age += 1
+        self.misses += 1
+        self.update_lane_change_events()
+        return prediction[:3].reshape(3)
+
+    def update(self, detection_coeffs):
+        self.kf.correct(detection_coeffs.astype(np.float32))
+        self.misses = 0
+        self.hits += 1
+        self.update_lane_change_events()
+
+    @property
+    def coeffs(self):
+        state = self.kf.statePost if self.misses == 0 else self.kf.statePre
+        return state[:3].ravel()
+
+    @property
+    def confidence(self):
+        if self.age == 0: return 0.0
+        return round(max(0.0, min(1.0, (self.hits - self.misses) / self.age)), 2)
+        
+    @property
+    def state_vector(self):
+        return (self.kf.statePost if self.misses == 0 else self.kf.statePre).ravel()
+
+    def check_lane_cross(self):
+        if self.confidence <= 0.7 or self.age <= 90:
+            return None
+
+        state = self.state_vector
+        a, b, c = state[:3]
+        da, db, dc = state[3:]
+
+        y = self.img_height
+        current_base_x = a * y**2 + b * y + c
+
+        base_x_velocity = da * y**2 + db * y + dc
+
+        velocity_threshold = 1.0
+        if abs(base_x_velocity) < velocity_threshold:
+            return None
+
+        direction = None
+        if self.previous_base_x is not None:
+            if (self.previous_base_x < self.middle_x) and (current_base_x >= self.middle_x):
+                if base_x_velocity > 0:
+                    direction = "right-to-left"
+                    self.lane_change_events.append((90, direction))
+            elif (self.previous_base_x >= self.middle_x) and (current_base_x < self.middle_x):
+                if base_x_velocity < 0:
+                    direction = "left-to-right"
+                    self.lane_change_events.append((90, direction))
+
+        self.previous_base_x = current_base_x
+
+        return direction
+
+
+class LaneTracker:
+    def __init__(self, miss_threshold=180, img_height=590, img_width=1640, num_y_samples=20):
+        self.tracks = []
+        self.next_id = 0
+        self.miss_threshold = miss_threshold
+        
+        self.img_height = img_height
+        self.img_width = img_width
+        
+        self.y_eval_points = np.linspace(0, img_height - 1, num_y_samples)
+        self.cross_events = []
+
+    def _get_x_values(self, coeffs):
         a, b, c = coeffs
+        return a * self.y_eval_points**2 + b * self.y_eval_points + c
 
-        # Mathematical Derivation for scaling:
-        # x' = x * sx
-        # y' = y * sy  => y = y' / sy
-        # x' = sx * (a * (y'/sy)^2 + b * (y'/sy) + c)
-        # x' = (a * sx / sy^2) * y'^2 + (b * sx / sy) * y' + (c * sx)
-
-        new_a = a * sx / (sy ** 2)
-        new_b = b * sx / sy
-        new_c = c * sx
+    def _calculate_cost_matrix(self, predictions, detections):
+        pred_x_vals = [self._get_x_values(p) for p in predictions]
+        det_x_vals = [self._get_x_values(d) for d in detections]
         
-        scaled_coeffs = np.array([new_a, new_b, new_c])
-        scaled_tracks.append((scaled_coeffs, t_id, conf, age, events))
+        cost_matrix = np.zeros((len(predictions), len(detections)))
+        for i, pred_x in enumerate(pred_x_vals):
+            for j, det_x in enumerate(det_x_vals):
+                cost_matrix[i, j] = np.mean(np.abs(pred_x - det_x))
+        # print(cost_matrix)
+        return cost_matrix
+
+    def _create_new_tracks(self, detections):
+        for det in detections:
+            new_track = LaneTrack(det, self.next_id, self.img_height, self.img_width)
+            self.tracks.append(new_track)
+            self.next_id += 1
+
+    def _prune_tracks(self):
+        self.tracks = [t for t in self.tracks if t.misses <= self.miss_threshold * t.confidence]
+
+    def update(self, detections):
+        # Kalman filter predictions of where tracks are expected to be
+        predicted_coeffs = [track.predict() for track in self.tracks]
+
+        if not detections:
+            self._prune_tracks()
+            
+            self.cross_events = []
+            for track in self.tracks:
+                direction = track.check_lane_cross()
+                if direction:
+                    self.cross_events.append({"track_id": track.id, "direction": direction})
+
+            return [(t.coeffs, t.id, t.confidence, t.age, t.lane_change_events) for t in self.tracks]
+
+        # If no previously predicted tracks, create new ones for all detections
+        if not self.tracks:
+            self._create_new_tracks(detections)
+            # New tracks can't have crossing events yet, so no check needed here
+            return [(t.coeffs, t.id, t.confidence, t.age, t.lane_change_events) for t in self.tracks]
+
+        # Cost matrix represents the "distance" between predicted tracks and new detections
+        # This helps match currently predicted/stored tracks to the detections
+        cost_matrix = self._calculate_cost_matrix(predicted_coeffs, detections)
         
-    return scaled_tracks
+        # Assigns detections to tracks using the Hungarian algorithm from the cost matrix
+        # row_ind, col_ind = linear_sum_assignment(cost_matrix)
 
-
-def run_combined_analysis(args, lane_cfg):
-    # 1. Setup
-    path_road, path_face = setup_video_paths(args.video_base)
-    if not os.path.exists(path_road) or not os.path.exists(path_face):
-        return print(f"Error: Files not found.\n{path_road}\n{path_face}")
-
-    lane_detector = Detect(lane_cfg)
-    
-    # Initialize tracker with MODEL resolution (this is where detection happens)
-    lane_tracker = LaneTracker(img_height=MODEL_HEIGHT, img_width=MODEL_WIDTH)
-    
-    face_analyzer = FaceAnalyzer(PROJECT_ROOT / 'face_analysis' / 'models')
-
-    cap_road = cv2.VideoCapture(path_road)
-    cap_face = cv2.VideoCapture(path_face)
-    
-    fps = cap_road.get(cv2.CAP_PROP_FPS)
-    fps = 30.0 if not (1 < fps <= 120) else fps
-    total_frames = int(cap_road.get(cv2.CAP_PROP_FRAME_COUNT))
-
-    out_writer = None
-    state_history = []
-    last_state = None
-
-    print(f"Processing {total_frames} frames @ {fps} FPS...")
-
-    try:
-        for _ in tqdm(range(total_frames)):
-            ret_r, frame_road = cap_road.read()
-            print(f"Frame shape: {frame_road.shape}")  # Debugging line
-            ret_f, frame_face = cap_face.read()
-
-            if not ret_r: 
+        # Find the first closest match, then next closest, etc., until all possible matches are made
+        row_ind, col_ind = [], []
+        cost_matrix_copy = cost_matrix.copy()
+        while cost_matrix_copy.size > 0:
+            r, c = np.unravel_index(np.argmin(cost_matrix_copy), cost_matrix_copy.shape)
+            if cost_matrix_copy[r, c] == np.inf or cost_matrix[r, c] > 300:  # Threshold to ignore bad matches
+                # print(f"Didn't match track {r} with any detection, min cost {cost_matrix_copy[r, c]:.2f} with detection {c}")
                 break
-            if not ret_f: 
-                frame_face = np.zeros((480, 640, 3), dtype=np.uint8)
+            row_ind.append(r)
+            col_ind.append(c)
+            cost_matrix_copy[r, :] = np.inf
+            cost_matrix_copy[:, c] = np.inf
 
-            current_time = cap_road.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
+        # For each matched pair, update the track (kalman filter prediction is updated) 
+        # with the detection
+        # r corresponds to the track index, c to the detection index
+        matched_det_indices = set()
+        for r, c in zip(row_ind, col_ind):
+            self.tracks[r].update(detections[c])
+            matched_det_indices.add(c)
+        
+        # Create new tracks for unmatched detections
+        unmatched_det_indices = set(range(len(detections))) - matched_det_indices
+        self._create_new_tracks([detections[i] for i in unmatched_det_indices])
 
-            # --- PROCESS LANE DETECTION (ON MODEL RESOLUTION) ---
-            # coeffs are returned in 1640x590 space
-            coeffs, _ = lane_detector.get_lane_detections(frame_road)
-            
-            # Update tracker (tracker runs in 1640x590 space)
-            filtered_coeffs = lane_tracker.update(coeffs)
+        self._prune_tracks()
 
-            # --- RESIZE VIDEO ---
-            # Resize the base video frame to 1920x1080 *before* overlaying lanes
-            vis_road = frame_road
+        self.cross_events = []
+        for track in self.tracks:
+            direction = track.check_lane_cross()
+            if direction:
+                event = {
+                    "track_id": track.id,
+                    "direction": direction,
+                    "age": track.age,
+                    "confidence": track.confidence
+                }
+                self.cross_events.append(event)
+        if self.cross_events:
+            print("Lane Change Detected:", self.cross_events)
 
-            # --- SCALE TRACKS ---
-            # Transform coefficients to match 1920x1080 coordinate system
-            scaled_tracks = scale_lane_coeffs(
-                filtered_coeffs, 
-                src_w=MODEL_WIDTH, src_h=MODEL_HEIGHT, 
-                dst_w=TARGET_WIDTH, dst_h=TARGET_HEIGHT
-            )
-
-            # --- OVERLAY LANES ---
-            # Now apply visualization on the large 1920x1080 image
-            vis_road = visualize_tracked_lanes(vis_road, scaled_tracks, show=False)
-            
-            # Process Face
-            vis_face, face_info = face_analyzer.process_frame(frame_face)
-
-            # --- STATE HISTORY ---
-            if face_info and face_info['label'] not in ["N/A", "Unknown"]:
-                curr = face_info['label']
-                if curr != last_state:
-                    state_history.append({'state': curr, 'timestamp': current_time})
-                    last_state = curr
-                elif state_history:
-                    state_history[-1]['timestamp'] = current_time # Update timestamp for duration
-
-            # Prune old history
-            state_history = [s for s in state_history if (current_time - s['timestamp']) <= HISTORY_DURATION]
-            if not state_history: last_state = None
-
-            # --- OVERLAY FACE ON ROAD ---
-            h_r, w_r = vis_road.shape[:2] # This is now 1080, 1920
-            h_f, w_f = vis_face.shape[:2]
-            
-            new_w_f = int(w_r * OVERLAY_SCALE)
-            new_h_f = int(new_w_f * (h_f / w_f))
-            vis_face_resized = cv2.resize(vis_face, (new_w_f, new_h_f))
-            
-            margin = 20
-            x_off = w_r - new_w_f - margin
-            y_off = margin
-            
-            # Border and Overlay
-            cv2.rectangle(vis_road, (x_off-2, y_off-2), (x_off+new_w_f+2, y_off+new_h_f+2), (0,0,0), 2)
-            vis_road[y_off:y_off+new_h_f, x_off:x_off+new_w_f] = vis_face_resized
-
-            # --- TEXT OVERLAYS ---
-            if face_info:
-                color = (0, 255, 0) if face_info['conf'] > 0.7 else (0, 165, 255)
-                stats = f"Head Pose: Y:{face_info['yaw']} P:{face_info['pitch']} R:{face_info['roll']}"
-                label_txt = f"Current: {face_info['label']} ({face_info['conf']:.2f})"
-                
-                cv2.putText(vis_road, stats, (30, 60), FONT, 0.8, (255, 255, 255), 1)
-                cv2.putText(vis_road, label_txt, (30, 100), FONT, 1, color, 2)
-
-            # Draw History
-            hist_y = 40
-            cv2.putText(vis_road, "State history (last 5s):", ((w_r//2)-100, hist_y), FONT, 0.6, (200,200,200), 1)
-            
-            for i, item in enumerate(state_history):
-                age = current_time - item['timestamp']
-                alpha = max(0, 1.0 - (age / HISTORY_DURATION))
-                txt = f"- {item['state']} ({age:.1f}s ago)"
-                
-                (tw, th), _ = cv2.getTextSize(txt, FONT, 0.7, 2)
-                draw_fading_text(vis_road, txt, ((w_r//2)-(tw//2), hist_y + 30 + (i * 30)), 0.7, (0, 255, 255), 2, alpha)
-
-            if args.show:
-                cv2.imshow('Combined Analysis', vis_road)
-                if cv2.waitKey(1) & 0xFF == ord('q'): break
-
-            # --- VIDEO WRITING ---
-            if out_writer is None and args.savedir:
-                h, w = vis_road.shape[:2]
-                # Adjust dimensions to be even for codec compatibility
-                h, w = (h // 2) * 2, (w // 2) * 2
-                
-                Path(args.savedir).mkdir(parents=True, exist_ok=True)
-                out_path = str(Path(args.savedir) / (Path(args.video_base).name + "_combined.mp4"))
-                
-                # Try codecs in order
-                for codec in ['mp4v', 'avc1', 'XVID']:
-                    out_writer = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*codec), fps, (w, h))
-                    if out_writer.isOpened():
-                        print(f"Recording to {out_path} using {codec}")
-                        break
-
-            if out_writer and out_writer.isOpened():
-                out_writer.write(cv2.resize(vis_road, (w, h)))
-
-    except KeyboardInterrupt:
-        print("\nInterrupted by user")
-    except Exception as e:
-        print(f"\nError: {e}")
-        import traceback; traceback.print_exc()
-    finally:
-        cap_road.release()
-        cap_face.release()
-        if out_writer: out_writer.release()
-        cv2.destroyAllWindows()
-        gc.collect()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Combined Lane and Face Analysis")
-    parser.add_argument('config', help='Path to Lane Detection config')
-    parser.add_argument('--video_base', required=True, help='Base video path (no I.mp4/F.mp4 suffix)')
-    parser.add_argument('--savedir', default='./results', help='Output directory')
-    parser.add_argument('--show', action='store_true', help='Show visualization')
-    parser.add_argument('--load_from', default='best.pth', help='Model weights')
-    
-    args = parser.parse_args()
-
-    # Load and patch Config
-    cfg = Config.fromfile(args.config)
-    cfg.load_from = args.load_from
-    cfg.show = False 
-    cfg.savedir = None 
-
-    lanedet_dir = LANE_DET_PATH / 'lanedet'
-    if hasattr(cfg, 'heads'): fix_anchor_path(cfg.heads, lanedet_dir)
-    if hasattr(cfg, 'net') and hasattr(cfg.net, 'heads'): fix_anchor_path(cfg.net.heads, lanedet_dir)
-
-    run_combined_analysis(args, cfg)
+        return [(t.coeffs, t.id, t.confidence, t.age, t.lane_change_events) for t in self.tracks]
