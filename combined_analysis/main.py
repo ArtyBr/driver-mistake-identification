@@ -9,9 +9,10 @@ warnings.filterwarnings("ignore", category=FutureWarning, message="`rcond` param
 CURRENT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = CURRENT_DIR.parent
 LANE_DET_PATH = PROJECT_ROOT / 'lane_detection'
+SRC_DIR = CURRENT_DIR / 'src'
 
-# Extend path to include project root and lane_detection submodule
-sys.path.extend([str(PROJECT_ROOT), str(LANE_DET_PATH)])
+# Extend path to include project root, lane_detection submodule, and src
+sys.path.extend([str(PROJECT_ROOT), str(LANE_DET_PATH), str(SRC_DIR)])
 
 import torch  # Import torch early to avoid libc10.so/shared library issues
 import argparse

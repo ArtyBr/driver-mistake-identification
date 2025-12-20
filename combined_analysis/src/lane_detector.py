@@ -16,10 +16,14 @@ class LaneDetectorWrapper:
         Returns:
             vis_road: The visualized frame with lanes overlayed (resized to target).
             lane_data: The raw tracking data (coeffs, id, conf, age, events).
+            cross_events: A list of immediate lane crossing events from this frame.
         """
         # coeffs are returned in MODEL resolution (1640x590)
         coeffs, ori_road = self.detector.get_lane_detections(frame)
         filtered_coeffs = self.tracker.update(coeffs)
+        
+        # Retrieve instantaneous cross events from the tracker
+        cross_events = self.tracker.cross_events
 
         # Resize the base video frame to TARGET resolution (1920x1080) before overlaying lanes
         vis_road = cv2.resize(ori_road, (config.TARGET_WIDTH, config.TARGET_HEIGHT), interpolation=cv2.INTER_LINEAR)
@@ -33,4 +37,4 @@ class LaneDetectorWrapper:
         vis_road = visualize_tracked_lanes(vis_road, scaled_tracks, show=False)
         # vis_road = draw_lanes_fancy(vis_road, scaled_tracks)
         
-        return vis_road, filtered_coeffs
+        return vis_road, filtered_coeffs, cross_events

@@ -7,7 +7,7 @@ from lanedet.models.registry import build_net
 from lanedet.utils.config import Config
 from lanedet.utils.visualization import imshow_lanes
 from lanedet.utils.net_utils import load_network
-from helper_classes import LaneTracker
+from lane_tracking import LaneTracker
 
 LANE_COLORS = [
     (0, 0, 255),   # Red

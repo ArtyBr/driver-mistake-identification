@@ -4,15 +4,15 @@ This system combines Lane Detection (using LaneAtt) and Face Analysis (using Ins
 
 ## Architecture
 
-The project has been refactored into a modular structure:
+The project has been refactored into a modular structure with core components in `src/`:
 
 - **`main.py`**: The entry point. Handles argument parsing and system initialization.
-- **`video_processor.py`**: core processing loop, handling video I/O, synchronization, and visualization.
-- **`lane_detector.py`**: Wrapper around the lane detection library and tracking logic.
-- **`lane_tracking.py`**: Kalman filter-based lane tracking (formerly `helper_classes.py`).
-- **`face_analyzer.py`**: Face detection and head pose estimation.
-- **`config.py`**: Shared constants and configuration.
-- **`utils.py`**: Helper functions.
+- **`src/video_processor.py`**: core processing loop, handling video I/O, synchronization, and visualization.
+- **`src/lane_detector.py`**: Wrapper around the lane detection library and tracking logic.
+- **`src/lane_tracking.py`**: Kalman filter-based lane tracking.
+- **`src/face_analyzer.py`**: Face detection and head pose estimation.
+- **`src/config.py`**: Shared constants and configuration.
+- **`src/utils.py`**: Helper functions.
 
 ## Usage
 

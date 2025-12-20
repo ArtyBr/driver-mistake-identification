@@ -23,6 +23,12 @@ class FaceAnalyzer:
         return None
 
     def process_frame(self, frame):
+        """
+        Analyzes the frame for face and head pose.
+        Returns:
+            frame: The original frame (untouched).
+            analysis_data: Dictionary containing pose and label info, plus raw detection data.
+        """
         faces = self.app.get(frame)
         if not faces:
             return frame, None
@@ -50,16 +56,11 @@ class FaceAnalyzer:
 
         analysis_data = {
             'yaw': int(yaw), 'pitch': int(pitch), 'roll': int(roll),
-            'label': svm_label, 'conf': svm_conf
+            'label': svm_label, 'conf': svm_conf,
+            'bbox': face.bbox.astype(int),
+            'kps': kps,
+            'nose_2d': nose_2d
         }
 
-        # Visualization
-        bbox = face.bbox.astype(int)
-        cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 255, 0), 2)
-        for kp in kps:
-            cv2.circle(frame, tuple(kp), 2, (0, 255, 0), -1)
-        
-        p2 = (int(nose_2d[0] + yaw * 10), int(nose_2d[1] - pitch * 10))
-        cv2.line(frame, nose_2d, p2, (255, 0, 0), 3)
-
+        # Note: We are NO LONGER drawing here.
         return frame, analysis_data
