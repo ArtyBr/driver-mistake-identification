@@ -252,9 +252,6 @@ class VideoProcessor:
 
     def _process_single_frame_headless(self, frame_road, frame_face, current_time):
         # Lane Processing
-        # Assuming process_frame returns (vis, lane_data, cross_events)
-        # We don't need vis, but the method might compute it. 
-        # Ideally lane_wrapper should have a method to just return data, but for now we ignore vis.
         vis_road, lane_data, cross_events = self.lane_wrapper.process_frame(frame_road)
 
         # Face Processing
@@ -274,12 +271,10 @@ class VideoProcessor:
                     if result:
                         self.safety_monitor.active_alerts.append(result)
                         self.all_events.append(result)
-                        # We don't print in headless mode usually, or maybe log it
         
-        # Serialize Lane Data
+        # Serialize Lane Data (Coefficients only)
         serialized_lanes = []
         if lane_data:
-            # lane_data is [(coeffs, id, conf, age, events), ...]
             # Scale to target resolution
             scaled_lanes = scale_lane_coeffs(
                 lane_data, 
@@ -289,41 +284,22 @@ class VideoProcessor:
             
             for track in scaled_lanes:
                 coeffs, t_id, conf, age, events = track
-                a, b, c = coeffs
-                
-                # Generate points along the lane
-                points = []
-                num_points = 50
-                # Bottom third: from 2/3 of height to total height
-                y_values = np.linspace(2 * config.TARGET_HEIGHT / 3, config.TARGET_HEIGHT, num_points)
-                
-                for y in y_values:
-                    x = a * y**2 + b * y + c
-                    if 0 <= x < config.TARGET_WIDTH:
-                        points.append([float(x), float(y)])
-                        
-                if points:
-                    serialized_lanes.append(points)
+                # Store coefficients [a, b, c] rounded to 6 decimal places
+                serialized_lanes.append([round(float(x), 6) for x in coeffs])
 
-        # Serialize Face Info
-        # face_info: {'bbox': [...], 'yaw': ..., 'pitch': ..., 'roll': ..., 'label': ...}
+        # Serialize Face Info (Essential fields only)
         serialized_face = {}
         if face_info:
-            for k, v in face_info.items():
-                if isinstance(v, (np.integer, int)):
-                    serialized_face[k] = int(v)
-                elif isinstance(v, (np.floating, float)):
-                    serialized_face[k] = float(v)
-                elif isinstance(v, np.ndarray):
-                    serialized_face[k] = v.tolist() # Handles multi-dim arrays automatically
-                elif isinstance(v, list):
-                     # Ensure elements are JSON serializable
-                     serialized_face[k] = v 
-                else:
-                    serialized_face[k] = str(v) # Fallback for unknown types
+            serialized_face = {
+                'yaw': round(float(face_info.get('yaw', 0)), 2),
+                'pitch': round(float(face_info.get('pitch', 0)), 2),
+                'roll': round(float(face_info.get('roll', 0)), 2),
+                'label': face_info.get('label', 'N/A'),
+                'nose_2d': [int(x) for x in face_info.get('nose_2d')] if face_info.get('nose_2d') else None
+            }
 
         return {
-            "time": float(current_time),
+            "time": round(float(current_time), 3),
             "lane_lines": serialized_lanes,
             "face_info": serialized_face,
             "current_state": self.last_state

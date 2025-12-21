@@ -97,7 +97,22 @@
   letter-spacing: 1px;
 }
 
+.play-button {
+  min-width: 50px;
+  font-size: 1.2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logs-row {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
 .events-timeline, .face-log {
+  flex: 1;
   text-align: left;
   background: #2a2a2a;
   padding: 15px;
@@ -124,6 +139,13 @@
 
 .event-item:hover {
   background: #444;
+}
+
+.event-item.active {
+  background: #2a2a2a;
+  border: 1px solid #ffd700;
+  border-left: 5px solid #ffd700;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
 }
 
 .event-item.CRITICAL {

@@ -59,7 +59,11 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
   }
 
   const onTimeUpdate = () => {
-    setCurrentTime(roadVideoRef.current.currentTime)
+    const time = roadVideoRef.current.currentTime
+    setCurrentTime(time)
+    if (time >= duration) {
+      setIsPlaying(false)
+    }
   }
 
   const onLoadedMetadata = () => {
@@ -125,14 +129,27 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
         ctx.strokeStyle = '#00FF00'
         ctx.lineWidth = 3
         if (frame.lane_lines) {
-          frame.lane_lines.forEach(lane => {
+          frame.lane_lines.forEach(coeffs => {
+            const [a, b, c] = coeffs
+            
             ctx.beginPath()
-            lane.forEach((pt, i) => {
-              const x = (pt[0] / 1920) * canvasRef.current.width
-              const y = (pt[1] / 1080) * canvasRef.current.height
+            // Generate points from y=720 to 1080 (bottom third of 1080p)
+            const startY = 720
+            const endY = 1080
+            const numSteps = 30
+            const step = (endY - startY) / numSteps
+
+            for (let i = 0; i <= numSteps; i++) {
+              const y_1080 = startY + i * step
+              const x_1920 = a * (y_1080 * y_1080) + b * y_1080 + c
+              
+              // Scale to canvas
+              const x = (x_1920 / 1920) * canvasRef.current.width
+              const y = (y_1080 / 1080) * canvasRef.current.height
+              
               if (i === 0) ctx.moveTo(x, y)
               else ctx.lineTo(x, y)
-            })
+            }
             ctx.stroke()
           })
         }
@@ -227,7 +244,9 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
       </div>
 
       <div className="controls">
-        <button onClick={togglePlay}>{isPlaying ? 'Pause' : 'Play'}</button>
+        <button onClick={togglePlay} className="play-button">
+          {isPlaying ? "⏸️" : "▶️"}
+        </button>
         <input
           type="range"
           min="0"
@@ -240,54 +259,59 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
         <span>{currentTime.toFixed(2)} / {duration.toFixed(2)}s</span>
       </div>
 
-      <div className="face-log">
-        <hr />
-        <h4>
-          Current Face Direction: {iconMap[currentFaceState] || iconMap['N/A']} {currentFaceState || "N/A"}
-        </h4>
-        <hr />
-        <h3>Face Direction Log (Transitions)</h3>
-        <div className="log-list">
-          {history.map((item, i) => {
-            const isCurrent = i === activeLogIndex
-            
-            return (
-              <div
-                key={i}
-                ref={el => itemRefs.current[i] = el}
-                className={`log-item ${isCurrent ? 'active' : ''}`}
-                onClick={() => {
-                  roadVideoRef.current.currentTime = Math.max(0, item.time - 0.5)
-                  faceVideoRef.current.currentTime = Math.max(0, item.time - 0.5)
-                }}
-              >
-                <span className="log-time">{item.time.toFixed(1)}s</span>
-                <span className="log-state">
-                  {iconMap[item.from] || iconMap['N/A']} <strong>{item.from}</strong> 
-                  {' → '} 
-                  {iconMap[item.to] || iconMap['N/A']} <strong>{item.to}</strong>
-                </span>
-              </div>
-            )
-          })}
+      <div className="logs-row">
+        <div className="face-log">
+          <hr />
+          <h4>
+            Current Face Direction: {iconMap[currentFaceState] || iconMap['N/A']} {currentFaceState || "N/A"}
+          </h4>
+          <hr />
+          <h3>Face Direction Log (Transitions)</h3>
+          <div className="log-list">
+            {history.map((item, i) => {
+              const isCurrent = i === activeLogIndex
+              
+              return (
+                <div
+                  key={i}
+                  ref={el => itemRefs.current[i] = el}
+                  className={`log-item ${isCurrent ? 'active' : ''}`}
+                  onClick={() => {
+                    roadVideoRef.current.currentTime = Math.max(0, item.time - 0.5)
+                    faceVideoRef.current.currentTime = Math.max(0, item.time - 0.5)
+                  }}
+                >
+                  <span className="log-time">{item.time.toFixed(1)}s</span>
+                  <span className="log-state">
+                    {iconMap[item.from] || iconMap['N/A']} <strong>{item.from}</strong> 
+                    {' → '} 
+                    {iconMap[item.to] || iconMap['N/A']} <strong>{item.to}</strong>
+                  </span>
+                </div>
+              )
+            })}
+          </div>
         </div>
-      </div>
 
-      <div className="events-timeline">
-        <h3>Detected Events</h3>
-        <div className="event-list">
-          {results.timeline_events.map((event, i) => (
-            <div
-              key={i}
-              className={`event-item ${event.severity}`}
-              onClick={() => {
-                roadVideoRef.current.currentTime = Math.max(0, event.timestamp - 5)
-                faceVideoRef.current.currentTime = Math.max(0, event.timestamp - 5)
-              }}
-            >
-              <strong>{event.timestamp.toFixed(2)}s:</strong> {event.message}
-            </div>
-          ))}
+        <div className="events-timeline">
+          <h3>Detected Events</h3>
+          <div className="event-list">
+            {results.timeline_events.map((event, i) => {
+              const isActive = currentTime >= (event.timestamp - 5) && currentTime <= event.timestamp
+              return (
+                <div
+                  key={i}
+                  className={`event-item ${event.severity} ${isActive ? 'active' : ''}`}
+                  onClick={() => {
+                    roadVideoRef.current.currentTime = Math.max(0, event.timestamp - 5)
+                    faceVideoRef.current.currentTime = Math.max(0, event.timestamp - 5)
+                  }}
+                >
+                  <strong>{event.timestamp.toFixed(2)}s:</strong> {event.message}
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
     </div>
