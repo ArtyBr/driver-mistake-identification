@@ -20,6 +20,7 @@ class VideoProcessor:
         
         self.state_history = []
         self.last_state = None
+        self.all_events = []
 
     def run(self, export_json=False, output_json_path=None, custom_video_paths=None):
         # 1. Setup Video Capture
@@ -73,7 +74,7 @@ class VideoProcessor:
             if export_json:
                 # Compile final JSON
                 final_events = []
-                for alert in self.safety_monitor.active_alerts:
+                for alert in self.all_events:
                     final_events.append({
                         "timestamp": alert.timestamp,
                         "type": "safety_alert",
@@ -193,6 +194,7 @@ class VideoProcessor:
                     result = self.safety_monitor.validate_lane_change(direction, current_time, self.state_history)
                     if result:
                         self.safety_monitor.active_alerts.append(result)
+                        self.all_events.append(result)
                         print(f"[{current_time:.2f}s] {result.message}")
 
         # Visualization Composition
@@ -271,6 +273,7 @@ class VideoProcessor:
                     result = self.safety_monitor.validate_lane_change(direction, current_time, self.state_history)
                     if result:
                         self.safety_monitor.active_alerts.append(result)
+                        self.all_events.append(result)
                         # We don't print in headless mode usually, or maybe log it
         
         # Serialize Lane Data
