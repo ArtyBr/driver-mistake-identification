@@ -1690,3 +1690,23 @@ INFO:     127.0.0.1:57306 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 
 INFO:     127.0.0.1:57298 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
 INFO:     127.0.0.1:43322 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
 INFO:     127.0.0.1:43336 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:60472 - "POST /run_test HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60472 - "GET /status/068c4bf0-7666-4d56-b5e9-f4944e541bb4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60472 - "GET /status/068c4bf0-7666-4d56-b5e9-f4944e541bb4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60472 - "GET /results/068c4bf0-7666-4d56-b5e9-f4944e541bb4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60474 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:60490 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:59914 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:59928 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:59914 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:59928 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35008 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35012 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35022 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35014 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35036 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35052 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35058 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35068 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35080 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35086 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content

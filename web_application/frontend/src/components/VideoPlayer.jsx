@@ -279,7 +279,6 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
               const endTime = event.timestamp
               const isTimeActive = currentTime >= startTime && currentTime <= endTime
               const isHovered = i === hoveredEventIndex
-              const showActive = isTimeActive || isHovered
               
               const leftPct = (startTime / duration) * 100
               const widthPct = ((endTime - startTime) / duration) * 100
@@ -292,12 +291,12 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
               return (
                 <div
                   key={i}
-                  className={`timeline-event-bar ${showActive ? 'active' : ''}`}
+                  className={`timeline-event-bar ${isTimeActive ? 'playback-active' : ''} ${isHovered ? 'hover-active' : ''}`}
                   style={{
                     left: `${leftPct}%`,
                     width: `${widthPct}%`,
                     backgroundColor: color,
-                    zIndex: showActive ? 5 : 1
+                    zIndex: isHovered ? 6 : (isTimeActive ? 5 : 1)
                   }}
                   onMouseEnter={() => setHoveredEventIndex(i)}
                   onMouseLeave={() => setHoveredEventIndex(null)}
@@ -374,13 +373,12 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
             {results.timeline_events.map((event, i) => {
               const isTimeActive = currentTime >= (event.timestamp - 5) && currentTime <= event.timestamp
               const isHovered = i === hoveredEventIndex
-              const isActive = isTimeActive || isHovered
               
               return (
                 <div
                   key={i}
                   ref={el => eventItemRefs.current[i] = el}
-                  className={`event-item ${event.severity} ${isActive ? 'active' : ''}`}
+                  className={`event-item ${event.severity} ${isTimeActive ? 'playback-active' : ''} ${isHovered ? 'hover-active' : ''}`}
                   onClick={() => {
                     roadVideoRef.current.currentTime = Math.max(0, event.timestamp - 5)
                     faceVideoRef.current.currentTime = Math.max(0, event.timestamp - 5)

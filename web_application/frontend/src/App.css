@@ -147,10 +147,17 @@
   cursor: pointer;
 }
 
-.timeline-event-bar.active {
+.timeline-event-bar.playback-active {
   opacity: 1;
   box-shadow: 0 0 2px #ffd700;
   border: 1px solid #ffd700;
+  z-index: 6; /* Ensure playback active is on top of hover if they overlap */
+}
+
+.timeline-event-bar.hover-active {
+  opacity: 1;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
 .timeline-cursor {
@@ -225,19 +232,28 @@
   background: #333;
   border-radius: 4px;
   cursor: pointer;
-  border-left: 5px solid #666;
+  border: 1px solid transparent; /* Placeholder to prevent shift */
+  border-left: 5px solid #666; /* Base left border */
   color: white;
+  transition: all 0.2s ease;
 }
 
 .event-item:hover {
   background: #444;
 }
 
-.event-item.active {
+.event-item.playback-active {
   background: #2a2a2a;
-  border: 1px solid #ffd700;
-  border-left: 5px solid #ffd700;
+  border-color: #ffd700;
+  border-left-color: #ffd700;
   box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
+}
+
+.event-item.hover-active {
+  background: #3a3a3a;
+  border-color: rgba(255, 255, 255, 0.4);
+  border-left-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.1);
 }
 
 .event-item.CRITICAL {
