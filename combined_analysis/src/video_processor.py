@@ -4,7 +4,7 @@ import config
 import json
 from tqdm import tqdm
 from pathlib import Path
-from utils import setup_video_paths
+from utils import setup_video_paths, scale_lane_coeffs
 from visualization import VideoVisualizer
 from safety_monitor import ManeuverValidator
 import gc
@@ -277,21 +277,33 @@ class VideoProcessor:
                         # We don't print in headless mode usually, or maybe log it
         
         # Serialize Lane Data
-        # lane_data usually contains 'lanes' which are lists of points. 
-        # Depending on lane_detector implementation, it might need conversion.
-        # Let's assume lane_data is a dict or list of points.
         serialized_lanes = []
         if lane_data:
-             # This depends on what lane_detector returns. 
-             # If it returns a list of lanes, where each lane is a list of points (x,y)
-             try:
-                 for lane in lane_data: # lane_data might be list of lanes
-                     points = []
-                     for point in lane:
-                         points.append([float(point[0]), float(point[1])])
-                     serialized_lanes.append(points)
-             except:
-                 pass # Handle structure mismatch gracefully
+            # lane_data is [(coeffs, id, conf, age, events), ...]
+            # Scale to target resolution
+            scaled_lanes = scale_lane_coeffs(
+                lane_data, 
+                src_w=config.MODEL_WIDTH, src_h=config.MODEL_HEIGHT,
+                dst_w=config.TARGET_WIDTH, dst_h=config.TARGET_HEIGHT
+            )
+            
+            for track in scaled_lanes:
+                coeffs, t_id, conf, age, events = track
+                a, b, c = coeffs
+                
+                # Generate points along the lane
+                points = []
+                num_points = 50
+                # Bottom third: from 2/3 of height to total height
+                y_values = np.linspace(2 * config.TARGET_HEIGHT / 3, config.TARGET_HEIGHT, num_points)
+                
+                for y in y_values:
+                    x = a * y**2 + b * y + c
+                    if 0 <= x < config.TARGET_WIDTH:
+                        points.append([float(x), float(y)])
+                        
+                if points:
+                    serialized_lanes.append(points)
 
         # Serialize Face Info
         # face_info: {'bbox': [...], 'yaw': ..., 'pitch': ..., 'roll': ..., 'label': ...}

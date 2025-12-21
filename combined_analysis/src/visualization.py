@@ -109,7 +109,8 @@ class VideoVisualizer:
         hist_w = 400
         hist_h = 30 + (len(display_history) * 25)
         hist_x = (w_r - hist_w) // 2
-        hist_y = h_r - hist_h - 40 # 40px from bottom
+        # Position at the bottom with 40px margin
+        hist_y = h_r - hist_h - 40 
         
         draw_hud_panel(vis_road, hist_x, hist_y, hist_w, hist_h, alpha=0.6, color=(20, 20, 20))
         draw_styled_text(vis_road, "FACE DIRECTION EVENT LOG", (hist_x + 15, hist_y + 20), 0.5, (255, 255, 0), 1)

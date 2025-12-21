@@ -4,9 +4,11 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
   const roadVideoRef = useRef(null)
   const faceVideoRef = useRef(null)
   const canvasRef = useRef(null)
+  const faceCanvasRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [currentFaceState, setCurrentFaceState] = useState("N/A")
 
   // Sync videos
   const togglePlay = () => {
@@ -39,48 +41,91 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
   // Draw loop
   useEffect(() => {
     let animationFrameId
+    let lastRenderedState = null
 
     const draw = () => {
       const ctx = canvasRef.current.getContext('2d')
+      const faceCtx = faceCanvasRef.current ? faceCanvasRef.current.getContext('2d') : null
       const roadVideo = roadVideoRef.current
-      if (!ctx || !roadVideo) return
+      const faceVideo = faceVideoRef.current
 
-      // Clear canvas
+      if (!ctx || !roadVideo || !faceCtx || !faceVideo) return
+
+      // Clear canvases
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
+      faceCtx.clearRect(0, 0, faceCanvasRef.current.width, faceCanvasRef.current.height)
 
       // Find frame data for current time
       const time = roadVideo.currentTime
       const frame = results.frame_data.find((f, i) => {
-          const next = results.frame_data[i+1]
-          return time >= f.time && (!next || time < next.time)
+        const next = results.frame_data[i + 1]
+        return time >= f.time && (!next || time < next.time)
       })
 
       if (frame) {
-        // Draw Lanes
+        // Update Current Face State UI (throttled check)
+        if (frame.current_state && frame.current_state !== lastRenderedState) {
+          setCurrentFaceState(frame.current_state)
+          lastRenderedState = frame.current_state
+        } else if (!frame.current_state && lastRenderedState !== "N/A") {
+          setCurrentFaceState("N/A")
+          lastRenderedState = "N/A"
+        }
+
+        // Draw Lanes (Road Canvas)
         ctx.strokeStyle = '#00FF00'
         ctx.lineWidth = 3
-        frame.lane_lines.forEach(lane => {
-          ctx.beginPath()
-          lane.forEach((pt, i) => {
-            // Need to scale coordinates if canvas size != video size
-            // For now assume they match or we scale here
-            const x = (pt[0] / 1920) * canvasRef.current.width
-            const y = (pt[1] / 1080) * canvasRef.current.height
-            if (i === 0) ctx.moveTo(x, y)
-            else ctx.lineTo(x, y)
+        if (frame.lane_lines) {
+          frame.lane_lines.forEach(lane => {
+            ctx.beginPath()
+            lane.forEach((pt, i) => {
+              const x = (pt[0] / 1920) * canvasRef.current.width
+              const y = (pt[1] / 1080) * canvasRef.current.height
+              if (i === 0) ctx.moveTo(x, y)
+              else ctx.lineTo(x, y)
+            })
+            ctx.stroke()
           })
-          ctx.stroke()
-        })
+        }
 
-        // Draw Face Info (Overlay on top left or in a box)
-        if (frame.face_info && frame.face_info.bbox) {
-            // Face info is from face video, but we might want to overlay some status on road video
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
-            ctx.fillRect(10, 10, 250, 80)
-            ctx.fillStyle = 'white'
-            ctx.font = '16px Arial'
-            ctx.fillText(`State: ${frame.current_state || 'N/A'}`, 20, 35)
-            ctx.fillText(`Gaze: Y:${frame.face_info.yaw?.toFixed(1)} P:${frame.face_info.pitch?.toFixed(1)}`, 20, 65)
+        // Draw Face Arrow (Face Canvas)
+        if (frame.face_info && frame.face_info.nose_2d && frame.face_info.yaw !== undefined) {
+          let { nose_2d, yaw, pitch } = frame.face_info
+
+          // Parse nose_2d if string (backend serialization quirk)
+          if (typeof nose_2d === 'string') {
+            const match = nose_2d.match(/\((-?\d+),\s*(-?\d+)\)/);
+            if (match) {
+              nose_2d = [parseInt(match[1]), parseInt(match[2])];
+            } else {
+              console.warn("Failed to parse nose_2d:", nose_2d);
+            }
+          }
+
+          if (Array.isArray(nose_2d) || (nose_2d.length === 2)) {
+            // Scale coordinates
+            // Assuming nose_2d is in video native resolution. 
+            // We need native resolution. If unavailable, default to 640x480 or similar?
+            // faceVideo.videoWidth is available when loaded.
+            const vW = faceVideo.videoWidth || 640
+            const vH = faceVideo.videoHeight || 480
+
+            const scaleX = faceCanvasRef.current.width / vW
+            const scaleY = faceCanvasRef.current.height / vH
+
+            const startX = nose_2d[0] * scaleX
+            const startY = nose_2d[1] * scaleY
+
+            const endX = (nose_2d[0] + yaw * 10) * scaleX
+            const endY = (nose_2d[1] - pitch * 10) * scaleY
+
+            faceCtx.strokeStyle = '#0000FF' // Blue in RGB
+            faceCtx.lineWidth = 3
+            faceCtx.beginPath()
+            faceCtx.moveTo(startX, startY)
+            faceCtx.lineTo(endX, endY)
+            faceCtx.stroke()
+          }
         }
       }
 
@@ -95,49 +140,102 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
     <div className="video-dashboard">
       <div className="video-container">
         <div className="video-wrapper road">
-          <video 
-            ref={roadVideoRef} 
-            src={roadUrl} 
+          <video
+            ref={roadVideoRef}
+            src={roadUrl}
             onTimeUpdate={onTimeUpdate}
             onLoadedMetadata={onLoadedMetadata}
             muted
           />
-          <canvas 
-            ref={canvasRef} 
-            width={1280} 
+          <canvas
+            ref={canvasRef}
+            width={1280}
             height={720}
             className="overlay-canvas"
           />
         </div>
         <div className="video-wrapper face">
-          <video 
-            ref={faceVideoRef} 
-            src={faceUrl} 
+          <video
+            ref={faceVideoRef}
+            src={faceUrl}
             muted
+          />
+          <canvas
+            ref={faceCanvasRef}
+            width={640}
+            height={480}
+            className="overlay-canvas"
           />
         </div>
       </div>
 
       <div className="controls">
         <button onClick={togglePlay}>{isPlaying ? 'Pause' : 'Play'}</button>
-        <input 
-          type="range" 
-          min="0" 
-          max={duration} 
-          step="0.01" 
-          value={currentTime} 
-          onChange={handleSeek} 
+        <input
+          type="range"
+          min="0"
+          max={duration}
+          step="0.01"
+          value={currentTime}
+          onChange={handleSeek}
           className="timeline-slider"
         />
         <span>{currentTime.toFixed(2)} / {duration.toFixed(2)}s</span>
+      </div>
+
+      <div className="face-log">
+        <hr />
+        <h4>Current Face Direction: {currentFaceState || "N/A"}</h4>
+        <hr />
+        <h3>Face Direction Log (Transitions)</h3>
+        <div className="log-list">
+          {(() => {
+            const history = []
+            let lastState = null
+
+            // Process frame data to find state changes
+            if (results && results.frame_data) {
+              results.frame_data.forEach(frame => {
+                const state = frame.current_state
+                if (state && state !== "N/A" && state !== "Unknown") {
+                  if (lastState !== null && state !== lastState) {
+                    history.push({
+                      from: lastState,
+                      to: state,
+                      time: frame.time
+                    })
+                  }
+                  if (lastState === null || state !== lastState) {
+                    lastState = state
+                  }
+                }
+              })
+            }
+
+            // Show recent items first
+            return history.reverse().map((item, i) => (
+              <div
+                key={i}
+                className="log-item"
+                onClick={() => {
+                  roadVideoRef.current.currentTime = Math.max(0, item.time - 0.5)
+                  faceVideoRef.current.currentTime = Math.max(0, item.time - 0.5)
+                }}
+              >
+                <span className="log-time">{item.time.toFixed(1)}s</span>
+                <span className="log-state">From <strong>{item.from}</strong> To <strong>{item.to}</strong></span>
+              </div>
+            ))
+          })()}
+        </div>
       </div>
 
       <div className="events-timeline">
         <h3>Detected Events</h3>
         <div className="event-list">
           {results.timeline_events.map((event, i) => (
-            <div 
-              key={i} 
+            <div
+              key={i}
               className={`event-item ${event.severity}`}
               onClick={() => {
                 roadVideoRef.current.currentTime = Math.max(0, event.timestamp - 2)

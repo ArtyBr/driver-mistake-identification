@@ -79,13 +79,38 @@
   flex-grow: 1;
 }
 
-.event-list {
+.current-status-box {
+  background: #1a1a1a;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px solid #444;
+  color: white;
+}
+
+.status-display {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #646cff;
+  margin-top: 5px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.events-timeline, .face-log {
+  text-align: left;
+  background: #2a2a2a;
+  padding: 15px;
+  border-radius: 8px;
+  color: white;
+}
+
+.event-list, .log-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
   max-height: 200px;
   overflow-y: auto;
-  text-align: left;
 }
 
 .event-item {
@@ -111,6 +136,40 @@
 
 .event-item.INFO {
   border-left-color: #4caf50;
+}
+
+.log-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #1a1a1a;
+  border-radius: 4px;
+  border: 1px solid #444;
+  cursor: pointer;
+  transition: background 0.2s;
+  color: #ccc;
+}
+
+.log-item:hover {
+  background: #333;
+  border-color: #646cff;
+}
+
+.log-time {
+  font-family: monospace;
+  color: #888;
+  min-width: 60px;
+}
+
+.log-state {
+  font-weight: 500;
+  color: #fff;
+  flex-grow: 1;
+  text-align: right;
+}
+
+.log-state strong {
+  color: #646cff;
 }
 
 .error {
