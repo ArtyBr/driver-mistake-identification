@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 
 const API_BASE = 'http://localhost:8000'
@@ -8,6 +8,19 @@ function Uploader({ onUploadSuccess }) {
   const [faceFile, setFaceFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(null)
+  const [analyses, setAnalyses] = useState([])
+  const [selectedAnalysis, setSelectedAnalysis] = useState("")
+
+  useEffect(() => {
+    // Fetch available analyses
+    axios.get(`${API_BASE}/list_analyses`)
+      .then(res => {
+        if (res.data.analyses) {
+          setAnalyses(res.data.analyses)
+        }
+      })
+      .catch(err => console.error("Failed to fetch analyses:", err))
+  }, [])
 
   const handleUpload = async () => {
     if (!roadFile || !faceFile) {
@@ -41,16 +54,27 @@ function Uploader({ onUploadSuccess }) {
     }
   }
 
-  const handleRunTest = async () => {
+  const handleLoadAnalysis = async () => {
     setUploading(true)
     setError(null)
     try {
-      const res = await axios.post(`${API_BASE}/run_test`)
+      const url = selectedAnalysis 
+        ? `${API_BASE}/run_test?analysis_id=${selectedAnalysis}`
+        : `${API_BASE}/run_test`
+        
+      const res = await axios.post(url)
+      
+      if (res.data.error) {
+         setError(res.data.error)
+         setUploading(false)
+         return
+      }
+
       const statusRes = await axios.get(`${API_BASE}/status/${res.data.job_id}`)
       onUploadSuccess(res.data.job_id, statusRes.data)
     } catch (err) {
       console.error(err)
-      setError("Test run failed.")
+      setError("Failed to load analysis.")
     } finally {
       setUploading(false)
     }
@@ -68,13 +92,32 @@ function Uploader({ onUploadSuccess }) {
         <input type="file" accept="video/*" onChange={(e) => setFaceFile(e.target.files[0])} />
       </div>
       {error && <p className="error">{error}</p>}
-      <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+      
+      <div className="actions-row" style={{ display: 'flex', gap: '20px', marginTop: '20px', alignItems: 'flex-end' }}>
         <button onClick={handleUpload} disabled={uploading}>
-          {uploading ? 'Uploading...' : 'Start Analysis'}
+          {uploading ? 'Uploading...' : 'Start New Analysis'}
         </button>
-        <button onClick={handleRunTest} disabled={uploading} style={{ backgroundColor: '#444' }}>
-          Run Test Analysis (Local Data)
-        </button>
+        
+        <div className="separator" style={{ width: '1px', background: '#444', height: '40px' }}></div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <label style={{ fontSize: '0.9em', color: '#888' }}>Load Previous Analysis:</label>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <select 
+              value={selectedAnalysis} 
+              onChange={(e) => setSelectedAnalysis(e.target.value)}
+              style={{ padding: '8px', borderRadius: '4px', background: '#333', color: 'white', border: '1px solid #555' }}
+            >
+              <option value="">-- Test Data (Default) --</option>
+              {analyses.map(name => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+            <button onClick={handleLoadAnalysis} disabled={uploading} style={{ backgroundColor: '#444' }}>
+              Load Analysis
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )

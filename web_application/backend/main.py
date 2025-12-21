@@ -117,12 +117,26 @@ async def upload_videos(
     video_road: UploadFile = File(...),
     video_face: UploadFile = File(...)
 ):
-    job_id = str(uuid.uuid4())
+    # Generate a user-friendly job ID/folder name from the road video filename
+    base_name = Path(video_road.filename).stem
+    # Sanitize: replace non-alphanumeric with underscore
+    safe_name = re.sub(r'[^\w\-]', '_', base_name)
+    
+    job_id = safe_name
     job_dir = UPLOAD_DIR / job_id
+    
+    # Handle duplicates by appending a counter
+    counter = 1
+    while job_dir.exists():
+        job_id = f"{safe_name}_{counter}"
+        job_dir = UPLOAD_DIR / job_id
+        counter += 1
+    
     job_dir.mkdir(parents=True, exist_ok=True)
     
-    road_path = job_dir / f"road_{video_road.filename}"
-    face_path = job_dir / f"face_{video_face.filename}"
+    # Save as standard names
+    road_path = job_dir / "road.mp4"
+    face_path = job_dir / "face.mp4"
     
     with open(road_path, "wb") as buffer:
         shutil.copyfileobj(video_road.file, buffer)
@@ -132,38 +146,62 @@ async def upload_videos(
         
     jobs[job_id] = {
         "status": "PENDING",
-        "road_url": f"/static/{job_id}/{road_path.name}",
-        "face_url": f"/static/{job_id}/{face_path.name}"
+        "road_url": f"/static/{job_id}/road.mp4",
+        "face_url": f"/static/{job_id}/face.mp4"
     }
     
     background_tasks.add_task(process_video_task, job_id, str(road_path), str(face_path))
     
     return {"job_id": job_id}
 
+@app.get("/list_analyses")
+async def list_analyses():
+    """List all available completed analyses (folders with results.json)"""
+    analyses = []
+    if UPLOAD_DIR.exists():
+        for path in UPLOAD_DIR.iterdir():
+            if path.is_dir() and (path / "results.json").exists():
+                analyses.append(path.name)
+    return {"analyses": sorted(analyses)}
+
 @app.post("/run_test")
-async def run_test(background_tasks: BackgroundTasks):
-    # 1. Generate a new ID so the frontend has a handle to query
-    new_job_id = str(uuid.uuid4())
+async def run_test(background_tasks: BackgroundTasks, analysis_id: str = None):
+    # 1. Generate a new ID so the frontend has a handle to query (or reuse the analysis_id)
+    # Actually, for viewing an existing result, we might not strictly need a new job ID 
+    # if we just want to load it. But to keep the frontend flow consistent (polling etc),
+    # we can just register the existing analysis as a "COMPLETED" job.
     
-    # 2. Define the source of the data (existing folder)
-    source_job_id = "test_video"
+    source_job_id = analysis_id if analysis_id else "test_video"
     source_dir = UPLOAD_DIR / source_job_id
     results_path = source_dir / "results.json"
 
     if not results_path.exists():
-        logger.error(f"Hardcoded results not found at {results_path}")
-        return {"error": "Hardcoded source data not found."}
+        logger.error(f"Results not found at {results_path}")
+        return {"error": f"Analysis '{source_job_id}' not found or incomplete."}
 
     # 3. Load the existing result JSON
     with open(results_path, 'r') as f:
         result_data = json.load(f)
 
-    # 4. Find the video files in the source directory
-    road_file = next(source_dir.glob("road_*.mp4"), None)
-    face_file = next(source_dir.glob("face_*.mp4"), None)
+    # 4. Find the video files - prefer standard names, fallback to glob
+    if (source_dir / "road.mp4").exists():
+        road_filename = "road.mp4"
+    else:
+        road_file = next(source_dir.glob("road_*.mp4"), None)
+        road_filename = road_file.name if road_file else "road_test.mp4"
 
-    road_filename = road_file.name if road_file else "road_test.mp4"
-    face_filename = face_file.name if face_file else "face_test.mp4"
+    if (source_dir / "face.mp4").exists():
+        face_filename = "face.mp4"
+    else:
+        face_file = next(source_dir.glob("face_*.mp4"), None)
+        face_filename = face_file.name if face_file else "face_test.mp4"
+
+    # Use the source_job_id as the key so we don't spawn infinite new UUIDs for the same data
+    # But if the frontend expects a unique handle every time (to reset state), we can use a new UUID.
+    # The frontend uses the returned ID to poll status.
+    
+    # If we use a new UUID, we need to make sure the URLs point to the OLD directory.
+    new_job_id = str(uuid.uuid4())
 
     jobs[new_job_id] = {
         "status": "COMPLETED",

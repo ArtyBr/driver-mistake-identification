@@ -31,7 +31,15 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
               time: frame.time
             })
           }
-          if (lastState === null || state !== lastState) {
+          if (lastState === null) {
+             // Record initial state
+             hist.push({
+               from: "Start",
+               to: state,
+               time: frame.time
+             })
+             lastState = state
+          } else if (state !== lastState) {
             lastState = state
           }
         }
