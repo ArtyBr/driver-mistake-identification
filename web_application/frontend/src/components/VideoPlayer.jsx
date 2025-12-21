@@ -532,7 +532,8 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
                   onMouseEnter={() => setHoveredEventIndex(i)}
                   onMouseLeave={() => setHoveredEventIndex(null)}
                 >
-                  <strong>{event.timestamp.toFixed(2)}s:</strong> {event.message}
+                  <span className="event-time">{event.timestamp.toFixed(1)}s</span>
+                  <span className="event-message">{event.message}</span>
                 </div>
               )
             })}

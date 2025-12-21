@@ -307,18 +307,20 @@
 }
 
 .event-item {
-  padding: 10px;
-  background: #333;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #1a1a1a;
   border-radius: 4px;
   cursor: pointer;
-  border: 1px solid transparent; /* Placeholder to prevent shift */
+  border: 1px solid #444;
   border-left: 5px solid #666; /* Base left border */
   color: white;
   transition: all 0.2s ease;
 }
 
 .event-item:hover {
-  background: #444;
+  background: #333;
 }
 
 .event-item.hover-active {
@@ -345,6 +347,19 @@
 
 .event-item.INFO {
   border-left-color: #4caf50;
+}
+
+.event-time {
+  font-family: monospace;
+  color: #888;
+  min-width: 60px;
+}
+
+.event-message {
+  font-weight: 500;
+  color: #fff;
+  flex-grow: 1;
+  text-align: right;
 }
 
 .log-item {
