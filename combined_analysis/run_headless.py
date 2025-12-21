@@ -3,7 +3,12 @@ import argparse
 import json
 import logging
 import traceback
+import warnings
 from pathlib import Path
+
+# Suppress warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)

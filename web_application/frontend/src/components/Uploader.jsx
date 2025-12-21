@@ -22,10 +22,16 @@ function Uploader({ onUploadSuccess }) {
     formData.append('video_road', roadFile)
     formData.append('video_face', faceFile)
 
+    console.log("Starting upload...", { roadFile: roadFile.name, faceFile: faceFile.name })
+
     try {
       const res = await axios.post(`${API_BASE}/upload`, formData)
+      console.log("Upload response:", res.data)
+
       // The status endpoint returns the URLs
       const statusRes = await axios.get(`${API_BASE}/status/${res.data.job_id}`)
+      console.log("Initial status response:", statusRes.data)
+      
       onUploadSuccess(res.data.job_id, statusRes.data)
     } catch (err) {
       console.error(err)

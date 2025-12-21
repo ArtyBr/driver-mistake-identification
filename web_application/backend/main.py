@@ -2,6 +2,7 @@ import sys
 import os
 import shutil
 import uuid
+import re
 import json
 import threading
 import logging
@@ -79,6 +80,15 @@ def process_video_task(job_id: str, road_path: str, face_path: str):
         ) as process:
             for line in process.stdout:
                 print(f"Job {job_id}: {line.strip()}")
+                
+                # Extract progress
+                match = re.search(r"(\d+)%\|", line)
+                if match:
+                    try:
+                        progress = int(match.group(1))
+                        jobs[job_id]["progress"] = progress
+                    except ValueError:
+                        pass
         
         # Check if output file exists regardless of return code
         if output_json_path.exists():

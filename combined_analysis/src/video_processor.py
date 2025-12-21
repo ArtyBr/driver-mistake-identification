@@ -44,7 +44,7 @@ class VideoProcessor:
         frame_data = []
 
         try:
-            for _ in tqdm(range(num_frames)):
+            for _ in tqdm(range(num_frames), mininterval=2.0):
                 # 3. Read Frames
                 ret_r, frame_road = cap_road.read()
                 ret_f, frame_face = cap_face.read()
