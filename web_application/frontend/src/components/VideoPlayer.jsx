@@ -13,6 +13,7 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
   const [currentFaceState, setCurrentFaceState] = useState("N/A")
   const [activeLogIndex, setActiveLogIndex] = useState(-1)
   const [hoveredEventIndex, setHoveredEventIndex] = useState(null)
+  const [hoveredFaceSegmentIndex, setHoveredFaceSegmentIndex] = useState(null)
 
   // Memoize history generation
   const history = useMemo(() => {
@@ -46,6 +47,39 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
       })
     }
     return hist
+  }, [results])
+
+  // Memoize face segments for timeline
+  const faceSegments = useMemo(() => {
+    const segments = []
+    let currentSegment = null
+
+    if (results && results.frame_data) {
+      results.frame_data.forEach(frame => {
+        const state = frame.current_state
+        if (state && state !== "N/A" && state !== "Unknown") {
+          if (!currentSegment) {
+            currentSegment = { state, startTime: frame.time, endTime: frame.time }
+          } else if (currentSegment.state !== state) {
+            // Close current segment
+            segments.push(currentSegment)
+            // Start new one
+            currentSegment = { state, startTime: frame.time, endTime: frame.time }
+          } else {
+            // Extend current
+            currentSegment.endTime = frame.time
+          }
+        } else if (currentSegment) {
+            // End segment on N/A or Unknown (gap)
+            segments.push(currentSegment)
+            currentSegment = null
+        }
+      })
+      if (currentSegment) {
+        segments.push(currentSegment)
+      }
+    }
+    return segments
   }, [results])
 
   // Sync videos
@@ -327,6 +361,51 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
               }}
             />
           </div>
+
+          <div className="timeline-face-track">
+            {duration > 0 && faceSegments.map((seg, i) => {
+              const widthPct = ((seg.endTime - seg.startTime) / duration) * 100
+              const leftPct = (seg.startTime / duration) * 100
+              
+              const isTimeActive = currentTime >= seg.startTime && currentTime <= seg.endTime
+              const isHovered = i === hoveredFaceSegmentIndex
+              
+              let color = '#9b59b6' // Purple for other states
+              if (seg.state === 'Looking Ahead') color = '#2ecc71' // Green
+              else if (seg.state === 'Left Mirror') color = '#e84393' // Pink
+              else if (seg.state === 'Right Mirror') color = '#00cec9' // Teal/Cyan
+              else if (seg.state === 'N/A') color = '#555'
+
+              return (
+                <div 
+                  key={i}
+                  className={`timeline-event-bar ${isTimeActive ? 'playback-active' : ''} ${isHovered ? 'hover-active' : ''}`}
+                  style={{
+                    left: `${leftPct}%`,
+                    width: `${widthPct}%`,
+                    backgroundColor: color,
+                    zIndex: isHovered ? 6 : (isTimeActive ? 5 : 1)
+                  }}
+                  onMouseEnter={() => setHoveredFaceSegmentIndex(i)}
+                  onMouseLeave={() => setHoveredFaceSegmentIndex(null)}
+                  onClick={() => {
+                     roadVideoRef.current.currentTime = seg.startTime
+                     faceVideoRef.current.currentTime = seg.startTime
+                     setCurrentTime(seg.startTime)
+                  }}
+                  title={`${seg.state} (${seg.startTime.toFixed(1)}s - ${seg.endTime.toFixed(1)}s)`}
+                />
+              )
+            })}
+             {/* Vertical Cursor on Face Track */}
+             <div 
+              className="timeline-cursor"
+              style={{
+                left: `${(currentTime / duration) * 100}%`
+              }}
+            />
+          </div>
+
           <input
             type="range"
             min="0"
@@ -336,9 +415,43 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
             onChange={handleSeek}
             className="timeline-slider"
           />
+          
+          <span className="track-label events-label">Events</span>
+          <span className="track-label gaze-label">Gaze</span>
         </div>
 
         <span className="time-display">{currentTime.toFixed(2)} / {duration.toFixed(2)}s</span>
+      </div>
+
+      <div className="timeline-legend">
+        <div className="legend-row">
+          <span className="legend-title">Events:</span>
+          {[
+            { label: 'Critical', color: '#ff4d4d' },
+            { label: 'Warning', color: '#ffa500' },
+            { label: 'Info', color: '#4caf50' }
+          ].map((item, i) => (
+            <div key={i} className="legend-item">
+              <span className="legend-swatch" style={{ backgroundColor: item.color }}></span>
+              <span className="legend-label">{item.label}</span>
+            </div>
+          ))}
+        </div>
+        <div className="legend-row">
+          <span className="legend-title">Gaze:</span>
+          {[
+            { label: 'Looking Ahead', color: '#2ecc71' },
+            { label: 'Left Mirror', color: '#e84393' },
+            { label: 'Right Mirror', color: '#00cec9' },
+            { label: 'Other', color: '#9b59b6' },
+            { label: 'N/A', color: '#555' }
+          ].map((item, i) => (
+            <div key={i} className="legend-item">
+              <span className="legend-swatch" style={{ backgroundColor: item.color }}></span>
+              <span className="legend-label">{item.label}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="logs-row">
