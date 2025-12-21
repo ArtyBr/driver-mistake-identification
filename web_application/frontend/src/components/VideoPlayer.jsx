@@ -1,14 +1,42 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useMemo } from 'react'
 
 function VideoPlayer({ results, roadUrl, faceUrl }) {
   const roadVideoRef = useRef(null)
   const faceVideoRef = useRef(null)
   const canvasRef = useRef(null)
   const faceCanvasRef = useRef(null)
+  const itemRefs = useRef([])
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [currentFaceState, setCurrentFaceState] = useState("N/A")
+  const [activeLogIndex, setActiveLogIndex] = useState(-1)
+
+  // Memoize history generation
+  const history = useMemo(() => {
+    const hist = []
+    let lastState = null
+
+    // Process frame data to find state changes
+    if (results && results.frame_data) {
+      results.frame_data.forEach(frame => {
+        const state = frame.current_state
+        if (state && state !== "N/A" && state !== "Unknown") {
+          if (lastState !== null && state !== lastState) {
+            hist.push({
+              from: lastState,
+              to: state,
+              time: frame.time
+            })
+          }
+          if (lastState === null || state !== lastState) {
+            lastState = state
+          }
+        }
+      })
+    }
+    return hist
+  }, [results])
 
   // Sync videos
   const togglePlay = () => {
@@ -37,6 +65,27 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
   const onLoadedMetadata = () => {
     setDuration(roadVideoRef.current.duration)
   }
+
+  // Update active log index based on time
+  useEffect(() => {
+    const index = history.findIndex((item, i) => {
+      const next = history[i + 1]
+      return item.time <= currentTime && (!next || next.time > currentTime)
+    })
+    if (index !== activeLogIndex) {
+      setActiveLogIndex(index)
+    }
+  }, [currentTime, history, activeLogIndex])
+
+  // Scroll to active item
+  useEffect(() => {
+    if (activeLogIndex !== -1 && itemRefs.current[activeLogIndex]) {
+      itemRefs.current[activeLogIndex].scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      })
+    }
+  }, [activeLogIndex])
 
   // Draw loop
   useEffect(() => {
@@ -136,6 +185,14 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
     return () => cancelAnimationFrame(animationFrameId)
   }, [results])
 
+  const iconMap = {
+    'Left Mirror': '[ < ]',
+    'Right Mirror': '[ > ]',
+    'Looking Ahead': '[ ^ ]',
+    'N/A': '[ ? ]',
+    'Unknown': '[ ? ]'
+  }
+
   return (
     <div className="video-dashboard">
       <div className="video-container">
@@ -185,48 +242,34 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
 
       <div className="face-log">
         <hr />
-        <h4>Current Face Direction: {currentFaceState || "N/A"}</h4>
+        <h4>
+          Current Face Direction: {iconMap[currentFaceState] || iconMap['N/A']} {currentFaceState || "N/A"}
+        </h4>
         <hr />
         <h3>Face Direction Log (Transitions)</h3>
         <div className="log-list">
-          {(() => {
-            const history = []
-            let lastState = null
-
-            // Process frame data to find state changes
-            if (results && results.frame_data) {
-              results.frame_data.forEach(frame => {
-                const state = frame.current_state
-                if (state && state !== "N/A" && state !== "Unknown") {
-                  if (lastState !== null && state !== lastState) {
-                    history.push({
-                      from: lastState,
-                      to: state,
-                      time: frame.time
-                    })
-                  }
-                  if (lastState === null || state !== lastState) {
-                    lastState = state
-                  }
-                }
-              })
-            }
-
-            // Show recent items first
-            return history.reverse().map((item, i) => (
+          {history.map((item, i) => {
+            const isCurrent = i === activeLogIndex
+            
+            return (
               <div
                 key={i}
-                className="log-item"
+                ref={el => itemRefs.current[i] = el}
+                className={`log-item ${isCurrent ? 'active' : ''}`}
                 onClick={() => {
                   roadVideoRef.current.currentTime = Math.max(0, item.time - 0.5)
                   faceVideoRef.current.currentTime = Math.max(0, item.time - 0.5)
                 }}
               >
                 <span className="log-time">{item.time.toFixed(1)}s</span>
-                <span className="log-state">From <strong>{item.from}</strong> To <strong>{item.to}</strong></span>
+                <span className="log-state">
+                  {iconMap[item.from] || iconMap['N/A']} <strong>{item.from}</strong> 
+                  {' → '} 
+                  {iconMap[item.to] || iconMap['N/A']} <strong>{item.to}</strong>
+                </span>
               </div>
-            ))
-          })()}
+            )
+          })}
         </div>
       </div>
 
@@ -238,8 +281,8 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
               key={i}
               className={`event-item ${event.severity}`}
               onClick={() => {
-                roadVideoRef.current.currentTime = Math.max(0, event.timestamp - 2)
-                faceVideoRef.current.currentTime = Math.max(0, event.timestamp - 2)
+                roadVideoRef.current.currentTime = Math.max(0, event.timestamp - 5)
+                faceVideoRef.current.currentTime = Math.max(0, event.timestamp - 5)
               }}
             >
               <strong>{event.timestamp.toFixed(2)}s:</strong> {event.message}

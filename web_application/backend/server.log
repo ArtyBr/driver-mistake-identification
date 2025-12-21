@@ -1,178 +1,754 @@
 INFO:__main__:Sys Path: ['/home/arty/projects/driver_mistake_identification/web_application/backend', '/home/arty/apps/miniconda3/envs/lane_detection/lib/python39.zip', '/home/arty/apps/miniconda3/envs/lane_detection/lib/python3.9', '/home/arty/apps/miniconda3/envs/lane_detection/lib/python3.9/lib-dynload', '/home/arty/apps/miniconda3/envs/lane_detection/lib/python3.9/site-packages', '/home/arty/projects/driver_mistake_identification/lane_detection/lanedet', '/home/arty/apps/miniconda3/envs/lane_detection/lib/python3.9/site-packages/setuptools/_vendor', '/home/arty/projects/driver_mistake_identification', '/home/arty/projects/driver_mistake_identification/combined_analysis', '/home/arty/projects/driver_mistake_identification/combined_analysis/src', '/home/arty/projects/driver_mistake_identification/lane_detection', '/home/arty/projects/driver_mistake_identification/lane_detection/lanedet']
-INFO:     Started server process [29288]
+INFO:     Started server process [38832]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     127.0.0.1:33108 - "POST /run_test HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33108 - "GET /status/e9877c42-c3fb-4c33-8055-3f36f574199a HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33108 - "GET /status/e9877c42-c3fb-4c33-8055-3f36f574199a HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33108 - "GET /results/e9877c42-c3fb-4c33-8055-3f36f574199a HTTP/1.1" 200 OK
-INFO:     127.0.0.1:46102 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/road_test.mp4 HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:46108 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/face_test.mp4 HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:60568 - "POST /run_test HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60568 - "GET /status/a496c075-a66e-4781-90e0-635e4f7dfef3 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60568 - "GET /status/a496c075-a66e-4781-90e0-635e4f7dfef3 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60568 - "GET /results/a496c075-a66e-4781-90e0-635e4f7dfef3 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52204 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/road_test.mp4 HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:52206 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/face_test.mp4 HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:42066 - "POST /run_test HTTP/1.1" 200 OK
-INFO:     127.0.0.1:42066 - "GET /status/73b2b9cf-81c3-4aeb-8205-6305295d521d HTTP/1.1" 200 OK
-INFO:     127.0.0.1:42066 - "GET /status/73b2b9cf-81c3-4aeb-8205-6305295d521d HTTP/1.1" 200 OK
-INFO:     127.0.0.1:42066 - "GET /results/73b2b9cf-81c3-4aeb-8205-6305295d521d HTTP/1.1" 200 OK
-INFO:     127.0.0.1:42074 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/road_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:42086 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/face_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:37974 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/road_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:37988 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/face_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:38492 - "POST /run_test HTTP/1.1" 200 OK
-INFO:     127.0.0.1:38492 - "GET /status/2f2a5e0c-7b50-4959-8221-acd4acf61e70 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:38492 - "GET /status/2f2a5e0c-7b50-4959-8221-acd4acf61e70 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:38492 - "GET /results/2f2a5e0c-7b50-4959-8221-acd4acf61e70 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33590 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/face_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:33584 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/road_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:35406 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/road_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:35418 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/face_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:36126 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/road_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:36130 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/face_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:36142 - "POST /run_test HTTP/1.1" 200 OK
-INFO:     127.0.0.1:36142 - "GET /status/608879bf-f7b9-4750-8788-27d59833bf65 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:36142 - "GET /status/608879bf-f7b9-4750-8788-27d59833bf65 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:36142 - "GET /results/608879bf-f7b9-4750-8788-27d59833bf65 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:36914 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/road_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:36916 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/face_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:38292 - "POST /run_test HTTP/1.1" 200 OK
-INFO:     127.0.0.1:38292 - "GET /status/0489bda6-8db1-4573-815a-d737a747fa6e HTTP/1.1" 200 OK
-INFO:     127.0.0.1:38292 - "GET /status/0489bda6-8db1-4573-815a-d737a747fa6e HTTP/1.1" 200 OK
-INFO:     127.0.0.1:38292 - "GET /results/0489bda6-8db1-4573-815a-d737a747fa6e HTTP/1.1" 200 OK
-INFO:     127.0.0.1:48392 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/road_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:48404 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/face_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:48420 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/road_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:48432 - "GET /static/49009798-1027-4364-9fdf-1322bcfe4f38/face_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:38420 - "POST /upload HTTP/1.1" 200 OK
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: Starting subprocess: python -u /home/arty/projects/driver_mistake_identification/combined_analysis/run_headless.py --road /home/arty/projects/driver_mistake_identification/web_application/uploads/146ff533-4b59-4463-9a75-cf5d4e04854b/road_2025_0901_211242_004616F_15s.mp4 --face /home/arty/projects/driver_mistake_identification/web_application/uploads/146ff533-4b59-4463-9a75-cf5d4e04854b/face_2025_0901_211242_004617I_15s.mp4 --output /home/arty/projects/driver_mistake_identification/web_application/uploads/146ff533-4b59-4463-9a75-cf5d4e04854b/results.json
-INFO:     127.0.0.1:38420 - "GET /status/146ff533-4b59-4463-9a75-cf5d4e04854b HTTP/1.1" 200 OK
-INFO:     127.0.0.1:38420 - "GET /status/146ff533-4b59-4463-9a75-cf5d4e04854b HTTP/1.1" 200 OK
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: INFO:HeadlessRunner:Starting analysis for:
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: Road: /home/arty/projects/driver_mistake_identification/web_application/uploads/146ff533-4b59-4463-9a75-cf5d4e04854b/road_2025_0901_211242_004616F_15s.mp4
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: Face: /home/arty/projects/driver_mistake_identification/web_application/uploads/146ff533-4b59-4463-9a75-cf5d4e04854b/face_2025_0901_211242_004617I_15s.mp4
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: INFO:HeadlessRunner:Initializing FaceAnalyzer...
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: find model: /home/arty/.insightface/models/buffalo_l/1k3d68.onnx landmark_3d_68 ['None', 3, 192, 192] 0.0 1.0
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: find model: /home/arty/.insightface/models/buffalo_l/2d106det.onnx landmark_2d_106 ['None', 3, 192, 192] 0.0 1.0
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: find model: /home/arty/.insightface/models/buffalo_l/det_10g.onnx detection [1, 3, '?', '?'] 127.5 128.0
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: find model: /home/arty/.insightface/models/buffalo_l/genderage.onnx genderage ['None', 3, 96, 96] 0.0 1.0
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: find model: /home/arty/.insightface/models/buffalo_l/w600k_r50.onnx recognition ['None', 3, 112, 112] 127.5 127.5
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: set det-size: (640, 640)
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: Loading Face Analysis Models...
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: INFO:HeadlessRunner:Initializing LaneDetectorWrapper...
-INFO:     127.0.0.1:38420 - "GET /status/146ff533-4b59-4463-9a75-cf5d4e04854b HTTP/1.1" 200 OK
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: INFO:HeadlessRunner:Running processing loop...
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: Processing frames 0 to 450 (450 frames) @ 30.0 FPS...
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: 
-INFO:     127.0.0.1:38420 - "GET /status/146ff533-4b59-4463-9a75-cf5d4e04854b HTTP/1.1" 200 OK
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: 0%|          | 0/450 [00:00<?, ?it/s]
-INFO:     127.0.0.1:38420 - "GET /status/146ff533-4b59-4463-9a75-cf5d4e04854b HTTP/1.1" 200 OK
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: 0%|          | 1/450 [00:02<17:20,  2.32s/it]
-INFO:     127.0.0.1:38420 - "GET /status/146ff533-4b59-4463-9a75-cf5d4e04854b HTTP/1.1" 200 OK
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: 13%|█▎        | 57/450 [00:04<00:25, 15.64it/s]
-INFO:     127.0.0.1:38420 - "GET /status/146ff533-4b59-4463-9a75-cf5d4e04854b HTTP/1.1" 200 OK
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: 24%|██▍       | 110/450 [00:06<00:16, 20.22it/s]
-INFO:     127.0.0.1:38420 - "GET /status/146ff533-4b59-4463-9a75-cf5d4e04854b HTTP/1.1" 200 OK
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: 36%|███▌      | 161/450 [00:08<00:13, 22.11it/s]Lane Change Detected: [{'track_id': 1, 'direction': 'left-to-right', 'age': 197, 'confidence': 1.0}]
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: 
-INFO:     127.0.0.1:38420 - "GET /status/146ff533-4b59-4463-9a75-cf5d4e04854b HTTP/1.1" 200 OK
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: 47%|████▋     | 212/450 [00:10<00:10, 23.21it/s]
-INFO:     127.0.0.1:38420 - "GET /status/146ff533-4b59-4463-9a75-cf5d4e04854b HTTP/1.1" 200 OK
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: 58%|█████▊    | 262/450 [00:12<00:07, 23.80it/s]
-INFO:     127.0.0.1:38420 - "GET /status/146ff533-4b59-4463-9a75-cf5d4e04854b HTTP/1.1" 200 OK
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: 70%|██████▉   | 313/450 [00:14<00:05, 24.27it/s]
-INFO:     127.0.0.1:38420 - "GET /status/146ff533-4b59-4463-9a75-cf5d4e04854b HTTP/1.1" 200 OK
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: 81%|████████  | 363/450 [00:16<00:03, 24.46it/s]
-INFO:     127.0.0.1:38420 - "GET /status/146ff533-4b59-4463-9a75-cf5d4e04854b HTTP/1.1" 200 OK
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: 92%|█████████▏| 414/450 [00:18<00:01, 24.66it/s]
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: 100%|██████████| 450/450 [00:19<00:00, 22.61it/s]
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: INFO:HeadlessRunner:Analysis completed successfully.
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: free(): invalid pointer
-INFO:     127.0.0.1:38420 - "GET /status/146ff533-4b59-4463-9a75-cf5d4e04854b HTTP/1.1" 200 OK
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b: Output file found. Assuming success despite potential exit codes.
-Job 146ff533-4b59-4463-9a75-cf5d4e04854b completed successfully.
-INFO:     127.0.0.1:38420 - "GET /status/146ff533-4b59-4463-9a75-cf5d4e04854b HTTP/1.1" 200 OK
-INFO:     127.0.0.1:38420 - "GET /results/146ff533-4b59-4463-9a75-cf5d4e04854b HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60962 - "GET /static/146ff533-4b59-4463-9a75-cf5d4e04854b/road_2025_0901_211242_004616F_15s.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:60974 - "GET /static/146ff533-4b59-4463-9a75-cf5d4e04854b/face_2025_0901_211242_004617I_15s.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:60982 - "GET /static/146ff533-4b59-4463-9a75-cf5d4e04854b/road_2025_0901_211242_004616F_15s.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:60982 - "GET /static/146ff533-4b59-4463-9a75-cf5d4e04854b/face_2025_0901_211242_004617I_15s.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:60994 - "GET /static/146ff533-4b59-4463-9a75-cf5d4e04854b/road_2025_0901_211242_004616F_15s.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:60982 - "GET /static/146ff533-4b59-4463-9a75-cf5d4e04854b/face_2025_0901_211242_004617I_15s.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:60996 - "GET /static/146ff533-4b59-4463-9a75-cf5d4e04854b/face_2025_0901_211242_004617I_15s.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:32778 - "GET /static/146ff533-4b59-4463-9a75-cf5d4e04854b/road_2025_0901_211242_004616F_15s.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:32790 - "GET /static/146ff533-4b59-4463-9a75-cf5d4e04854b/face_2025_0901_211242_004617I_15s.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:49898 - "POST /upload HTTP/1.1" 200 OK
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: Starting subprocess: python -u /home/arty/projects/driver_mistake_identification/combined_analysis/run_headless.py --road /home/arty/projects/driver_mistake_identification/web_application/uploads/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4/road_2025_0901_211242_004616F_15s.mp4 --face /home/arty/projects/driver_mistake_identification/web_application/uploads/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4/face_2025_0901_211242_004617I_15s.mp4 --output /home/arty/projects/driver_mistake_identification/web_application/uploads/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4/results.json
-INFO:     127.0.0.1:49898 - "GET /status/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49898 - "GET /status/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4 HTTP/1.1" 200 OK
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: INFO:HeadlessRunner:Starting analysis for:
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: Road: /home/arty/projects/driver_mistake_identification/web_application/uploads/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4/road_2025_0901_211242_004616F_15s.mp4
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: Face: /home/arty/projects/driver_mistake_identification/web_application/uploads/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4/face_2025_0901_211242_004617I_15s.mp4
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: INFO:HeadlessRunner:Initializing FaceAnalyzer...
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: find model: /home/arty/.insightface/models/buffalo_l/1k3d68.onnx landmark_3d_68 ['None', 3, 192, 192] 0.0 1.0
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: find model: /home/arty/.insightface/models/buffalo_l/2d106det.onnx landmark_2d_106 ['None', 3, 192, 192] 0.0 1.0
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: find model: /home/arty/.insightface/models/buffalo_l/det_10g.onnx detection [1, 3, '?', '?'] 127.5 128.0
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: find model: /home/arty/.insightface/models/buffalo_l/genderage.onnx genderage ['None', 3, 96, 96] 0.0 1.0
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: find model: /home/arty/.insightface/models/buffalo_l/w600k_r50.onnx recognition ['None', 3, 112, 112] 127.5 127.5
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: set det-size: (640, 640)
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: Loading Face Analysis Models...
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: INFO:HeadlessRunner:Initializing LaneDetectorWrapper...
-INFO:     127.0.0.1:49898 - "GET /status/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4 HTTP/1.1" 200 OK
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: INFO:HeadlessRunner:Running processing loop...
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: Processing frames 0 to 450 (450 frames) @ 30.0 FPS...
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: 
-INFO:     127.0.0.1:49898 - "GET /status/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4 HTTP/1.1" 200 OK
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: 0%|          | 0/450 [00:00<?, ?it/s]
-INFO:     127.0.0.1:49898 - "GET /status/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4 HTTP/1.1" 200 OK
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: 0%|          | 1/450 [00:02<17:10,  2.30s/it]
-INFO:     127.0.0.1:49898 - "GET /status/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4 HTTP/1.1" 200 OK
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: 13%|█▎        | 58/450 [00:04<00:24, 15.92it/s]
-INFO:     127.0.0.1:49898 - "GET /status/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4 HTTP/1.1" 200 OK
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: 25%|██▍       | 111/450 [00:06<00:16, 20.42it/s]
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: 36%|███▌      | 162/450 [00:08<00:12, 22.37it/s]Lane Change Detected: [{'track_id': 1, 'direction': 'left-to-right', 'age': 197, 'confidence': 1.0}]
-INFO:     127.0.0.1:49898 - "GET /status/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4 HTTP/1.1" 200 OK
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: 
-INFO:     127.0.0.1:49898 - "GET /status/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4 HTTP/1.1" 200 OK
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: 47%|████▋     | 213/450 [00:10<00:10, 23.36it/s]
-INFO:     127.0.0.1:49898 - "GET /status/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4 HTTP/1.1" 200 OK
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: 58%|█████▊    | 263/450 [00:12<00:07, 23.80it/s]
-INFO:     127.0.0.1:49898 - "GET /status/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4 HTTP/1.1" 200 OK
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: 70%|██████▉   | 314/450 [00:14<00:05, 24.19it/s]
-INFO:     127.0.0.1:49898 - "GET /status/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4 HTTP/1.1" 200 OK
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: 81%|████████  | 364/450 [00:16<00:03, 24.40it/s]
-INFO:     127.0.0.1:49898 - "GET /status/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4 HTTP/1.1" 200 OK
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: 92%|█████████▏| 414/450 [00:18<00:01, 24.57it/s]
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: 100%|██████████| 450/450 [00:19<00:00, 22.63it/s]
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: INFO:HeadlessRunner:Analysis completed successfully.
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: free(): invalid pointer
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4: Output file found. Assuming success despite potential exit codes.
-Job 5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4 completed successfully.
-INFO:     127.0.0.1:49898 - "GET /status/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49898 - "GET /results/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:45268 - "GET /static/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4/road_2025_0901_211242_004616F_15s.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:45276 - "GET /static/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4/face_2025_0901_211242_004617I_15s.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:45294 - "GET /static/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4/road_2025_0901_211242_004616F_15s.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:45278 - "GET /static/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4/face_2025_0901_211242_004617I_15s.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:45278 - "GET /static/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4/road_2025_0901_211242_004616F_15s.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:45294 - "GET /static/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4/face_2025_0901_211242_004617I_15s.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:45304 - "GET /static/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4/face_2025_0901_211242_004617I_15s.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:45324 - "GET /static/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4/face_2025_0901_211242_004617I_15s.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:45316 - "GET /static/5ac02e4b-970e-4b4d-915a-c2e9ff4e59e4/road_2025_0901_211242_004616F_15s.mp4 HTTP/1.1" 206 Partial Content
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-INFO:     Application shutdown complete.
-INFO:     Finished server process [22557]
+INFO:     127.0.0.1:35350 - "POST /run_test HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35350 - "GET /status/680925aa-e2ce-4557-84a9-808b08dd56c9 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35350 - "GET /status/680925aa-e2ce-4557-84a9-808b08dd56c9 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40084 - "GET /status/680925aa-e2ce-4557-84a9-808b08dd56c9 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40100 - "GET /status/680925aa-e2ce-4557-84a9-808b08dd56c9 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39028 - "GET /status/680925aa-e2ce-4557-84a9-808b08dd56c9 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39034 - "GET /status/680925aa-e2ce-4557-84a9-808b08dd56c9 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39046 - "GET /status/680925aa-e2ce-4557-84a9-808b08dd56c9 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39062 - "GET /status/680925aa-e2ce-4557-84a9-808b08dd56c9 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54660 - "GET /results/680925aa-e2ce-4557-84a9-808b08dd56c9 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42688 - "GET /results/680925aa-e2ce-4557-84a9-808b08dd56c9 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42702 - "GET /results/680925aa-e2ce-4557-84a9-808b08dd56c9 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42718 - "GET /results/680925aa-e2ce-4557-84a9-808b08dd56c9 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42722 - "GET /results/680925aa-e2ce-4557-84a9-808b08dd56c9 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42730 - "GET /results/680925aa-e2ce-4557-84a9-808b08dd56c9 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48020 - "GET /results/680925aa-e2ce-4557-84a9-808b08dd56c9 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48040 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48036 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50642 - "POST /run_test HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50642 - "GET /status/0d5d79bc-031f-4242-bb5a-ff721fc13f89 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50642 - "GET /status/0d5d79bc-031f-4242-bb5a-ff721fc13f89 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50658 - "GET /status/0d5d79bc-031f-4242-bb5a-ff721fc13f89 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58598 - "GET /status/0d5d79bc-031f-4242-bb5a-ff721fc13f89 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58602 - "GET /status/0d5d79bc-031f-4242-bb5a-ff721fc13f89 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58610 - "GET /status/0d5d79bc-031f-4242-bb5a-ff721fc13f89 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58612 - "GET /status/0d5d79bc-031f-4242-bb5a-ff721fc13f89 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58062 - "GET /status/0d5d79bc-031f-4242-bb5a-ff721fc13f89 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58064 - "GET /results/0d5d79bc-031f-4242-bb5a-ff721fc13f89 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40834 - "GET /results/0d5d79bc-031f-4242-bb5a-ff721fc13f89 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40848 - "GET /results/0d5d79bc-031f-4242-bb5a-ff721fc13f89 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40856 - "GET /results/0d5d79bc-031f-4242-bb5a-ff721fc13f89 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40866 - "GET /results/0d5d79bc-031f-4242-bb5a-ff721fc13f89 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34668 - "GET /results/0d5d79bc-031f-4242-bb5a-ff721fc13f89 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34682 - "GET /results/0d5d79bc-031f-4242-bb5a-ff721fc13f89 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34686 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:34690 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:45948 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:45960 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:54994 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:54998 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55004 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55008 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55014 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55022 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55034 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55038 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55048 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55050 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55052 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55066 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55068 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55072 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55078 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55080 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55084 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55106 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55100 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55112 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55126 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55158 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55142 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55160 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55164 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55170 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55182 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55200 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55198 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55216 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55222 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55238 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55230 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55246 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55250 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55258 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55264 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55270 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55272 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55276 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55292 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55306 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55312 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55320 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55326 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55336 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55342 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55350 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55358 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55372 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55382 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55384 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55390 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55398 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55404 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55414 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55422 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55438 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55440 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55452 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55470 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55466 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55476 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55478 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55484 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55494 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55488 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55504 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55510 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55520 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55522 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55538 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55532 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55544 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55546 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55550 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55564 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55578 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55586 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55594 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55598 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55610 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55622 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55626 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55642 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55662 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55656 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55666 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55668 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55676 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55688 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55692 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55694 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55700 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55702 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55714 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55726 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55736 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55744 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:56486 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:56534 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:56598 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:56678 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:56694 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:52778 - "POST /run_test HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52778 - "GET /status/b1960c18-89b6-4ef3-bd2d-a9f0cb5b1223 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52778 - "GET /status/b1960c18-89b6-4ef3-bd2d-a9f0cb5b1223 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35652 - "GET /status/b1960c18-89b6-4ef3-bd2d-a9f0cb5b1223 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35662 - "GET /status/b1960c18-89b6-4ef3-bd2d-a9f0cb5b1223 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43254 - "GET /status/b1960c18-89b6-4ef3-bd2d-a9f0cb5b1223 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43258 - "GET /status/b1960c18-89b6-4ef3-bd2d-a9f0cb5b1223 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43270 - "GET /status/b1960c18-89b6-4ef3-bd2d-a9f0cb5b1223 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43276 - "GET /status/b1960c18-89b6-4ef3-bd2d-a9f0cb5b1223 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54422 - "GET /results/b1960c18-89b6-4ef3-bd2d-a9f0cb5b1223 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54434 - "GET /results/b1960c18-89b6-4ef3-bd2d-a9f0cb5b1223 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57540 - "GET /results/b1960c18-89b6-4ef3-bd2d-a9f0cb5b1223 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57546 - "GET /results/b1960c18-89b6-4ef3-bd2d-a9f0cb5b1223 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57550 - "GET /results/b1960c18-89b6-4ef3-bd2d-a9f0cb5b1223 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46324 - "GET /results/b1960c18-89b6-4ef3-bd2d-a9f0cb5b1223 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46340 - "GET /results/b1960c18-89b6-4ef3-bd2d-a9f0cb5b1223 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35604 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35616 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55266 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55250 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:39700 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:39696 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:53428 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:53440 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:40748 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:40758 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:40766 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:40774 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:53184 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:53198 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:53214 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:36642 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:36646 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:36658 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:36664 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37738 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37748 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37758 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37764 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37780 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37786 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37790 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37804 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37820 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37830 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37846 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37854 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37858 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37868 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37878 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37888 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37892 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37894 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37910 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37914 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37926 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37940 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37950 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37954 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37962 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37978 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37980 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37992 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38004 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38018 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38022 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38038 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38054 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38062 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38066 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38082 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38084 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38086 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38092 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38102 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38114 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38128 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38132 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38136 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38150 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38158 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38166 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38170 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38186 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38198 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38206 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38216 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38230 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38234 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38236 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38242 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38250 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38264 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38280 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38304 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38292 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38316 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38330 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38350 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38334 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:43704 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:43716 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:43732 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:43734 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:43736 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:43742 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:43752 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:43760 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:43776 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:43790 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:43806 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:43818 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:43822 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:43828 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:57374 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:57384 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:57400 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:57416 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:57420 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:57426 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:57438 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:57446 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:57442 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:57462 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:57462 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:57464 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:57472 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:57486 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:57500 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:57508 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55106 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55108 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55118 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55128 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55134 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55146 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55158 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55166 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55176 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55188 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55190 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55196 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55206 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55220 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55224 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55234 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55244 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55260 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55270 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55272 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:55280 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51438 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:54340 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:54348 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:41338 - "POST /run_test HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41338 - "GET /status/fcb7a7b3-3d7b-4039-af86-12502b7c5cfa HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41338 - "GET /status/fcb7a7b3-3d7b-4039-af86-12502b7c5cfa HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42860 - "GET /status/fcb7a7b3-3d7b-4039-af86-12502b7c5cfa HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42864 - "GET /status/fcb7a7b3-3d7b-4039-af86-12502b7c5cfa HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42878 - "GET /status/fcb7a7b3-3d7b-4039-af86-12502b7c5cfa HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41714 - "POST /upload HTTP/1.1" 200 OK
+Job 94cbb781-6602-4934-880d-64efb9089a52: Starting subprocess: python -u /home/arty/projects/driver_mistake_identification/combined_analysis/run_headless.py --road /home/arty/projects/driver_mistake_identification/web_application/uploads/94cbb781-6602-4934-880d-64efb9089a52/road_2025_0901_211242_004616F_15s.mp4 --face /home/arty/projects/driver_mistake_identification/web_application/uploads/94cbb781-6602-4934-880d-64efb9089a52/face_2025_0901_211242_004617I_15s.mp4 --output /home/arty/projects/driver_mistake_identification/web_application/uploads/94cbb781-6602-4934-880d-64efb9089a52/results.json
+INFO:     127.0.0.1:41714 - "GET /status/94cbb781-6602-4934-880d-64efb9089a52 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41714 - "GET /status/94cbb781-6602-4934-880d-64efb9089a52 HTTP/1.1" 200 OK
+Job 94cbb781-6602-4934-880d-64efb9089a52: INFO:HeadlessRunner:Starting analysis for:
+Job 94cbb781-6602-4934-880d-64efb9089a52: Road: /home/arty/projects/driver_mistake_identification/web_application/uploads/94cbb781-6602-4934-880d-64efb9089a52/road_2025_0901_211242_004616F_15s.mp4
+Job 94cbb781-6602-4934-880d-64efb9089a52: Face: /home/arty/projects/driver_mistake_identification/web_application/uploads/94cbb781-6602-4934-880d-64efb9089a52/face_2025_0901_211242_004617I_15s.mp4
+Job 94cbb781-6602-4934-880d-64efb9089a52: INFO:HeadlessRunner:Initializing FaceAnalyzer...
+Job 94cbb781-6602-4934-880d-64efb9089a52: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
+Job 94cbb781-6602-4934-880d-64efb9089a52: find model: /home/arty/.insightface/models/buffalo_l/1k3d68.onnx landmark_3d_68 ['None', 3, 192, 192] 0.0 1.0
+Job 94cbb781-6602-4934-880d-64efb9089a52: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
+Job 94cbb781-6602-4934-880d-64efb9089a52: find model: /home/arty/.insightface/models/buffalo_l/2d106det.onnx landmark_2d_106 ['None', 3, 192, 192] 0.0 1.0
+Job 94cbb781-6602-4934-880d-64efb9089a52: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
+Job 94cbb781-6602-4934-880d-64efb9089a52: find model: /home/arty/.insightface/models/buffalo_l/det_10g.onnx detection [1, 3, '?', '?'] 127.5 128.0
+Job 94cbb781-6602-4934-880d-64efb9089a52: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
+Job 94cbb781-6602-4934-880d-64efb9089a52: find model: /home/arty/.insightface/models/buffalo_l/genderage.onnx genderage ['None', 3, 96, 96] 0.0 1.0
+Job 94cbb781-6602-4934-880d-64efb9089a52: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
+Job 94cbb781-6602-4934-880d-64efb9089a52: find model: /home/arty/.insightface/models/buffalo_l/w600k_r50.onnx recognition ['None', 3, 112, 112] 127.5 127.5
+Job 94cbb781-6602-4934-880d-64efb9089a52: set det-size: (640, 640)
+Job 94cbb781-6602-4934-880d-64efb9089a52: Loading Face Analysis Models...
+Job 94cbb781-6602-4934-880d-64efb9089a52: INFO:HeadlessRunner:Initializing LaneDetectorWrapper...
+INFO:     127.0.0.1:41714 - "GET /status/94cbb781-6602-4934-880d-64efb9089a52 HTTP/1.1" 200 OK
+Job 94cbb781-6602-4934-880d-64efb9089a52: INFO:HeadlessRunner:Running processing loop...
+Job 94cbb781-6602-4934-880d-64efb9089a52: Processing frames 0 to 450 (450 frames) @ 30.0 FPS...
+Job 94cbb781-6602-4934-880d-64efb9089a52: 
+INFO:     127.0.0.1:41714 - "GET /status/94cbb781-6602-4934-880d-64efb9089a52 HTTP/1.1" 200 OK
+Job 94cbb781-6602-4934-880d-64efb9089a52: 0%|          | 0/450 [00:00<?, ?it/s]
+INFO:     127.0.0.1:41714 - "GET /status/94cbb781-6602-4934-880d-64efb9089a52 HTTP/1.1" 200 OK
+Job 94cbb781-6602-4934-880d-64efb9089a52: 0%|          | 1/450 [00:02<17:55,  2.40s/it]
+INFO:     127.0.0.1:41714 - "GET /status/94cbb781-6602-4934-880d-64efb9089a52 HTTP/1.1" 200 OK
+Job 94cbb781-6602-4934-880d-64efb9089a52: 12%|█▏        | 54/450 [00:04<00:27, 14.51it/s]
+INFO:     127.0.0.1:41714 - "GET /status/94cbb781-6602-4934-880d-64efb9089a52 HTTP/1.1" 200 OK
+Job 94cbb781-6602-4934-880d-64efb9089a52: 23%|██▎       | 105/450 [00:06<00:17, 19.21it/s]
+INFO:     127.0.0.1:41714 - "GET /status/94cbb781-6602-4934-880d-64efb9089a52 HTTP/1.1" 200 OK
+Job 94cbb781-6602-4934-880d-64efb9089a52: 34%|███▍      | 155/450 [00:08<00:13, 21.26it/s]Lane Change Detected: [{'track_id': 1, 'direction': 'left-to-right', 'age': 197, 'confidence': 1.0}]
+Job 94cbb781-6602-4934-880d-64efb9089a52: 
+INFO:     127.0.0.1:41714 - "GET /status/94cbb781-6602-4934-880d-64efb9089a52 HTTP/1.1" 200 OK
+Job 94cbb781-6602-4934-880d-64efb9089a52: 45%|████▌     | 204/450 [00:10<00:10, 22.40it/s]
+INFO:     127.0.0.1:41714 - "GET /status/94cbb781-6602-4934-880d-64efb9089a52 HTTP/1.1" 200 OK
+Job 94cbb781-6602-4934-880d-64efb9089a52: 56%|█████▌    | 253/450 [00:12<00:08, 22.99it/s]
+INFO:     127.0.0.1:41714 - "GET /status/94cbb781-6602-4934-880d-64efb9089a52 HTTP/1.1" 200 OK
+Job 94cbb781-6602-4934-880d-64efb9089a52: 67%|██████▋   | 302/450 [00:14<00:06, 23.44it/s]
+INFO:     127.0.0.1:41714 - "GET /status/94cbb781-6602-4934-880d-64efb9089a52 HTTP/1.1" 200 OK
+Job 94cbb781-6602-4934-880d-64efb9089a52: 78%|███████▊  | 350/450 [00:16<00:04, 23.57it/s]
+INFO:     127.0.0.1:41714 - "GET /status/94cbb781-6602-4934-880d-64efb9089a52 HTTP/1.1" 200 OK
+Job 94cbb781-6602-4934-880d-64efb9089a52: 89%|████████▊ | 399/450 [00:18<00:02, 23.83it/s]
+Job 94cbb781-6602-4934-880d-64efb9089a52: 100%|█████████▉| 449/450 [00:20<00:00, 24.13it/s]
+Job 94cbb781-6602-4934-880d-64efb9089a52: 100%|██████████| 450/450 [00:20<00:00, 21.85it/s]
+Job 94cbb781-6602-4934-880d-64efb9089a52: INFO:HeadlessRunner:Analysis completed successfully.
+Job 94cbb781-6602-4934-880d-64efb9089a52: free(): invalid pointer
+INFO:     127.0.0.1:41714 - "GET /status/94cbb781-6602-4934-880d-64efb9089a52 HTTP/1.1" 200 OK
+Job 94cbb781-6602-4934-880d-64efb9089a52: Output file found. Assuming success despite potential exit codes.
+Job 94cbb781-6602-4934-880d-64efb9089a52 completed successfully.
+INFO:     127.0.0.1:41714 - "GET /status/94cbb781-6602-4934-880d-64efb9089a52 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41714 - "GET /results/94cbb781-6602-4934-880d-64efb9089a52 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35914 - "GET /static/94cbb781-6602-4934-880d-64efb9089a52/face_2025_0901_211242_004617I_15s.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35912 - "GET /static/94cbb781-6602-4934-880d-64efb9089a52/road_2025_0901_211242_004616F_15s.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35928 - "GET /static/94cbb781-6602-4934-880d-64efb9089a52/road_2025_0901_211242_004616F_15s.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35936 - "GET /static/94cbb781-6602-4934-880d-64efb9089a52/face_2025_0901_211242_004617I_15s.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35936 - "GET /static/94cbb781-6602-4934-880d-64efb9089a52/road_2025_0901_211242_004616F_15s.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35928 - "GET /static/94cbb781-6602-4934-880d-64efb9089a52/face_2025_0901_211242_004617I_15s.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35948 - "GET /static/94cbb781-6602-4934-880d-64efb9089a52/road_2025_0901_211242_004616F_15s.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35962 - "GET /static/94cbb781-6602-4934-880d-64efb9089a52/face_2025_0901_211242_004617I_15s.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:56612 - "POST /run_test HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56612 - "GET /status/2fad4946-7759-4ab4-9a9f-cca29245f677 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56612 - "GET /status/2fad4946-7759-4ab4-9a9f-cca29245f677 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42640 - "GET /status/2fad4946-7759-4ab4-9a9f-cca29245f677 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42644 - "GET /status/2fad4946-7759-4ab4-9a9f-cca29245f677 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42658 - "GET /status/2fad4946-7759-4ab4-9a9f-cca29245f677 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42664 - "GET /status/2fad4946-7759-4ab4-9a9f-cca29245f677 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42676 - "GET /status/2fad4946-7759-4ab4-9a9f-cca29245f677 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58220 - "GET /status/2fad4946-7759-4ab4-9a9f-cca29245f677 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58226 - "GET /results/2fad4946-7759-4ab4-9a9f-cca29245f677 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46428 - "GET /results/2fad4946-7759-4ab4-9a9f-cca29245f677 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46438 - "GET /results/2fad4946-7759-4ab4-9a9f-cca29245f677 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46444 - "GET /results/2fad4946-7759-4ab4-9a9f-cca29245f677 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46458 - "GET /results/2fad4946-7759-4ab4-9a9f-cca29245f677 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44732 - "GET /results/2fad4946-7759-4ab4-9a9f-cca29245f677 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44746 - "GET /results/2fad4946-7759-4ab4-9a9f-cca29245f677 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44750 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:44752 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35956 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35962 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35970 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:35986 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51712 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51718 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51720 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51730 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51758 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51746 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51762 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51774 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51780 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51784 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51794 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51800 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51816 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51826 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51842 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51866 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51856 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51876 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51884 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51890 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51900 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51914 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51922 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51926 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51940 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42358 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42368 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42380 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42384 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42404 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42396 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42414 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42420 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42444 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42434 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42454 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42458 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42462 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42472 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42490 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42476 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42498 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:36948 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:36956 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:36962 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:36974 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:36982 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:36992 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37006 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37022 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37028 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37034 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37038 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37042 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37048 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37060 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37070 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37076 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37092 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37108 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37100 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37112 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37120 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37138 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37126 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37140 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37154 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37166 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37182 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37184 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37198 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37214 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37218 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37222 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37232 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37240 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37250 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37260 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37264 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37274 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37278 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37288 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37298 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37304 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37306 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37330 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37318 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37340 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37356 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37372 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37384 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37400 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37406 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37418 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37424 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37426 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37428 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37440 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37436 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37450 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37460 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37482 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37466 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37488 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37492 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37498 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37500 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37502 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37512 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37524 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37530 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37540 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37552 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37568 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37582 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37592 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37606 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37608 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37614 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37622 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37636 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37638 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37648 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37650 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37656 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37668 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37678 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37688 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37692 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37708 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37716 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37732 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37738 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37754 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37764 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37778 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37792 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37802 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37816 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37832 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37846 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37850 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37862 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37870 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37880 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37890 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37904 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37906 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37908 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37912 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37918 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37922 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37930 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37940 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37942 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37946 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37956 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37964 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37980 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37986 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38000 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38002 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38010 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38026 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38034 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38040 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38042 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38056 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38058 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38060 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38068 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38084 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38092 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38108 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38112 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38126 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38134 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38142 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38156 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38162 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38168 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38178 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38190 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38204 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38214 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38230 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38232 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38244 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38252 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38254 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38268 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38280 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38294 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38296 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38300 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38306 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38310 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38314 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38324 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38330 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38342 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38344 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38348 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38358 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38370 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38380 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38392 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38394 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38400 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38404 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38412 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38418 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38434 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38436 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38442 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38450 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38452 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38466 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38468 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38474 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38484 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38492 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38506 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38510 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38526 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38536 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38538 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38540 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38542 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38550 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38554 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38560 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38566 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38580 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38592 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38608 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38616 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38624 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38636 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42038 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42042 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42056 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42070 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42084 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42100 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42102 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42104 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42108 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42110 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42126 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42132 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42148 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42150 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42152 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42166 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42182 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42198 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42212 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42228 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42238 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42254 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42262 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42270 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42280 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42286 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42292 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42296 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42300 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42312 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:47594 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:47602 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38800 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38816 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38828 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38818 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38830 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38842 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38852 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38860 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38864 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38868 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38874 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:38870 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:46714 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:46714 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:46722 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:46714 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:46730 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:46754 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:46746 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:46762 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:46766 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:46774 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:46788 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:46798 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:47190 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:47206 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:47208 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:47232 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:47232 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:36050 - "POST /upload HTTP/1.1" 200 OK
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: Starting subprocess: python -u /home/arty/projects/driver_mistake_identification/combined_analysis/run_headless.py --road /home/arty/projects/driver_mistake_identification/web_application/uploads/ee076bde-b19b-4b12-9cfe-9ca5dca48495/road_2025_0901_211242_004616F_15s.mp4 --face /home/arty/projects/driver_mistake_identification/web_application/uploads/ee076bde-b19b-4b12-9cfe-9ca5dca48495/face_2025_0901_211242_004617I_15s.mp4 --output /home/arty/projects/driver_mistake_identification/web_application/uploads/ee076bde-b19b-4b12-9cfe-9ca5dca48495/results.json
+INFO:     127.0.0.1:36050 - "GET /status/ee076bde-b19b-4b12-9cfe-9ca5dca48495 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36050 - "GET /status/ee076bde-b19b-4b12-9cfe-9ca5dca48495 HTTP/1.1" 200 OK
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: INFO:HeadlessRunner:Starting analysis for:
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: Road: /home/arty/projects/driver_mistake_identification/web_application/uploads/ee076bde-b19b-4b12-9cfe-9ca5dca48495/road_2025_0901_211242_004616F_15s.mp4
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: Face: /home/arty/projects/driver_mistake_identification/web_application/uploads/ee076bde-b19b-4b12-9cfe-9ca5dca48495/face_2025_0901_211242_004617I_15s.mp4
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: INFO:HeadlessRunner:Initializing FaceAnalyzer...
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: find model: /home/arty/.insightface/models/buffalo_l/1k3d68.onnx landmark_3d_68 ['None', 3, 192, 192] 0.0 1.0
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: find model: /home/arty/.insightface/models/buffalo_l/2d106det.onnx landmark_2d_106 ['None', 3, 192, 192] 0.0 1.0
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: find model: /home/arty/.insightface/models/buffalo_l/det_10g.onnx detection [1, 3, '?', '?'] 127.5 128.0
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: find model: /home/arty/.insightface/models/buffalo_l/genderage.onnx genderage ['None', 3, 96, 96] 0.0 1.0
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: find model: /home/arty/.insightface/models/buffalo_l/w600k_r50.onnx recognition ['None', 3, 112, 112] 127.5 127.5
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: set det-size: (640, 640)
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: Loading Face Analysis Models...
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: INFO:HeadlessRunner:Initializing LaneDetectorWrapper...
+INFO:     127.0.0.1:36050 - "GET /status/ee076bde-b19b-4b12-9cfe-9ca5dca48495 HTTP/1.1" 200 OK
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: INFO:HeadlessRunner:Running processing loop...
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: Processing frames 0 to 450 (450 frames) @ 30.0 FPS...
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: 
+INFO:     127.0.0.1:36050 - "GET /status/ee076bde-b19b-4b12-9cfe-9ca5dca48495 HTTP/1.1" 200 OK
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: 0%|          | 0/450 [00:00<?, ?it/s]
+INFO:     127.0.0.1:36050 - "GET /status/ee076bde-b19b-4b12-9cfe-9ca5dca48495 HTTP/1.1" 200 OK
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: 0%|          | 1/450 [00:02<17:59,  2.40s/it]
+INFO:     127.0.0.1:36050 - "GET /status/ee076bde-b19b-4b12-9cfe-9ca5dca48495 HTTP/1.1" 200 OK
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: 12%|█▏        | 56/450 [00:04<00:26, 14.97it/s]
+INFO:     127.0.0.1:36050 - "GET /status/ee076bde-b19b-4b12-9cfe-9ca5dca48495 HTTP/1.1" 200 OK
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: 24%|██▍       | 108/450 [00:06<00:17, 19.73it/s]
+INFO:     127.0.0.1:36050 - "GET /status/ee076bde-b19b-4b12-9cfe-9ca5dca48495 HTTP/1.1" 200 OK
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: 35%|███▌      | 159/450 [00:08<00:13, 21.89it/s]Lane Change Detected: [{'track_id': 1, 'direction': 'left-to-right', 'age': 197, 'confidence': 1.0}]
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: 
+INFO:     127.0.0.1:36050 - "GET /status/ee076bde-b19b-4b12-9cfe-9ca5dca48495 HTTP/1.1" 200 OK
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: 47%|████▋     | 210/450 [00:10<00:10, 23.07it/s]
+INFO:     127.0.0.1:36050 - "GET /status/ee076bde-b19b-4b12-9cfe-9ca5dca48495 HTTP/1.1" 200 OK
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: 58%|█████▊    | 260/450 [00:12<00:08, 23.69it/s]
+INFO:     127.0.0.1:36050 - "GET /status/ee076bde-b19b-4b12-9cfe-9ca5dca48495 HTTP/1.1" 200 OK
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: 69%|██████▉   | 311/450 [00:14<00:05, 24.24it/s]
+INFO:     127.0.0.1:36050 - "GET /status/ee076bde-b19b-4b12-9cfe-9ca5dca48495 HTTP/1.1" 200 OK
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: 80%|████████  | 362/450 [00:16<00:03, 24.52it/s]
+INFO:     127.0.0.1:36050 - "GET /status/ee076bde-b19b-4b12-9cfe-9ca5dca48495 HTTP/1.1" 200 OK
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: 92%|█████████▏| 413/450 [00:18<00:01, 24.78it/s]
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: 100%|██████████| 450/450 [00:19<00:00, 22.50it/s]
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: INFO:HeadlessRunner:Analysis completed successfully.
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: free(): invalid pointer
+INFO:     127.0.0.1:36050 - "GET /status/ee076bde-b19b-4b12-9cfe-9ca5dca48495 HTTP/1.1" 200 OK
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495: Output file found. Assuming success despite potential exit codes.
+Job ee076bde-b19b-4b12-9cfe-9ca5dca48495 completed successfully.
+INFO:     127.0.0.1:36050 - "GET /status/ee076bde-b19b-4b12-9cfe-9ca5dca48495 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36050 - "GET /results/ee076bde-b19b-4b12-9cfe-9ca5dca48495 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52732 - "GET /static/ee076bde-b19b-4b12-9cfe-9ca5dca48495/road_2025_0901_211242_004616F_15s.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:52742 - "GET /static/ee076bde-b19b-4b12-9cfe-9ca5dca48495/face_2025_0901_211242_004617I_15s.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:52748 - "GET /static/ee076bde-b19b-4b12-9cfe-9ca5dca48495/face_2025_0901_211242_004617I_15s.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:52750 - "GET /static/ee076bde-b19b-4b12-9cfe-9ca5dca48495/road_2025_0901_211242_004616F_15s.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:52750 - "GET /static/ee076bde-b19b-4b12-9cfe-9ca5dca48495/road_2025_0901_211242_004616F_15s.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:52748 - "GET /static/ee076bde-b19b-4b12-9cfe-9ca5dca48495/face_2025_0901_211242_004617I_15s.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:53344 - "GET /static/ee076bde-b19b-4b12-9cfe-9ca5dca48495/road_2025_0901_211242_004616F_15s.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:53356 - "GET /static/ee076bde-b19b-4b12-9cfe-9ca5dca48495/face_2025_0901_211242_004617I_15s.mp4 HTTP/1.1" 206 Partial Content

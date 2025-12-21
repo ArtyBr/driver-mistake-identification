@@ -146,7 +146,7 @@ async def run_test(background_tasks: BackgroundTasks):
     new_job_id = str(uuid.uuid4())
     
     # 2. Define the source of the data (existing folder)
-    source_job_id = "49009798-1027-4364-9fdf-1322bcfe4f38"
+    source_job_id = "test_video"
     source_dir = UPLOAD_DIR / source_job_id
     results_path = source_dir / "results.json"
 
