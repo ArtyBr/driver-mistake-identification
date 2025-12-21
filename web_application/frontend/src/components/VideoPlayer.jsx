@@ -160,6 +160,7 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
   // Draw loop
   useEffect(() => {
     let animationFrameId
+    let videoCallbackId
     let lastRenderedState = null
 
     const draw = () => {
@@ -261,11 +262,25 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
         }
       }
 
-      animationFrameId = requestAnimationFrame(draw)
+      if (roadVideoRef.current && roadVideoRef.current.requestVideoFrameCallback) {
+        videoCallbackId = roadVideoRef.current.requestVideoFrameCallback(draw)
+      } else {
+        animationFrameId = requestAnimationFrame(draw)
+      }
     }
 
-    draw()
-    return () => cancelAnimationFrame(animationFrameId)
+    if (roadVideoRef.current && roadVideoRef.current.requestVideoFrameCallback) {
+      videoCallbackId = roadVideoRef.current.requestVideoFrameCallback(draw)
+    } else {
+      draw()
+    }
+    
+    return () => {
+      if (videoCallbackId && roadVideoRef.current && roadVideoRef.current.cancelVideoFrameCallback) {
+        roadVideoRef.current.cancelVideoFrameCallback(videoCallbackId)
+      }
+      cancelAnimationFrame(animationFrameId)
+    }
   }, [results])
 
   const iconMap = {
@@ -274,6 +289,14 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
     'Looking Ahead': '[ ^ ]',
     'N/A': '[ ? ]',
     'Unknown': '[ ? ]'
+  }
+
+  const getColorForState = (state) => {
+    if (state === 'Looking Ahead') return '#2ecc71'
+    if (state === 'Left Mirror') return '#e84393'
+    if (state === 'Right Mirror') return '#00cec9'
+    if (state === 'N/A' || state === 'Unknown') return '#aaa'
+    return '#9b59b6' // Other
   }
 
   return (
@@ -458,7 +481,9 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
         <div className="face-log">
           <hr />
           <h4>
-            Current Face Direction: {iconMap[currentFaceState] || iconMap['N/A']} {currentFaceState || "N/A"}
+            Current Face Direction: <span style={{ color: getColorForState(currentFaceState) }}>
+              {iconMap[currentFaceState] || iconMap['N/A']} {currentFaceState || "N/A"}
+            </span>
           </h4>
           <hr />
           <h3>Face Direction Log (Transitions)</h3>
@@ -478,9 +503,9 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
                 >
                   <span className="log-time">{item.time.toFixed(1)}s</span>
                   <span className="log-state">
-                    {iconMap[item.from] || iconMap['N/A']} <strong>{item.from}</strong> 
+                    {iconMap[item.from] || iconMap['N/A']} <strong style={{ color: getColorForState(item.from) }}>{item.from}</strong> 
                     {' → '} 
-                    {iconMap[item.to] || iconMap['N/A']} <strong>{item.to}</strong>
+                    {iconMap[item.to] || iconMap['N/A']} <strong style={{ color: getColorForState(item.to) }}>{item.to}</strong>
                   </span>
                 </div>
               )

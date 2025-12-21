@@ -127,9 +127,9 @@
 
 .timeline-events-track {
   position: absolute;
-  top: 30px;
-  left: 68px; /* 60px + 8px offset for thumb center */
-  width: calc(100% - 86px); /* 100% - 70px - 16px for thumb inset */
+  top: 30px; /* Shifted down to clear the thumb area */
+  left: 68px;
+  width: calc(100% - 87px);
   height: 10px;
   pointer-events: none;
   z-index: 1;
@@ -140,9 +140,9 @@
 
 .timeline-face-track {
   position: absolute;
-  top: 45px;
-  left: 68px; /* 60px + 8px offset for thumb center */
-  width: calc(100% - 86px); /* 100% - 70px - 16px for thumb inset */
+  top: 45px; /* Below the events track */
+  left: 68px;
+  width: calc(100% - 87px);
   height: 10px;
   pointer-events: none;
   z-index: 1;
@@ -182,17 +182,17 @@
   cursor: pointer;
 }
 
+.timeline-event-bar.hover-active {
+  opacity: 1;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
 .timeline-event-bar.playback-active {
   opacity: 1;
   box-shadow: 0 0 2px #ffd700;
   border: 1px solid #ffd700;
   z-index: 6; /* Ensure playback active is on top of hover if they overlap */
-}
-
-.timeline-event-bar.hover-active {
-  opacity: 1;
-  box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
 .timeline-cursor {
@@ -321,18 +321,18 @@
   background: #444;
 }
 
-.event-item.playback-active {
-  background: #2a2a2a;
-  border-color: #ffd700;
-  border-left-color: #ffd700;
-  box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
-}
-
 .event-item.hover-active {
   background: #3a3a3a;
   border-color: rgba(255, 255, 255, 0.4);
   border-left-color: rgba(255, 255, 255, 0.6);
   box-shadow: 0 0 6px rgba(255, 255, 255, 0.1);
+}
+
+.event-item.playback-active {
+  background: #2a2a2a;
+  border-color: #ffd700;
+  border-left-color: #ffd700;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
 }
 
 .event-item.CRITICAL {
