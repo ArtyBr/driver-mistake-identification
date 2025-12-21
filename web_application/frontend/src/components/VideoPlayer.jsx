@@ -6,11 +6,13 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
   const canvasRef = useRef(null)
   const faceCanvasRef = useRef(null)
   const itemRefs = useRef([])
+  const eventItemRefs = useRef([])
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [currentFaceState, setCurrentFaceState] = useState("N/A")
   const [activeLogIndex, setActiveLogIndex] = useState(-1)
+  const [hoveredEventIndex, setHoveredEventIndex] = useState(null)
 
   // Memoize history generation
   const history = useMemo(() => {
@@ -90,6 +92,28 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
       })
     }
   }, [activeLogIndex])
+
+  // Scroll to active event item (for hover or playback)
+  useEffect(() => {
+    // Find the currently active event index (either hovered or by time)
+    const activeEventIndex = results.timeline_events.findIndex((event, i) => {
+       const isTimeActive = currentTime >= (event.timestamp - 5) && currentTime <= event.timestamp
+       const isHovered = i === hoveredEventIndex
+       return isTimeActive || isHovered
+    })
+
+    if (activeEventIndex !== -1 && eventItemRefs.current[activeEventIndex]) {
+      // Only scroll if it's the hovered one (user interaction) or maybe just always?
+      // If we scroll on playback it might be annoying if user is scrolling manually.
+      // Let's scroll primarily if it's hovered (user intention to see it).
+      if (hoveredEventIndex !== null) {
+          eventItemRefs.current[activeEventIndex].scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest'
+          })
+      }
+    }
+  }, [hoveredEventIndex, currentTime, results])
 
   // Draw loop
   useEffect(() => {
@@ -247,16 +271,67 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
         <button onClick={togglePlay} className="play-button">
           {isPlaying ? "⏸️" : "▶️"}
         </button>
-        <input
-          type="range"
-          min="0"
-          max={duration}
-          step="0.01"
-          value={currentTime}
-          onChange={handleSeek}
-          className="timeline-slider"
-        />
-        <span>{currentTime.toFixed(2)} / {duration.toFixed(2)}s</span>
+        
+        <div className="timeline-wrapper">
+          <div className="timeline-events-track">
+            {duration > 0 && results.timeline_events.map((event, i) => {
+              const startTime = Math.max(0, event.timestamp - 5)
+              const endTime = event.timestamp
+              const isTimeActive = currentTime >= startTime && currentTime <= endTime
+              const isHovered = i === hoveredEventIndex
+              const showActive = isTimeActive || isHovered
+              
+              const leftPct = (startTime / duration) * 100
+              const widthPct = ((endTime - startTime) / duration) * 100
+              
+              let color = '#ccc'
+              if (event.severity === 'CRITICAL') color = '#ff4d4d' // Red
+              else if (event.severity === 'WARNING') color = '#ffa500' // Orange
+              else if (event.severity === 'INFO') color = '#4caf50' // Green
+
+              return (
+                <div
+                  key={i}
+                  className={`timeline-event-bar ${showActive ? 'active' : ''}`}
+                  style={{
+                    left: `${leftPct}%`,
+                    width: `${widthPct}%`,
+                    backgroundColor: color,
+                    zIndex: showActive ? 5 : 1
+                  }}
+                  onMouseEnter={() => setHoveredEventIndex(i)}
+                  onMouseLeave={() => setHoveredEventIndex(null)}
+                  onClick={() => {
+                    const seekTime = Math.max(0, event.timestamp - 5)
+                    roadVideoRef.current.currentTime = seekTime
+                    faceVideoRef.current.currentTime = seekTime
+                    setCurrentTime(seekTime)
+                  }}
+                  title={`${event.message} (${startTime.toFixed(1)}s - ${endTime.toFixed(1)}s)`}
+                />
+              )
+            })}
+            
+            {/* Vertical Cursor on Event Track */}
+            <div 
+              className="timeline-cursor"
+              style={{
+                left: `${(currentTime / duration) * 100}%`
+              }}
+            />
+          </div>
+          <input
+            type="range"
+            min="0"
+            max={duration}
+            step="0.01"
+            value={currentTime}
+            onChange={handleSeek}
+            className="timeline-slider"
+          />
+        </div>
+
+        <span className="time-display">{currentTime.toFixed(2)} / {duration.toFixed(2)}s</span>
       </div>
 
       <div className="logs-row">
@@ -297,15 +372,21 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
           <h3>Detected Events</h3>
           <div className="event-list">
             {results.timeline_events.map((event, i) => {
-              const isActive = currentTime >= (event.timestamp - 5) && currentTime <= event.timestamp
+              const isTimeActive = currentTime >= (event.timestamp - 5) && currentTime <= event.timestamp
+              const isHovered = i === hoveredEventIndex
+              const isActive = isTimeActive || isHovered
+              
               return (
                 <div
                   key={i}
+                  ref={el => eventItemRefs.current[i] = el}
                   className={`event-item ${event.severity} ${isActive ? 'active' : ''}`}
                   onClick={() => {
                     roadVideoRef.current.currentTime = Math.max(0, event.timestamp - 5)
                     faceVideoRef.current.currentTime = Math.max(0, event.timestamp - 5)
                   }}
+                  onMouseEnter={() => setHoveredEventIndex(i)}
+                  onMouseLeave={() => setHoveredEventIndex(null)}
                 >
                   <strong>{event.timestamp.toFixed(2)}s:</strong> {event.message}
                 </div>

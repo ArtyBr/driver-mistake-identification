@@ -75,8 +75,100 @@
   color: white;
 }
 
-.timeline-slider {
+.timeline-wrapper {
   flex-grow: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 45px; /* Increased space */
+}
+
+.timeline-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  margin: 0;
+  cursor: pointer;
+  z-index: 2;
+  position: relative;
+  background: transparent;
+  top: 15%;
+}
+
+/* Thumb styling for Chrome/Safari/Edge/Opera */
+.timeline-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #2a2a2a;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 0 2px rgba(0,0,0,0.5);
+  margin-top: 1px; /* Adjust if needed to center on track */
+}
+
+/* Thumb styling for Firefox */
+.timeline-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #2a2a2a;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 0 2px rgba(0,0,0,0.5);
+}
+
+.timeline-events-track {
+  position: absolute;
+  top: 30%;
+  /* 8px margin (half of 16px thumb) ensures 0% and 100% 
+     align with the center of the thumb at the edges */
+  left: 9px;
+  right: 9px;
+  height: 12px;
+  transform: translateY(14px);
+  pointer-events: none;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.timeline-event-bar {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  opacity: 0.8;
+  border-radius: 2px;
+  transition: all 0.1s ease;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.timeline-event-bar.active {
+  opacity: 1;
+  box-shadow: 0 0 2px #ffd700;
+  border: 1px solid #ffd700;
+}
+
+.timeline-cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #fff;
+  z-index: 10;
+  transform: translateX(-50%);
+  pointer-events: none;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+}
+
+.time-display {
+  min-width: 100px;
+  text-align: right;
+  font-family: monospace;
 }
 
 .current-status-box {
