@@ -14,6 +14,7 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
   const [activeLogIndex, setActiveLogIndex] = useState(-1)
   const [hoveredEventIndex, setHoveredEventIndex] = useState(null)
   const [hoveredFaceSegmentIndex, setHoveredFaceSegmentIndex] = useState(null)
+  const [hoveredLogIndex, setHoveredLogIndex] = useState(null)
 
   // Memoize history generation
   const history = useMemo(() => {
@@ -156,6 +157,28 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
       }
     }
   }, [hoveredEventIndex, currentTime, results])
+
+  // Scroll to active log item when hovering face segment
+  useEffect(() => {
+    if (hoveredFaceSegmentIndex !== null) {
+      // Find the log item that corresponds to this face segment
+      const segment = faceSegments[hoveredFaceSegmentIndex]
+      if (segment) {
+        // Find the history item where the transition TO matches the segment state
+        // and the time is at or just before the segment start
+        const logIndex = history.findIndex(item => 
+          item.to === segment.state && Math.abs(item.time - segment.startTime) < 1.0
+        )
+        
+        if (logIndex !== -1 && itemRefs.current[logIndex]) {
+          itemRefs.current[logIndex].scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest'
+          })
+        }
+      }
+    }
+  }, [hoveredFaceSegmentIndex, faceSegments, history])
 
   // Draw loop
   useEffect(() => {
@@ -393,6 +416,12 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
               const isTimeActive = currentTime >= seg.startTime && currentTime <= seg.endTime
               const isHovered = i === hoveredFaceSegmentIndex
               
+              // Check if this segment corresponds to the hovered log item
+              const isLogHovered = hoveredLogIndex !== null && (() => {
+                const logItem = history[hoveredLogIndex]
+                return logItem && logItem.to === seg.state && Math.abs(logItem.time - seg.startTime) < 1.0
+              })()
+              
               let color = '#9b59b6' // Purple for other states
               if (seg.state === 'Looking Ahead') color = '#2ecc71' // Green
               else if (seg.state === 'Left Mirror') color = '#e84393' // Pink
@@ -402,12 +431,12 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
               return (
                 <div 
                   key={i}
-                  className={`timeline-event-bar ${isTimeActive ? 'playback-active' : ''} ${isHovered ? 'hover-active' : ''}`}
+                  className={`timeline-event-bar ${isTimeActive ? 'playback-active' : ''} ${isHovered || isLogHovered ? 'hover-active' : ''}`}
                   style={{
                     left: `${leftPct}%`,
                     width: `${widthPct}%`,
                     backgroundColor: color,
-                    zIndex: isHovered ? 6 : (isTimeActive ? 5 : 1)
+                    zIndex: (isHovered || isLogHovered) ? 6 : (isTimeActive ? 5 : 1)
                   }}
                   onMouseEnter={() => setHoveredFaceSegmentIndex(i)}
                   onMouseLeave={() => setHoveredFaceSegmentIndex(null)}
@@ -490,22 +519,35 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
           <div className="log-list">
             {history.map((item, i) => {
               const isCurrent = i === activeLogIndex
+              const isHovered = i === hoveredLogIndex
+              
+              // Check if this log corresponds to the hovered face segment
+              const isSegmentHovered = hoveredFaceSegmentIndex !== null && (() => {
+                const segment = faceSegments[hoveredFaceSegmentIndex]
+                return segment && item.to === segment.state && Math.abs(item.time - segment.startTime) < 1.0
+              })()
               
               return (
                 <div
                   key={i}
                   ref={el => itemRefs.current[i] = el}
-                  className={`log-item ${isCurrent ? 'active' : ''}`}
+                  className={`log-item ${isCurrent ? 'active' : ''} ${isHovered || isSegmentHovered ? 'hover-active' : ''}`}
                   onClick={() => {
                     roadVideoRef.current.currentTime = Math.max(0, item.time - 0.5)
                     faceVideoRef.current.currentTime = Math.max(0, item.time - 0.5)
                   }}
+                  onMouseEnter={() => setHoveredLogIndex(i)}
+                  onMouseLeave={() => setHoveredLogIndex(null)}
                 >
                   <span className="log-time">{item.time.toFixed(1)}s</span>
-                  <span className="log-state">
-                    {iconMap[item.from] || iconMap['N/A']} <strong style={{ color: getColorForState(item.from) }}>{item.from}</strong> 
-                    {' → '} 
-                    {iconMap[item.to] || iconMap['N/A']} <strong style={{ color: getColorForState(item.to) }}>{item.to}</strong>
+                  <span className="log-state-container">
+                    <span className="log-state-from">
+                      {iconMap[item.from] || iconMap['N/A']} <strong style={{ color: getColorForState(item.from) }}>{item.from}</strong>
+                    </span>
+                    <span className="log-arrow">→</span>
+                    <span className="log-state-to">
+                      {iconMap[item.to] || iconMap['N/A']} <strong style={{ color: getColorForState(item.to) }}>{item.to}</strong>
+                    </span>
                   </span>
                 </div>
               )

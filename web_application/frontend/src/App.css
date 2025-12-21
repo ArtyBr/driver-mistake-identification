@@ -208,9 +208,10 @@
 }
 
 .time-display {
-  min-width: 100px;
+  width: 150px;
   text-align: right;
   font-family: monospace;
+  flex-shrink: 0;
 }
 
 .timeline-legend {
@@ -385,20 +386,52 @@
   box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
 }
 
+.log-item.hover-active {
+  background: #3a3a3a;
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.2);
+}
+
 .log-time {
   font-family: monospace;
   color: #888;
   min-width: 60px;
 }
 
-.log-state {
-  font-weight: 500;
-  color: #fff;
+.log-state-container {
+  display: flex;
+  align-items: center;
   flex-grow: 1;
-  text-align: right;
+  gap: 12px;
 }
 
-.log-state strong {
+.log-state-from {
+  font-weight: 500;
+  color: #fff;
+  text-align: left;
+  padding-left: 33%;
+  flex: 1;
+  min-width: 0;
+}
+
+.log-arrow {
+  color: #888;
+  font-weight: bold;
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+
+.log-state-to {
+  font-weight: 500;
+  color: #fff;
+  text-align: left;
+  padding-left: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.log-state-from strong,
+.log-state-to strong {
   color: #646cff;
 }
 
