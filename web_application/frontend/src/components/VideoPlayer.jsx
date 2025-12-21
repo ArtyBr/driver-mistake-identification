@@ -481,7 +481,8 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
           {[
             { label: 'Critical', color: '#ff4d4d' },
             { label: 'Warning', color: '#ffa500' },
-            { label: 'Info', color: '#4caf50' }
+            { label: 'Safe', color: '#4caf50' },
+            { label: 'No event', color: '#555' }
           ].map((item, i) => (
             <div key={i} className="legend-item">
               <span className="legend-swatch" style={{ backgroundColor: item.color }}></span>
@@ -495,8 +496,7 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
             { label: 'Looking Ahead', color: '#2ecc71' },
             { label: 'Left Mirror', color: '#e84393' },
             { label: 'Right Mirror', color: '#00cec9' },
-            { label: 'Other', color: '#9b59b6' },
-            { label: 'N/A', color: '#555' }
+            { label: 'Other', color: '#9b59b6' }
           ].map((item, i) => (
             <div key={i} className="legend-item">
               <span className="legend-swatch" style={{ backgroundColor: item.color }}></span>
