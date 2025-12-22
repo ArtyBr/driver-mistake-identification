@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
 const API_BASE = 'http://localhost:8000';
@@ -7,6 +7,7 @@ const API_BASE = 'http://localhost:8000';
 const StatusPage = () => {
   const { jobId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [status, setStatus] = useState('PENDING');
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState(null);
@@ -25,7 +26,7 @@ const StatusPage = () => {
           }
           if (res.data.status === 'COMPLETED') {
             clearInterval(interval);
-            navigate(`/results/${jobId}`);
+            navigate(`/results/${jobId}`, { state: location.state });
           } else if (res.data.status === 'FAILED') {
             setError(res.data.error || "Analysis failed due to an unknown error.");
             clearInterval(interval);
@@ -37,7 +38,7 @@ const StatusPage = () => {
       }, 2000);
     }
     return () => clearInterval(interval);
-  }, [jobId, status, navigate]);
+  }, [jobId, status, navigate, location.state]);
 
   return (
     <div className="container mt-5">

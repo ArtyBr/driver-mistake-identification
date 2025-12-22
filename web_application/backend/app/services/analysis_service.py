@@ -9,7 +9,7 @@ from ..db import database
 
 logger = logging.getLogger(__name__)
 
-def run_analysis_process(job_id: str, road_path: str, face_path: str) -> None:
+def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_videos: bool = False) -> None:
     """
     Executes the analysis script in a subprocess.
     Updates the database with status, progress, and results.
@@ -61,6 +61,18 @@ def run_analysis_process(job_id: str, road_path: str, face_path: str) -> None:
                 analysis_result = json.load(f)
             
             database.update_job_result(job_id, analysis_result)
+            
+            # Cleanup videos if not keeping them
+            if not keep_videos:
+                try:
+                    r_p = Path(road_path)
+                    f_p = Path(face_path)
+                    if r_p.exists(): r_p.unlink()
+                    if f_p.exists(): f_p.unlink()
+                    logger.info(f"Job {job_id}: Deleted source videos.")
+                except Exception as cleanup_err:
+                    logger.warning(f"Job {job_id}: Failed to delete videos: {cleanup_err}")
+
             logger.info(f"Job {job_id} completed successfully.")
         else:
             if process.returncode != 0:

@@ -8,16 +8,20 @@ const VideoDisplay = ({
   canvasRef, 
   faceCanvasRef,
   onTimeUpdate,
-  onLoadedMetadata
+  onLoadedMetadata,
+  onEnded,
+  roadAspectRatio,
+  faceAspectRatio
 }) => {
   return (
     <div className="video-container">
-      <div className="video-wrapper road">
+      <div className="video-wrapper road" style={{ aspectRatio: roadAspectRatio }}>
         <video
           ref={roadVideoRef}
           src={roadUrl}
           onTimeUpdate={onTimeUpdate}
           onLoadedMetadata={onLoadedMetadata}
+          onEnded={onEnded}
           muted
         />
         <canvas
@@ -27,7 +31,7 @@ const VideoDisplay = ({
           className="overlay-canvas"
         />
       </div>
-      <div className="video-wrapper face">
+      <div className="video-wrapper face" style={{ aspectRatio: faceAspectRatio }}>
         <video
           ref={faceVideoRef}
           src={faceUrl}

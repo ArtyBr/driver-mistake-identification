@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import VideoPlayer from '../components/VideoPlayer';
 import '../App.css'; // Import the custom styles for VideoPlayer
@@ -8,6 +8,7 @@ const API_BASE = 'http://localhost:8000';
 
 const ResultPage = () => {
   const { jobId } = useParams();
+  const location = useLocation();
   const [results, setResults] = useState(null);
   const [jobData, setJobData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -37,6 +38,42 @@ const ResultPage = () => {
     }
   }, [jobId]);
 
+  const videoUrls = useMemo(() => {
+      let rUrls = [];
+      let fUrls = [];
+
+      // Check for local files first (passed via navigation state)
+      if (location.state?.roadFiles && location.state.roadFiles.length > 0) {
+          rUrls = location.state.roadFiles.map(f => URL.createObjectURL(f));
+      } else if (jobData?.road_url) {
+          rUrls = [`${API_BASE}${jobData.road_url}`];
+      }
+
+      if (location.state?.faceFiles && location.state.faceFiles.length > 0) {
+          fUrls = location.state.faceFiles.map(f => URL.createObjectURL(f));
+      } else if (jobData?.face_url) {
+          fUrls = [`${API_BASE}${jobData.face_url}`];
+      }
+
+      return { road: rUrls, face: fUrls };
+  }, [jobData, location.state]);
+
+  // Cleanup Blob URLs when unmounting or changing
+  useEffect(() => {
+      return () => {
+          if (videoUrls.road) {
+              videoUrls.road.forEach(url => {
+                  if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+              });
+          }
+          if (videoUrls.face) {
+              videoUrls.face.forEach(url => {
+                  if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+              });
+          }
+      }
+  }, [videoUrls]);
+
   if (loading) {
     return (
       <div className="text-center mt-5">
@@ -65,11 +102,11 @@ const ResultPage = () => {
           <Link to="/analyze" className="btn btn-cyber">New Analysis</Link>
        </div>
 
-       {results && jobData && (
+       {results && (
           <VideoPlayer 
             results={results} 
-            roadUrl={`${API_BASE}${jobData.road_url}`}
-            faceUrl={`${API_BASE}${jobData.face_url}`}
+            roadUrls={videoUrls.road}
+            faceUrls={videoUrls.face}
           />
        )}
     </div>

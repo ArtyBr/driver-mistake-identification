@@ -6,8 +6,10 @@ This directory contains the web-based interface for the Driver Mistake Identific
 
 The application uses a decoupled client-server architecture:
 
-*   **Frontend**: A Single Page Application (SPA) built with React 19 and Vite. It handles video uploads, displays real-time progress, and visualizes the analysis results.
-*   **Backend**: A FastAPI server that exposes REST endpoints. It manages video file storage, queues analysis jobs in the background (using `combined_analysis` scripts), and persists state in a SQLite database.
+*   **Frontend**: A Single Page Application (SPA) built with React 19 and Vite.
+    *   **Modular Design**: Logic is separated into custom hooks (`useVideoPlayback`, `useVideoCanvas`, `useVideoAnalysisData`) for cleaner code and better maintainability.
+    *   **Local-First Playback**: Optimized to play uploaded files directly from the user's browser (Blob URLs) when available, reducing server bandwidth and providing instant feedback.
+*   **Backend**: A FastAPI server that exposes REST endpoints. It manages video file storage, uses **FFmpeg** to splice multi-part uploads into continuous streams for analysis, and persists state in a SQLite database.
 
 ## Prerequisites
 
@@ -39,10 +41,12 @@ The UI will be available at `http://localhost:5173`.
 
 ## Features
 
-*   **Video Upload**: Upload dual video streams (road and face).
+*   **Spliced Video Support**: Upload multiple video parts for both road and face cameras; the backend automatically merges them using FFmpeg.
+*   **Intelligent Timeline**: Interactive seeker that spans multiple video segments seamlessly.
+*   **Rich Visualizations**: Real-time overlay of detected lane lines (road) and head pose pointers (face).
+*   **Flicker-Free Playback**: Optimized React rendering that reuses video elements during segment transitions.
 *   **Progress Tracking**: Real-time feedback on upload and analysis status.
-*   **Result Visualization**: (Planned) Interactive dashboard for reviewing identified mistakes.
-*   **Job History**: Persistent record of past analyses.
+*   **Job History**: Persistent record of past analyses with collision-resistant job ID generation.
 
 ## Directory Structure
 

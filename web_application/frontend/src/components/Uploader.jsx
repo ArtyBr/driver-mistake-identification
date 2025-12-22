@@ -5,6 +5,7 @@ import FileDropZone from './FileDropZone'
 function Uploader({ onUploadSuccess }) {
   const [roadFiles, setRoadFiles] = useState([])
   const [faceFiles, setFaceFiles] = useState([])
+  const [keepVideos, setKeepVideos] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState(null)
@@ -66,10 +67,13 @@ function Uploader({ onUploadSuccess }) {
         formData.append('video_face', file)
     });
 
+    // Append keep_videos flag
+    formData.append('keep_videos', keepVideos);
+
     try {
       const data = await uploadVideos(formData, setUploadProgress)
       const statusData = await getJobStatus(data.job_id)
-      onUploadSuccess(data.job_id, statusData)
+      onUploadSuccess(data.job_id, statusData, { roadFiles, faceFiles })
     } catch (err) {
       console.error(err)
       setError(err.response?.data?.detail || "Upload failed. Check your connection or file size.")
@@ -122,6 +126,19 @@ function Uploader({ onUploadSuccess }) {
               multiple={true}
             />
           </div>
+        </div>
+
+        <div className="form-check mb-4">
+          <input 
+            className="form-check-input" 
+            type="checkbox" 
+            id="keepVideosCheck" 
+            checked={keepVideos}
+            onChange={(e) => setKeepVideos(e.target.checked)}
+          />
+          <label className="form-check-label text-white" htmlFor="keepVideosCheck">
+            Keep videos on server after analysis (Uncheck to delete after processing)
+          </label>
         </div>
         
         {uploading && uploadProgress > 0 && uploadProgress < 100 && (

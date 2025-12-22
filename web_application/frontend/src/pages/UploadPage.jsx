@@ -5,8 +5,8 @@ import Uploader from '../components/Uploader';
 const UploadPage = () => {
   const navigate = useNavigate();
 
-  const handleUploadSuccess = (jobId, jobData) => {
-    navigate(`/status/${jobId}`);
+  const handleUploadSuccess = (jobId, jobData, localFiles) => {
+    navigate(`/status/${jobId}`, { state: localFiles });
   };
 
   return (

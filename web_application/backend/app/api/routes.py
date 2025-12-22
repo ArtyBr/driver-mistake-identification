@@ -5,7 +5,7 @@ import json
 import logging
 from pathlib import Path
 from typing import List
-from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException
+from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException, Form
 from ..core.config import UPLOAD_DIR
 from ..db import database
 from ..services.analysis_service import run_analysis_process
@@ -19,7 +19,8 @@ logger = logging.getLogger(__name__)
 async def upload_videos(
     background_tasks: BackgroundTasks,
     video_road: List[UploadFile] = File(...),
-    video_face: List[UploadFile] = File(...)
+    video_face: List[UploadFile] = File(...),
+    keep_videos: bool = Form(False)
 ):
     """
     Uploads road and face videos and starts the analysis process in the background.
@@ -35,9 +36,9 @@ async def upload_videos(
     job_id = safe_name
     job_dir = UPLOAD_DIR / job_id
     
-    # Handle duplicates
+    # Handle duplicates by checking both filesystem and database
     counter = 1
-    while job_dir.exists():
+    while job_dir.exists() or database.get_job(job_id) is not None:
         job_id = f"{safe_name}_{counter}"
         job_dir = UPLOAD_DIR / job_id
         counter += 1
@@ -86,7 +87,7 @@ async def upload_videos(
     database.create_job(job_id, str(road_final_path), str(face_final_path))
     
     # Trigger background task
-    background_tasks.add_task(run_analysis_process, job_id, str(road_final_path), str(face_final_path))
+    background_tasks.add_task(run_analysis_process, job_id, str(road_final_path), str(face_final_path), keep_videos=keep_videos)
     
     return {"job_id": job_id}
 
@@ -162,10 +163,18 @@ async def get_status(job_id: str):
         
         # Note: If paths are somehow not under UPLOAD_DIR (e.g. absolute paths elsewhere), this fails.
         # But our logic ensures they are.
-        road_rel = road_path.relative_to(UPLOAD_DIR)
-        face_rel = face_path.relative_to(UPLOAD_DIR)
-        road_url = f"/static/{road_rel}"
-        face_url = f"/static/{face_rel}"
+        if road_path.exists():
+            road_rel = road_path.relative_to(UPLOAD_DIR)
+            road_url = f"/static/{road_rel}"
+        else:
+            road_url = ""
+            
+        if face_path.exists():
+            face_rel = face_path.relative_to(UPLOAD_DIR)
+            face_url = f"/static/{face_rel}"
+        else:
+            face_url = ""
+
     except ValueError:
         road_url = ""
         face_url = ""
