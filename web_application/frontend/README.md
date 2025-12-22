@@ -1,16 +1,38 @@
-# React + Vite
+# Frontend UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The frontend is a **React 19** application initialized with **Vite**. It provides a user-friendly interface for the Driver Mistake Identification system.
 
-Currently, two official plugins are available:
+## Project Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+*   `src/components/`: Reusable UI components (e.g., `Uploader.jsx`).
+*   `src/services/`: API integration modules (e.g., `api.js`).
+*   `src/App.jsx`: Main layout and routing logic.
 
-## React Compiler
+## Key Technologies
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+*   **Vite**: Fast build tool and development server.
+*   **Axios**: HTTP client for API requests.
+*   **Bootstrap 5**: CSS framework for styling.
 
-## Expanding the ESLint configuration
+## Configuration
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Environment variables are stored in `.env`:
+*   `VITE_API_BASE`: Base URL for the backend API (default: `http://localhost:8000`).
+
+## Commands
+
+### Install Dependencies
+```bash
+npm install
+```
+
+### Run Development Server
+```bash
+npm run dev
+```
+
+### Build for Production
+```bash
+npm run build
+```
+The output will be in the `dist/` folder, ready to be served by any static file server.

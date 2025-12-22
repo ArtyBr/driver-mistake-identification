@@ -1,54 +1,65 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
-
-const API_BASE = 'http://localhost:8000'
+import { uploadVideos, listAnalyses, runTestAnalysis, getJobStatus } from '../services/api'
 
 function Uploader({ onUploadSuccess }) {
   const [roadFile, setRoadFile] = useState(null)
   const [faceFile, setFaceFile] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState(null)
   const [analyses, setAnalyses] = useState([])
   const [selectedAnalysis, setSelectedAnalysis] = useState("")
 
   useEffect(() => {
     // Fetch available analyses
-    axios.get(`${API_BASE}/list_analyses`)
-      .then(res => {
-        if (res.data.analyses) {
-          setAnalyses(res.data.analyses)
-        }
-      })
+    listAnalyses()
+      .then(data => setAnalyses(data))
       .catch(err => console.error("Failed to fetch analyses:", err))
   }, [])
 
+  const validateFile = (file) => {
+    const validTypes = ['video/mp4', 'video/avi', 'video/quicktime', 'video/x-msvideo'];
+
+    if (!validTypes.includes(file.type) && !file.name.match(/\.(mp4|avi|mov)$/i)) {
+      return "Invalid file type. Please upload MP4, AVI, or MOV.";
+    }
+    return null;
+  }
+
   const handleUpload = async () => {
+    setError(null)
+    setUploadProgress(0)
+
     if (!roadFile || !faceFile) {
       setError("Please select both road and face videos.")
       return
     }
 
+    const roadError = validateFile(roadFile);
+    if (roadError) {
+      setError(`Road Video: ${roadError}`);
+      return;
+    }
+
+    const faceError = validateFile(faceFile);
+    if (faceError) {
+      setError(`Driver Video: ${faceError}`);
+      return;
+    }
+
     setUploading(true)
-    setError(null)
 
     const formData = new FormData()
     formData.append('video_road', roadFile)
     formData.append('video_face', faceFile)
 
-    console.log("Starting upload...", { roadFile: roadFile.name, faceFile: faceFile.name })
-
     try {
-      const res = await axios.post(`${API_BASE}/upload`, formData)
-      console.log("Upload response:", res.data)
-
-      // The status endpoint returns the URLs
-      const statusRes = await axios.get(`${API_BASE}/status/${res.data.job_id}`)
-      console.log("Initial status response:", statusRes.data)
-      
-      onUploadSuccess(res.data.job_id, statusRes.data)
+      const data = await uploadVideos(formData, setUploadProgress)
+      const statusData = await getJobStatus(data.job_id)
+      onUploadSuccess(data.job_id, statusData)
     } catch (err) {
       console.error(err)
-      setError("Upload failed. Make sure the backend is running.")
+      setError(err.response?.data?.detail || "Upload failed. Check your connection or file size.")
     } finally {
       setUploading(false)
     }
@@ -58,23 +69,12 @@ function Uploader({ onUploadSuccess }) {
     setUploading(true)
     setError(null)
     try {
-      const url = selectedAnalysis 
-        ? `${API_BASE}/run_test?analysis_id=${selectedAnalysis}`
-        : `${API_BASE}/run_test`
-        
-      const res = await axios.post(url)
-      
-      if (res.data.error) {
-         setError(res.data.error)
-         setUploading(false)
-         return
-      }
-
-      const statusRes = await axios.get(`${API_BASE}/status/${res.data.job_id}`)
-      onUploadSuccess(res.data.job_id, statusRes.data)
+      const data = await runTestAnalysis(selectedAnalysis)
+      const statusData = await getJobStatus(data.job_id)
+      onUploadSuccess(data.job_id, statusData)
     } catch (err) {
       console.error(err)
-      setError("Failed to load analysis.")
+      setError(err.response?.data?.detail || "Failed to load analysis.")
     } finally {
       setUploading(false)
     }
@@ -96,6 +96,7 @@ function Uploader({ onUploadSuccess }) {
             accept="video/*" 
             onChange={(e) => setRoadFile(e.target.files[0])} 
           />
+          <div className="form-text">Supported formats: MP4, AVI, MOV.</div>
         </div>
         
         <div className="mb-4">
@@ -108,13 +109,28 @@ function Uploader({ onUploadSuccess }) {
           />
         </div>
         
+        {uploading && uploadProgress > 0 && uploadProgress < 100 && (
+          <div className="progress mb-3">
+            <div 
+              className="progress-bar progress-bar-striped progress-bar-animated" 
+              role="progressbar" 
+              style={{ width: `${uploadProgress}%` }} 
+              aria-valuenow={uploadProgress} 
+              aria-valuemin="0" 
+              aria-valuemax="100"
+            >
+              Uploading {uploadProgress}%
+            </div>
+          </div>
+        )}
+
         <button 
           className="btn btn-primary w-100 mb-4" 
           onClick={handleUpload} 
           disabled={uploading}
         >
           {uploading ? (
-            <span><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Uploading...</span>
+            <span><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...</span>
           ) : 'Start New Analysis'}
         </button>
         

@@ -1,73 +1,98 @@
 INFO:__main__:Sys Path: ['/home/arty/projects/driver_mistake_identification/web_application/backend', '/home/arty/apps/miniconda3/envs/lane_detection/lib/python39.zip', '/home/arty/apps/miniconda3/envs/lane_detection/lib/python3.9', '/home/arty/apps/miniconda3/envs/lane_detection/lib/python3.9/lib-dynload', '/home/arty/apps/miniconda3/envs/lane_detection/lib/python3.9/site-packages', '/home/arty/projects/driver_mistake_identification/lane_detection/lanedet', '/home/arty/apps/miniconda3/envs/lane_detection/lib/python3.9/site-packages/setuptools/_vendor', '/home/arty/projects/driver_mistake_identification', '/home/arty/projects/driver_mistake_identification/combined_analysis', '/home/arty/projects/driver_mistake_identification/combined_analysis/src', '/home/arty/projects/driver_mistake_identification/lane_detection', '/home/arty/projects/driver_mistake_identification/lane_detection/lanedet']
-INFO:     Started server process [10555]
+INFO:     Started server process [15645]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     127.0.0.1:33430 - "POST /run_test HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33430 - "GET /status/8a402f76-6a20-430f-9f54-48be6ce1a853 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33430 - "GET /status/8a402f76-6a20-430f-9f54-48be6ce1a853 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33430 - "GET /results/8a402f76-6a20-430f-9f54-48be6ce1a853 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:37818 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:37832 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:45670 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:45654 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:52646 - "GET /list_analyses HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52658 - "GET /list_analyses HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52646 - "POST /run_test HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52658 - "GET /status/eecdfe5e-f201-43b9-b214-cb1b521eaf0b HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52658 - "GET /status/eecdfe5e-f201-43b9-b214-cb1b521eaf0b HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52658 - "GET /status/eecdfe5e-f201-43b9-b214-cb1b521eaf0b HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52646 - "GET /status/eecdfe5e-f201-43b9-b214-cb1b521eaf0b HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52658 - "GET /results/eecdfe5e-f201-43b9-b214-cb1b521eaf0b HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52646 - "GET /results/eecdfe5e-f201-43b9-b214-cb1b521eaf0b HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59524 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:59528 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:39546 - "GET /list_analyses HTTP/1.1" 200 OK
-INFO:     127.0.0.1:39562 - "GET /list_analyses HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50938 - "GET /list_analyses HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50952 - "GET /list_analyses HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50966 - "POST /run_test?analysis_id=2025_0913_150529_007661F HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50966 - "GET /status/4c4c8196-64f6-4415-a5ee-682ad0c9465c HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50966 - "GET /status/4c4c8196-64f6-4415-a5ee-682ad0c9465c HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50966 - "GET /status/4c4c8196-64f6-4415-a5ee-682ad0c9465c HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59014 - "GET /status/4c4c8196-64f6-4415-a5ee-682ad0c9465c HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50966 - "GET /results/4c4c8196-64f6-4415-a5ee-682ad0c9465c HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59014 - "GET /results/4c4c8196-64f6-4415-a5ee-682ad0c9465c HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59030 - "GET /static/2025_0913_150529_007661F/face.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:59016 - "GET /static/2025_0913_150529_007661F/road.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:59040 - "GET /static/2025_0913_150529_007661F/face.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:59038 - "GET /static/2025_0913_150529_007661F/road.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:59050 - "GET /static/2025_0913_150529_007661F/road.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:59064 - "GET /static/2025_0913_150529_007661F/face.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:43922 - "GET /status/4c4c8196-64f6-4415-a5ee-682ad0c9465c HTTP/1.1" 200 OK
-INFO:     127.0.0.1:43926 - "GET /status/4c4c8196-64f6-4415-a5ee-682ad0c9465c HTTP/1.1" 200 OK
-INFO:     127.0.0.1:43922 - "GET /results/4c4c8196-64f6-4415-a5ee-682ad0c9465c HTTP/1.1" 200 OK
-INFO:     127.0.0.1:43926 - "GET /results/4c4c8196-64f6-4415-a5ee-682ad0c9465c HTTP/1.1" 200 OK
-INFO:     127.0.0.1:43940 - "GET /static/2025_0913_150529_007661F/face.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:43928 - "GET /static/2025_0913_150529_007661F/road.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:33426 - "GET /static/2025_0913_150529_007661F/face.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:33416 - "GET /static/2025_0913_150529_007661F/road.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:51694 - "GET /status/4c4c8196-64f6-4415-a5ee-682ad0c9465c HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51702 - "GET /status/4c4c8196-64f6-4415-a5ee-682ad0c9465c HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51694 - "GET /results/4c4c8196-64f6-4415-a5ee-682ad0c9465c HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51702 - "GET /results/4c4c8196-64f6-4415-a5ee-682ad0c9465c HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51744 - "GET /static/2025_0913_150529_007661F/face.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:51738 - "GET /static/2025_0913_150529_007661F/road.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:51760 - "GET /static/2025_0913_150529_007661F/face.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:51750 - "GET /static/2025_0913_150529_007661F/road.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:44868 - "GET /static/2025_0913_150529_007661F/road.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:44884 - "GET /static/2025_0913_150529_007661F/face.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:43084 - "GET /static/2025_0913_150529_007661F/road.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:43092 - "GET /static/2025_0913_150529_007661F/face.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:43860 - "GET /status/4c4c8196-64f6-4415-a5ee-682ad0c9465c HTTP/1.1" 200 OK
-INFO:     127.0.0.1:43874 - "GET /status/4c4c8196-64f6-4415-a5ee-682ad0c9465c HTTP/1.1" 200 OK
-INFO:     127.0.0.1:43860 - "GET /results/4c4c8196-64f6-4415-a5ee-682ad0c9465c HTTP/1.1" 200 OK
-INFO:     127.0.0.1:43874 - "GET /results/4c4c8196-64f6-4415-a5ee-682ad0c9465c HTTP/1.1" 200 OK
-INFO:     127.0.0.1:38582 - "GET /static/2025_0913_150529_007661F/road.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:38588 - "GET /static/2025_0913_150529_007661F/face.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:38608 - "GET /static/2025_0913_150529_007661F/face.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:38604 - "GET /static/2025_0913_150529_007661F/road.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:34200 - "GET /static/2025_0913_150529_007661F/face.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:34200 - "GET /static/2025_0913_150529_007661F/face.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:53342 - "GET /static/2025_0913_150529_007661F/face.mp4 HTTP/1.1" 206 Partial Content
-INFO:     127.0.0.1:53348 - "GET /static/2025_0913_150529_007661F/road.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:48662 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48674 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60678 - "POST /run_test?analysis_id=test_video HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60678 - "GET /status/2aa882bc-9515-4955-ac2b-838f12fdc135 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60678 - "GET /status/2aa882bc-9515-4955-ac2b-838f12fdc135 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60678 - "GET /status/2aa882bc-9515-4955-ac2b-838f12fdc135 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45618 - "GET /status/2aa882bc-9515-4955-ac2b-838f12fdc135 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60678 - "GET /results/2aa882bc-9515-4955-ac2b-838f12fdc135 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45618 - "GET /results/2aa882bc-9515-4955-ac2b-838f12fdc135 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45638 - "GET /static/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:45630 - "GET /static/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:45650 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45654 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55664 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55664 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38734 - "OPTIONS /upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38734 - "POST /upload HTTP/1.1" 200 OK
+Job 2025_0901_211242_004616F_15s: Starting subprocess: python -u /home/arty/projects/driver_mistake_identification/combined_analysis/run_headless.py --road /home/arty/projects/driver_mistake_identification/web_application/uploads/2025_0901_211242_004616F_15s/road.mp4 --face /home/arty/projects/driver_mistake_identification/web_application/uploads/2025_0901_211242_004616F_15s/face.mp4 --output /home/arty/projects/driver_mistake_identification/web_application/uploads/2025_0901_211242_004616F_15s/results.json
+INFO:     127.0.0.1:38734 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38734 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38734 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+Job 2025_0901_211242_004616F_15s: INFO:HeadlessRunner:Starting analysis for:
+Job 2025_0901_211242_004616F_15s: Road: /home/arty/projects/driver_mistake_identification/web_application/uploads/2025_0901_211242_004616F_15s/road.mp4
+Job 2025_0901_211242_004616F_15s: Face: /home/arty/projects/driver_mistake_identification/web_application/uploads/2025_0901_211242_004616F_15s/face.mp4
+Job 2025_0901_211242_004616F_15s: INFO:HeadlessRunner:Initializing FaceAnalyzer...
+INFO:     127.0.0.1:38734 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+Job 2025_0901_211242_004616F_15s: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
+Job 2025_0901_211242_004616F_15s: find model: /home/arty/.insightface/models/buffalo_l/1k3d68.onnx landmark_3d_68 ['None', 3, 192, 192] 0.0 1.0
+Job 2025_0901_211242_004616F_15s: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
+Job 2025_0901_211242_004616F_15s: find model: /home/arty/.insightface/models/buffalo_l/2d106det.onnx landmark_2d_106 ['None', 3, 192, 192] 0.0 1.0
+Job 2025_0901_211242_004616F_15s: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
+Job 2025_0901_211242_004616F_15s: find model: /home/arty/.insightface/models/buffalo_l/det_10g.onnx detection [1, 3, '?', '?'] 127.5 128.0
+Job 2025_0901_211242_004616F_15s: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
+Job 2025_0901_211242_004616F_15s: find model: /home/arty/.insightface/models/buffalo_l/genderage.onnx genderage ['None', 3, 96, 96] 0.0 1.0
+Job 2025_0901_211242_004616F_15s: Applied providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}, 'CUDAExecutionProvider': {'sdpa_kernel': '0', 'use_tf32': '1', 'prefer_nhwc': '0', 'tunable_op_max_tuning_duration_ms': '0', 'enable_skip_layer_norm_strict_mode': '0', 'tunable_op_tuning_enable': '0', 'tunable_op_enable': '0', 'use_ep_level_unified_stream': '0', 'device_id': '0', 'has_user_compute_stream': '0', 'gpu_external_empty_cache': '0', 'cudnn_conv_algo_search': 'EXHAUSTIVE', 'cudnn_conv1d_pad_to_nc1d': '0', 'gpu_mem_limit': '18446744073709551615', 'gpu_external_alloc': '0', 'gpu_external_free': '0', 'arena_extend_strategy': 'kNextPowerOfTwo', 'do_copy_in_default_stream': '1', 'enable_cuda_graph': '0', 'user_compute_stream': '0', 'cudnn_conv_use_max_workspace': '1'}}
+Job 2025_0901_211242_004616F_15s: find model: /home/arty/.insightface/models/buffalo_l/w600k_r50.onnx recognition ['None', 3, 112, 112] 127.5 127.5
+Job 2025_0901_211242_004616F_15s: set det-size: (640, 640)
+Job 2025_0901_211242_004616F_15s: Loading Face Analysis Models...
+Job 2025_0901_211242_004616F_15s: INFO:HeadlessRunner:Initializing LaneDetectorWrapper...
+INFO:     127.0.0.1:38734 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+Job 2025_0901_211242_004616F_15s: INFO:HeadlessRunner:Running processing loop...
+Job 2025_0901_211242_004616F_15s: Processing frames 0 to 450 (450 frames) @ 30.0 FPS...
+Job 2025_0901_211242_004616F_15s: 
+INFO:     127.0.0.1:38734 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+Job 2025_0901_211242_004616F_15s: 0%|          | 0/450 [00:00<?, ?it/s]
+INFO:     127.0.0.1:38734 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+Job 2025_0901_211242_004616F_15s: 0%|          | 1/450 [00:02<22:01,  2.94s/it]
+INFO:     127.0.0.1:38734 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+Job 2025_0901_211242_004616F_15s: 13%|█▎        | 59/450 [00:04<00:27, 14.34it/s]
+INFO:     127.0.0.1:38734 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+Job 2025_0901_211242_004616F_15s: 25%|██▌       | 113/450 [00:07<00:17, 19.44it/s]
+INFO:     127.0.0.1:38734 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+Job 2025_0901_211242_004616F_15s: 37%|███▋      | 165/450 [00:09<00:13, 21.77it/s]Lane Change Detected: [{'track_id': 1, 'direction': 'left-to-right', 'age': 197, 'confidence': 1.0}]
+Job 2025_0901_211242_004616F_15s: 
+INFO:     127.0.0.1:38734 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+Job 2025_0901_211242_004616F_15s: 48%|████▊     | 216/450 [00:11<00:10, 22.91it/s]
+INFO:     127.0.0.1:38734 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+Job 2025_0901_211242_004616F_15s: 59%|█████▉    | 266/450 [00:13<00:07, 23.45it/s]
+INFO:     127.0.0.1:38734 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+Job 2025_0901_211242_004616F_15s: 70%|███████   | 317/450 [00:15<00:05, 23.95it/s]
+INFO:     127.0.0.1:38734 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+Job 2025_0901_211242_004616F_15s: 81%|████████▏ | 366/450 [00:17<00:03, 23.93it/s]
+INFO:     127.0.0.1:38734 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+Job 2025_0901_211242_004616F_15s: 92%|█████████▏| 415/450 [00:19<00:01, 24.05it/s]
+Job 2025_0901_211242_004616F_15s: 100%|██████████| 450/450 [00:20<00:00, 21.80it/s]
+Job 2025_0901_211242_004616F_15s: INFO:HeadlessRunner:Analysis completed successfully.
+Job 2025_0901_211242_004616F_15s: free(): invalid pointer
+INFO:     127.0.0.1:38734 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+Job 2025_0901_211242_004616F_15s: Output file found. Assuming success despite potential exit codes.
+Job 2025_0901_211242_004616F_15s completed successfully.
+INFO:     127.0.0.1:38734 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38734 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37836 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38734 - "GET /results/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37836 - "GET /results/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37842 - "GET /static/2025_0901_211242_004616F_15s/road.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37858 - "GET /static/2025_0901_211242_004616F_15s/face.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37866 - "GET /static/2025_0901_211242_004616F_15s/road.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37870 - "GET /static/2025_0901_211242_004616F_15s/face.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37870 - "GET /static/2025_0901_211242_004616F_15s/face.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:37866 - "GET /static/2025_0901_211242_004616F_15s/road.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42110 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42124 - "GET /status/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42110 - "GET /results/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42124 - "GET /results/2025_0901_211242_004616F_15s HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42128 - "GET /static/2025_0901_211242_004616F_15s/road.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42142 - "GET /static/2025_0901_211242_004616F_15s/face.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42168 - "GET /static/2025_0901_211242_004616F_15s/face.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:42158 - "GET /static/2025_0901_211242_004616F_15s/road.mp4 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:47896 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47908 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50284 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50292 - "GET /list_analyses HTTP/1.1" 200 OK
