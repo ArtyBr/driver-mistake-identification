@@ -40,10 +40,10 @@ const ResultPage = () => {
   if (loading) {
     return (
       <div className="text-center mt-5">
-        <div className="spinner-border text-primary" role="status">
+        <div className="spinner-border" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
-        <p className="mt-2">Loading results...</p>
+        <p className="mt-2 text-muted">Loading results...</p>
       </div>
     );
   }
@@ -61,8 +61,8 @@ const ResultPage = () => {
   return (
     <div className="container-fluid">
        <div className="d-flex justify-content-between align-items-center mb-4">
-          <h2 className="mb-0">Analysis Results</h2>
-          <Link to="/analyze" className="btn btn-outline-primary">New Analysis</Link>
+          <h2 className="mb-0 page-title">Analysis Results</h2>
+          <Link to="/analyze" className="btn btn-cyber">New Analysis</Link>
        </div>
 
        {results && jobData && (

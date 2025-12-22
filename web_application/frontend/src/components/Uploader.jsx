@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { uploadVideos, listAnalyses, runTestAnalysis, getJobStatus } from '../services/api'
+import FileDropZone from './FileDropZone'
 
 function Uploader({ onUploadSuccess }) {
-  const [roadFile, setRoadFile] = useState(null)
-  const [faceFile, setFaceFile] = useState(null)
+  const [roadFiles, setRoadFiles] = useState([])
+  const [faceFiles, setFaceFiles] = useState([])
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState(null)
@@ -21,7 +22,7 @@ function Uploader({ onUploadSuccess }) {
     const validTypes = ['video/mp4', 'video/avi', 'video/quicktime', 'video/x-msvideo'];
 
     if (!validTypes.includes(file.type) && !file.name.match(/\.(mp4|avi|mov)$/i)) {
-      return "Invalid file type. Please upload MP4, AVI, or MOV.";
+      return `Invalid file type: ${file.name}. Please upload MP4, AVI, or MOV.`;
     }
     return null;
   }
@@ -30,28 +31,40 @@ function Uploader({ onUploadSuccess }) {
     setError(null)
     setUploadProgress(0)
 
-    if (!roadFile || !faceFile) {
+    if (!roadFiles || roadFiles.length === 0 || !faceFiles || faceFiles.length === 0) {
       setError("Please select both road and face videos.")
       return
     }
 
-    const roadError = validateFile(roadFile);
-    if (roadError) {
-      setError(`Road Video: ${roadError}`);
-      return;
+    // Validate all files
+    for (const file of roadFiles) {
+      const err = validateFile(file);
+      if (err) {
+        setError(`Road Video Error: ${err}`);
+        return;
+      }
     }
-
-    const faceError = validateFile(faceFile);
-    if (faceError) {
-      setError(`Driver Video: ${faceError}`);
-      return;
+    for (const file of faceFiles) {
+      const err = validateFile(file);
+      if (err) {
+        setError(`Driver Video Error: ${err}`);
+        return;
+      }
     }
 
     setUploading(true)
 
     const formData = new FormData()
-    formData.append('video_road', roadFile)
-    formData.append('video_face', faceFile)
+    
+    // Append all road files
+    roadFiles.forEach(file => {
+        formData.append('video_road', file)
+    });
+
+    // Append all face files
+    faceFiles.forEach(file => {
+        formData.append('video_face', file)
+    });
 
     try {
       const data = await uploadVideos(formData, setUploadProgress)
@@ -81,32 +94,34 @@ function Uploader({ onUploadSuccess }) {
   }
 
   return (
-    <div className="card shadow-sm">
-      <div className="card-header bg-primary text-white">
+    <div className="card-cyber shadow-sm">
+      <div className="card-header">
         <h4 className="mb-0">Upload New Analysis</h4>
       </div>
       <div className="card-body">
         {error && <div className="alert alert-danger">{error}</div>}
         
-        <div className="mb-4">
-          <label className="form-label fw-bold">Road Video (Front Facing):</label>
-          <input 
-            className="form-control" 
-            type="file" 
-            accept="video/*" 
-            onChange={(e) => setRoadFile(e.target.files[0])} 
-          />
-          <div className="form-text">Supported formats: MP4, AVI, MOV.</div>
-        </div>
-        
-        <div className="mb-4">
-          <label className="form-label fw-bold">Driver Video (Face Facing):</label>
-          <input 
-            className="form-control" 
-            type="file" 
-            accept="video/*" 
-            onChange={(e) => setFaceFile(e.target.files[0])} 
-          />
+        <div className="row">
+          <div className="col-md-6">
+            <FileDropZone 
+              label="Road Video (Front Facing)" 
+              files={roadFiles} 
+              setFiles={setRoadFiles} 
+              accept="video/*"
+              helperText="Supported formats: MP4, AVI, MOV. Select multiple files to splice."
+              multiple={true}
+            />
+          </div>
+          <div className="col-md-6">
+            <FileDropZone 
+              label="Driver Video (Face Facing)" 
+              files={faceFiles} 
+              setFiles={setFaceFiles} 
+              accept="video/*"
+              helperText="Ideally aligned with road video. Select multiple files to splice."
+              multiple={true}
+            />
+          </div>
         </div>
         
         {uploading && uploadProgress > 0 && uploadProgress < 100 && (
@@ -125,23 +140,23 @@ function Uploader({ onUploadSuccess }) {
         )}
 
         <button 
-          className="btn btn-primary w-100 mb-4" 
+          className="btn btn-cyber-primary w-100 mb-4" 
           onClick={handleUpload} 
           disabled={uploading}
         >
           {uploading ? (
             <span><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...</span>
-          ) : 'Start New Analysis'}
+          ) : 'START NEW ANALYSIS'}
         </button>
         
-        <hr className="my-4" />
+        <hr className="my-4 border-secondary" />
         
-        <h5 className="mb-3 text-secondary">Or Load Previous Analysis</h5>
+        <h5 className="mb-3 text-muted">Or Load Previous Analysis</h5>
         <div className="row g-2 align-items-end">
           <div className="col-md-8">
             <label className="form-label small text-muted">Select Analysis:</label>
             <select 
-              className="form-select"
+              className="form-select form-control-cyber"
               value={selectedAnalysis} 
               onChange={(e) => setSelectedAnalysis(e.target.value)}
             >
@@ -153,11 +168,11 @@ function Uploader({ onUploadSuccess }) {
           </div>
           <div className="col-md-4">
             <button 
-              className="btn btn-outline-secondary w-100" 
+              className="btn btn-cyber w-100" 
               onClick={handleLoadAnalysis} 
               disabled={uploading}
             >
-              Load Analysis
+              LOAD ANALYSIS
             </button>
           </div>
         </div>

@@ -43,8 +43,8 @@ const StatusPage = () => {
     <div className="container mt-5">
       <div className="row justify-content-center">
         <div className="col-lg-8">
-          <div className="card shadow-sm text-center p-5">
-            <h2 className="mb-4">Processing Video</h2>
+          <div className="card-cyber shadow-sm text-center p-5">
+            <h2 className="mb-4 text-white">Processing Video</h2>
             
             {error ? (
               <div className="alert alert-danger">{error}</div>
@@ -55,7 +55,7 @@ const StatusPage = () => {
                 </p>
                 <div className="progress mb-3" style={{ height: '30px' }}>
                   <div 
-                    className="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                    className="progress-bar progress-bar-striped progress-bar-animated" 
                     role="progressbar" 
                     style={{ width: `${progress}%` }} 
                     aria-valuenow={progress} 

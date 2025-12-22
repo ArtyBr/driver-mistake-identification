@@ -4,10 +4,12 @@ import re
 import json
 import logging
 from pathlib import Path
+from typing import List
 from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException
 from ..core.config import UPLOAD_DIR
 from ..db import database
 from ..services.analysis_service import run_analysis_process
+from ..services.video_utils import splice_videos
 from ..models.schemas import JobCreateResponse, JobStatusResponse, AnalysisListResponse
 
 router = APIRouter()
@@ -16,14 +18,18 @@ logger = logging.getLogger(__name__)
 @router.post("/upload", response_model=JobCreateResponse)
 async def upload_videos(
     background_tasks: BackgroundTasks,
-    video_road: UploadFile = File(...),
-    video_face: UploadFile = File(...)
+    video_road: List[UploadFile] = File(...),
+    video_face: List[UploadFile] = File(...)
 ):
     """
     Uploads road and face videos and starts the analysis process in the background.
+    Supports multiple files per category (will be spliced).
     """
-    # Generate a safe job ID from the filename
-    base_name = Path(video_road.filename).stem
+    if not video_road or not video_face:
+        raise HTTPException(status_code=400, detail="Both road and face videos are required")
+
+    # Generate a safe job ID from the filename of the first road video
+    base_name = Path(video_road[0].filename).stem
     safe_name = re.sub(r'[^\w\-]', '_', base_name)
     
     job_id = safe_name
@@ -38,21 +44,49 @@ async def upload_videos(
     
     job_dir.mkdir(parents=True, exist_ok=True)
     
-    # Save files
-    road_path = job_dir / "road.mp4"
-    face_path = job_dir / "face.mp4"
-    
-    with open(road_path, "wb") as buffer:
-        shutil.copyfileobj(video_road.file, buffer)
+    # --- Process Road Videos ---
+    road_parts = []
+    for i, file_obj in enumerate(video_road):
+        part_path = job_dir / f"road_part_{i:03d}.mp4"
+        with open(part_path, "wb") as buffer:
+            shutil.copyfileobj(file_obj.file, buffer)
+        road_parts.append(part_path)
         
-    with open(face_path, "wb") as buffer:
-        shutil.copyfileobj(video_face.file, buffer)
+    road_final_path = job_dir / "road.mp4"
+    if not splice_videos(road_parts, road_final_path):
+        # Cleanup
+        shutil.rmtree(job_dir)
+        raise HTTPException(status_code=500, detail="Failed to splice road videos")
+
+    # Cleanup road parts if more than 1 (splice_videos moves the file if only 1)
+    if len(road_parts) > 1:
+        for p in road_parts:
+            if p.exists(): p.unlink()
+
+    # --- Process Face Videos ---
+    face_parts = []
+    for i, file_obj in enumerate(video_face):
+        part_path = job_dir / f"face_part_{i:03d}.mp4"
+        with open(part_path, "wb") as buffer:
+            shutil.copyfileobj(file_obj.file, buffer)
+        face_parts.append(part_path)
+        
+    face_final_path = job_dir / "face.mp4"
+    if not splice_videos(face_parts, face_final_path):
+        # Cleanup
+        shutil.rmtree(job_dir)
+        raise HTTPException(status_code=500, detail="Failed to splice face videos")
+
+    # Cleanup face parts
+    if len(face_parts) > 1:
+        for p in face_parts:
+            if p.exists(): p.unlink()
         
     # Create DB entry
-    database.create_job(job_id, str(road_path), str(face_path))
+    database.create_job(job_id, str(road_final_path), str(face_final_path))
     
     # Trigger background task
-    background_tasks.add_task(run_analysis_process, job_id, str(road_path), str(face_path))
+    background_tasks.add_task(run_analysis_process, job_id, str(road_final_path), str(face_final_path))
     
     return {"job_id": job_id}
 

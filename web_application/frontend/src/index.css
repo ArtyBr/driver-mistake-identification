@@ -1,14 +1,4 @@
+/* Global resets handled in App.css */
 :root {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  color-scheme: dark;
 }
-
-/* Custom overrides if needed, otherwise let Bootstrap handle it */
-body {
-  background-color: #f8f9fa; /* Bootstrap light gray */
-  color: #212529;
-}
-
-/* Dark mode support if we want to keep it consistent with the previous dark theme, 
-   but for a "modern finished" look, a clean light theme often looks more professional. 
-   I'll stick to a clean light theme for the main UI, but the video player might need dark backgrounds.
-*/

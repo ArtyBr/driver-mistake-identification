@@ -1,12 +1,19 @@
 import { useRef, useEffect, useState, useMemo } from 'react'
+import VideoDisplay from './video_player/VideoDisplay'
+import Timeline from './video_player/Timeline'
+import LogViewer from './video_player/LogViewer'
+import Legend from './video_player/Legend'
 
 function VideoPlayer({ results, roadUrl, faceUrl }) {
   const roadVideoRef = useRef(null)
   const faceVideoRef = useRef(null)
   const canvasRef = useRef(null)
   const faceCanvasRef = useRef(null)
-  const itemRefs = useRef([])
-  const eventItemRefs = useRef([])
+  // itemRefs and eventItemRefs are now inside LogViewer, so we don't need them here directly for scrolling, 
+  // but wait - LogViewer needs to know which item to scroll to. 
+  // Actually, LogViewer manages its own refs and receives the active index. 
+  // So we can remove itemRefs and eventItemRefs from here.
+
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -96,8 +103,7 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
     }
   }
 
-  const handleSeek = (e) => {
-    const time = parseFloat(e.target.value)
+  const handleSeek = (time) => {
     roadVideoRef.current.currentTime = time
     faceVideoRef.current.currentTime = time
     setCurrentTime(time)
@@ -129,63 +135,19 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
   // Helper to find the specific log index for a given segment
   const getLogIndexForSegment = (segment) => {
     if (!segment) return -1
-    // Find the latest history item that started at or before the segment
-    // and matches the state.
-    // Since history is sorted by time, we can search backwards or iterate to find best candidate.
     let bestIndex = -1
     for (let i = 0; i < history.length; i++) {
       const item = history[i]
-      if (item.time <= segment.startTime + 0.1) { // small epsilon for float comparison
+      if (item.time <= segment.startTime + 0.1) { 
          if (item.to === segment.state) {
            bestIndex = i
          }
       } else {
-        // history items are now future of segment start
         break
       }
     }
     return bestIndex
   }
-
-  // Scroll to active log item when hovering face segment
-  useEffect(() => {
-    if (hoveredFaceSegmentIndex !== null) {
-      const segment = faceSegments[hoveredFaceSegmentIndex]
-      const logIndex = getLogIndexForSegment(segment)
-      
-      if (logIndex !== -1 && itemRefs.current[logIndex]) {
-        itemRefs.current[logIndex].scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest'
-        })
-      }
-    }
-  }, [hoveredFaceSegmentIndex, faceSegments, history])
-
-  // Scroll to active event item (for hover or playback)
-  useEffect(() => {
-    // Find the currently active event index (either hovered or by time)
-    const activeEventIndex = results.timeline_events.findIndex((event, i) => {
-       const isTimeActive = currentTime >= (event.timestamp - 5) && currentTime <= event.timestamp
-       const isHovered = i === hoveredEventIndex
-       return isTimeActive || isHovered
-    })
-
-    if (activeEventIndex !== -1 && eventItemRefs.current[activeEventIndex]) {
-      // Only scroll if it's the hovered one (user interaction) or maybe just always?
-      // If we scroll on playback it might be annoying if user is scrolling manually.
-      // Let's scroll primarily if it's hovered (user intention to see it).
-      if (hoveredEventIndex !== null) {
-          eventItemRefs.current[activeEventIndex].scrollIntoView({
-            behavior: 'smooth',
-            block: 'nearest'
-          })
-      }
-    }
-  }, [hoveredEventIndex, currentTime, results])
-
-  // Scroll to active log item when hovering face segment
-  // (Removed previous duplicate effect)
 
   // Draw loop
   useEffect(() => {
@@ -223,14 +185,13 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
         }
 
         // Draw Lanes (Road Canvas)
-        ctx.strokeStyle = '#00FF00'
+        ctx.strokeStyle = '#20c997' // Subtle Green
         ctx.lineWidth = 3
         if (frame.lane_lines) {
           frame.lane_lines.forEach(coeffs => {
             const [a, b, c] = coeffs
             
             ctx.beginPath()
-            // Generate points from y=720 to 1080 (bottom third of 1080p)
             const startY = 720
             const endY = 1080
             const numSteps = 30
@@ -240,7 +201,6 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
               const y_1080 = startY + i * step
               const x_1920 = a * (y_1080 * y_1080) + b * y_1080 + c
               
-              // Scale to canvas
               const x = (x_1920 / 1920) * canvasRef.current.width
               const y = (y_1080 / 1080) * canvasRef.current.height
               
@@ -255,7 +215,6 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
         if (frame.face_info && frame.face_info.nose_2d && frame.face_info.yaw !== undefined) {
           let { nose_2d, yaw, pitch } = frame.face_info
 
-          // Parse nose_2d if string (backend serialization quirk)
           if (typeof nose_2d === 'string') {
             const match = nose_2d.match(/\((-?\d+),\s*(-?\d+)\)/);
             if (match) {
@@ -266,10 +225,6 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
           }
 
           if (Array.isArray(nose_2d) || (nose_2d.length === 2)) {
-            // Scale coordinates
-            // Assuming nose_2d is in video native resolution. 
-            // We need native resolution. If unavailable, default to 640x480 or similar?
-            // faceVideo.videoWidth is available when loaded.
             const vW = faceVideo.videoWidth || 640
             const vH = faceVideo.videoHeight || 480
 
@@ -282,7 +237,7 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
             const endX = (nose_2d[0] + yaw * 10) * scaleX
             const endY = (nose_2d[1] - pitch * 10) * scaleY
 
-            faceCtx.strokeStyle = '#0000FF' // Blue in RGB
+            faceCtx.strokeStyle = '#00d2df' // Subtle Cyan
             faceCtx.lineWidth = 3
             faceCtx.beginPath()
             faceCtx.moveTo(startX, startY)
@@ -322,271 +277,69 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
   }
 
   const getColorForState = (state) => {
-    if (state === 'Looking Ahead') return '#2ecc71'
-    if (state === 'Left Mirror') return '#e84393'
-    if (state === 'Right Mirror') return '#00cec9'
-    if (state === 'N/A' || state === 'Unknown') return '#aaa'
-    return '#9b59b6' // Other
+    if (state === 'Looking Ahead') return '#20c997' // Subtle Green
+    if (state === 'Left Mirror') return '#6f42c1' // Subtle Purple
+    if (state === 'Right Mirror') return '#00d2df' // Subtle Cyan
+    if (state === 'N/A' || state === 'Unknown') return '#6c757d'
+    return '#ffc107' // Warning Amber (Other)
   }
 
   return (
     <div className="video-dashboard">
-      <div className="video-container">
-        <div className="video-wrapper road">
-          <video
-            ref={roadVideoRef}
-            src={roadUrl}
-            onTimeUpdate={onTimeUpdate}
-            onLoadedMetadata={onLoadedMetadata}
-            muted
-          />
-          <canvas
-            ref={canvasRef}
-            width={1280}
-            height={720}
-            className="overlay-canvas"
-          />
-        </div>
-        <div className="video-wrapper face">
-          <video
-            ref={faceVideoRef}
-            src={faceUrl}
-            muted
-          />
-          <canvas
-            ref={faceCanvasRef}
-            width={640}
-            height={480}
-            className="overlay-canvas"
-          />
-        </div>
-      </div>
+      <VideoDisplay 
+        roadUrl={roadUrl}
+        faceUrl={faceUrl}
+        roadVideoRef={roadVideoRef}
+        faceVideoRef={faceVideoRef}
+        canvasRef={canvasRef}
+        faceCanvasRef={faceCanvasRef}
+        onTimeUpdate={onTimeUpdate}
+        onLoadedMetadata={onLoadedMetadata}
+      />
 
       <div className="controls">
         <button onClick={togglePlay} className="play-button">
           {isPlaying ? "⏸️" : "▶️"}
         </button>
         
-        <div className="timeline-wrapper">
-          <div className="timeline-events-track">
-            {duration > 0 && results.timeline_events.map((event, i) => {
-              const startTime = Math.max(0, event.timestamp - 5)
-              const endTime = event.timestamp
-              const isTimeActive = currentTime >= startTime && currentTime <= endTime
-              const isHovered = i === hoveredEventIndex
-              
-              const leftPct = (startTime / duration) * 100
-              const widthPct = ((endTime - startTime) / duration) * 100
-              
-              let color = '#ccc'
-              if (event.severity === 'CRITICAL') color = '#ff4d4d' // Red
-              else if (event.severity === 'WARNING') color = '#ffa500' // Orange
-              else if (event.severity === 'INFO') color = '#4caf50' // Green
-
-              return (
-                <div
-                  key={i}
-                  className={`timeline-event-bar ${isTimeActive ? 'playback-active' : ''} ${isHovered ? 'hover-active' : ''}`}
-                  style={{
-                    left: `${leftPct}%`,
-                    width: `${widthPct}%`,
-                    backgroundColor: color,
-                    zIndex: isHovered ? 6 : (isTimeActive ? 5 : 1)
-                  }}
-                  onMouseEnter={() => setHoveredEventIndex(i)}
-                  onMouseLeave={() => setHoveredEventIndex(null)}
-                  onClick={() => {
-                    const seekTime = Math.max(0, event.timestamp - 5)
-                    roadVideoRef.current.currentTime = seekTime
-                    faceVideoRef.current.currentTime = seekTime
-                    setCurrentTime(seekTime)
-                  }}
-                  title={`${event.message} (${startTime.toFixed(1)}s - ${endTime.toFixed(1)}s)`}
-                />
-              )
-            })}
-            
-            {/* Vertical Cursor on Event Track */}
-            <div 
-              className="timeline-cursor"
-              style={{
-                left: `${(currentTime / duration) * 100}%`
-              }}
-            />
-          </div>
-
-          <div className="timeline-face-track">
-            {duration > 0 && faceSegments.map((seg, i) => {
-              const widthPct = ((seg.endTime - seg.startTime) / duration) * 100
-              const leftPct = (seg.startTime / duration) * 100
-              
-              const isTimeActive = currentTime >= seg.startTime && currentTime <= seg.endTime
-              const isHovered = i === hoveredFaceSegmentIndex
-              
-              // Check if this segment corresponds to the hovered log item
-              const isLogHovered = hoveredLogIndex !== null && (() => {
-                const logItem = history[hoveredLogIndex]
-                return logItem && logItem.to === seg.state && Math.abs(logItem.time - seg.startTime) < 1.0
-              })()
-              
-              let color = '#9b59b6' // Purple for other states
-              if (seg.state === 'Looking Ahead') color = '#2ecc71' // Green
-              else if (seg.state === 'Left Mirror') color = '#e84393' // Pink
-              else if (seg.state === 'Right Mirror') color = '#00cec9' // Teal/Cyan
-              else if (seg.state === 'N/A') color = '#555'
-
-              return (
-                <div 
-                  key={i}
-                  className={`timeline-event-bar ${isTimeActive ? 'playback-active' : ''} ${isHovered || isLogHovered ? 'hover-active' : ''}`}
-                  style={{
-                    left: `${leftPct}%`,
-                    width: `${widthPct}%`,
-                    backgroundColor: color,
-                    zIndex: (isHovered || isLogHovered) ? 6 : (isTimeActive ? 5 : 1)
-                  }}
-                  onMouseEnter={() => setHoveredFaceSegmentIndex(i)}
-                  onMouseLeave={() => setHoveredFaceSegmentIndex(null)}
-                  onClick={() => {
-                     roadVideoRef.current.currentTime = seg.startTime
-                     faceVideoRef.current.currentTime = seg.startTime
-                     setCurrentTime(seg.startTime)
-                  }}
-                  title={`${seg.state} (${seg.startTime.toFixed(1)}s - ${seg.endTime.toFixed(1)}s)`}
-                />
-              )
-            })}
-             {/* Vertical Cursor on Face Track */}
-             <div 
-              className="timeline-cursor"
-              style={{
-                left: `${(currentTime / duration) * 100}%`
-              }}
-            />
-          </div>
-
-          <input
-            type="range"
-            min="0"
-            max={duration}
-            step="0.01"
-            value={currentTime}
-            onChange={handleSeek}
-            className="timeline-slider"
-          />
-          
-          <span className="track-label events-label">Events</span>
-          <span className="track-label gaze-label">Gaze</span>
-        </div>
+        <Timeline 
+          currentTime={currentTime}
+          duration={duration}
+          events={results.timeline_events}
+          faceSegments={faceSegments}
+          history={history}
+          hoveredEventIndex={hoveredEventIndex}
+          setHoveredEventIndex={setHoveredEventIndex}
+          hoveredFaceSegmentIndex={hoveredFaceSegmentIndex}
+          setHoveredFaceSegmentIndex={setHoveredFaceSegmentIndex}
+          hoveredLogIndex={hoveredLogIndex}
+          onSeek={handleSeek}
+          getColorForState={getColorForState}
+          getLogIndexForSegment={getLogIndexForSegment}
+        />
 
         <span className="time-display">{currentTime.toFixed(2)} / {duration.toFixed(2)}s</span>
       </div>
 
-      <div className="timeline-legend">
-        <div className="legend-row">
-          <span className="legend-title">Events:</span>
-          {[
-            { label: 'Critical', color: '#ff4d4d' },
-            { label: 'Warning', color: '#ffa500' },
-            { label: 'Safe', color: '#4caf50' },
-            { label: 'No event', color: '#555' }
-          ].map((item, i) => (
-            <div key={i} className="legend-item">
-              <span className="legend-swatch" style={{ backgroundColor: item.color }}></span>
-              <span className="legend-label">{item.label}</span>
-            </div>
-          ))}
-        </div>
-        <div className="legend-row">
-          <span className="legend-title">Gaze:</span>
-          {[
-            { label: 'Looking Ahead', color: '#2ecc71' },
-            { label: 'Left Mirror', color: '#e84393' },
-            { label: 'Right Mirror', color: '#00cec9' },
-            { label: 'Other', color: '#9b59b6' }
-          ].map((item, i) => (
-            <div key={i} className="legend-item">
-              <span className="legend-swatch" style={{ backgroundColor: item.color }}></span>
-              <span className="legend-label">{item.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <Legend />
 
-      <div className="logs-row">
-        <div className="face-log">
-          <hr />
-          <h4>
-            Current Face Direction: <span style={{ color: getColorForState(currentFaceState) }}>
-              {iconMap[currentFaceState] || iconMap['N/A']} {currentFaceState || "N/A"}
-            </span>
-          </h4>
-          <hr />
-          <h3>Face Direction Log (Transitions)</h3>
-          <div className="log-list">
-            {history.map((item, i) => {
-              const isCurrent = i === activeLogIndex
-              const isHovered = i === hoveredLogIndex
-              
-              // Check if this log corresponds to the hovered face segment
-              const isSegmentHovered = hoveredFaceSegmentIndex !== null && 
-                                     getLogIndexForSegment(faceSegments[hoveredFaceSegmentIndex]) === i
-              
-              return (
-                <div
-                  key={i}
-                  ref={el => itemRefs.current[i] = el}
-                  className={`log-item ${isCurrent ? 'active' : ''} ${isHovered || isSegmentHovered ? 'hover-active' : ''}`}
-                  onClick={() => {
-                    roadVideoRef.current.currentTime = Math.max(0, item.time - 0.5)
-                    faceVideoRef.current.currentTime = Math.max(0, item.time - 0.5)
-                  }}
-                  onMouseEnter={() => setHoveredLogIndex(i)}
-                  onMouseLeave={() => setHoveredLogIndex(null)}
-                >
-                  <span className="log-time">{item.time.toFixed(1)}s</span>
-                  <span className="log-state-container">
-                    <span className="log-state-from">
-                      {iconMap[item.from] || iconMap['N/A']} <strong style={{ color: getColorForState(item.from) }}>{item.from}</strong>
-                    </span>
-                    <span className="log-arrow">→</span>
-                    <span className="log-state-to">
-                      {iconMap[item.to] || iconMap['N/A']} <strong style={{ color: getColorForState(item.to) }}>{item.to}</strong>
-                    </span>
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        <div className="events-timeline">
-          <h3>Detected Events</h3>
-          <div className="event-list">
-            {results.timeline_events.map((event, i) => {
-              const isTimeActive = currentTime >= (event.timestamp - 5) && currentTime <= event.timestamp
-              const isHovered = i === hoveredEventIndex
-              
-              return (
-                <div
-                  key={i}
-                  ref={el => eventItemRefs.current[i] = el}
-                  className={`event-item ${event.severity} ${isTimeActive ? 'playback-active' : ''} ${isHovered ? 'hover-active' : ''}`}
-                  onClick={() => {
-                    roadVideoRef.current.currentTime = Math.max(0, event.timestamp - 5)
-                    faceVideoRef.current.currentTime = Math.max(0, event.timestamp - 5)
-                  }}
-                  onMouseEnter={() => setHoveredEventIndex(i)}
-                  onMouseLeave={() => setHoveredEventIndex(null)}
-                >
-                  <span className="event-time">{event.timestamp.toFixed(1)}s</span>
-                  <span className="event-message">{event.message}</span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
+      <LogViewer 
+        history={history}
+        events={results.timeline_events}
+        activeLogIndex={activeLogIndex}
+        hoveredEventIndex={hoveredEventIndex}
+        setHoveredEventIndex={setHoveredEventIndex}
+        hoveredLogIndex={hoveredLogIndex}
+        setHoveredLogIndex={setHoveredLogIndex}
+        hoveredFaceSegmentIndex={hoveredFaceSegmentIndex}
+        currentFaceState={currentFaceState}
+        currentTime={currentTime}
+        onSeek={handleSeek}
+        getColorForState={getColorForState}
+        getLogIndexForSegment={getLogIndexForSegment}
+        faceSegments={faceSegments}
+        iconMap={iconMap}
+      />
     </div>
   )
 }
