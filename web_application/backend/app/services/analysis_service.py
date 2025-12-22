@@ -9,7 +9,7 @@ from ..db import database
 
 logger = logging.getLogger(__name__)
 
-def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_videos: bool = False) -> None:
+def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_videos: bool = False, road_metadata: dict = None, face_metadata: dict = None) -> None:
     """
     Executes the analysis script in a subprocess.
     Updates the database with status, progress, and results.
@@ -27,6 +27,11 @@ def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_video
             "--face", str(face_path),
             "--output", str(output_json_path)
         ]
+
+        if road_metadata:
+            cmd.extend(["--road_meta", json.dumps(road_metadata)])
+        if face_metadata:
+            cmd.extend(["--face_meta", json.dumps(face_metadata)])
         
         logger.debug(f"Command: {' '.join(cmd)}")
         

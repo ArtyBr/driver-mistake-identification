@@ -22,7 +22,7 @@ class VideoProcessor:
         self.last_state = None
         self.all_events = []
 
-    def run(self, export_json=False, output_json_path=None, custom_video_paths=None):
+    def run(self, export_json=False, output_json_path=None, custom_video_paths=None, metadata=None):
         # 1. Setup Video Capture
         if custom_video_paths:
              cap_road, cap_face, start_frame, end_frame, fps = self._setup_custom_video_capture(custom_video_paths)
@@ -86,7 +86,11 @@ class VideoProcessor:
                 result = {
                     "meta": {
                         "duration": num_frames / fps,
-                        "fps": fps
+                        "fps": fps,
+                        "road_file": Path(custom_video_paths.get('road')).name if custom_video_paths else "unknown",
+                        "face_file": Path(custom_video_paths.get('face')).name if custom_video_paths else "unknown",
+                        "road_metadata": metadata.get('road') if metadata else None,
+                        "face_metadata": metadata.get('face') if metadata else None
                     },
                     "timeline_events": final_events,
                     "frame_data": frame_data

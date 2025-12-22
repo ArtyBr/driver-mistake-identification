@@ -603,3 +603,22 @@ footer {
   border-color: var(--accent-primary);
   border-right-color: transparent;
 }
+
+/* Custom Alerts for Cyber Theme */
+.alert-cyber {
+  background: var(--bg-panel-lighter);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  border-radius: 4px;
+}
+
+.alert-cyber-danger {
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid var(--accent-danger);
+  color: #ff8e98;
+}
+
+.alert-cyber-danger h5 {
+  color: #ff4d5e;
+  font-weight: 700;
+}

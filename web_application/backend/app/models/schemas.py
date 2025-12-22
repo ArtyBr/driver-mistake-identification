@@ -6,6 +6,8 @@ class JobStatusResponse(BaseModel):
     progress: Optional[int] = 0
     road_url: Optional[str] = None
     face_url: Optional[str] = None
+    road_metadata: Optional[Dict[str, Any]] = None
+    face_metadata: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
 
 class JobCreateResponse(BaseModel):

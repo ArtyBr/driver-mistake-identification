@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 const VideoDisplay = ({ 
   roadUrl, 
@@ -13,6 +13,15 @@ const VideoDisplay = ({
   roadAspectRatio,
   faceAspectRatio
 }) => {
+  // Force video reload when src changes (important for local blobs)
+  useEffect(() => {
+    if (roadVideoRef.current) roadVideoRef.current.load();
+  }, [roadUrl, roadVideoRef]);
+
+  useEffect(() => {
+    if (faceVideoRef.current) faceVideoRef.current.load();
+  }, [faceUrl, faceVideoRef]);
+
   return (
     <div className="video-container">
       <div className="video-wrapper road" style={{ aspectRatio: roadAspectRatio }}>

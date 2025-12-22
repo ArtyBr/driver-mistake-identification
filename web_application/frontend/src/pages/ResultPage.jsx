@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import VideoPlayer from '../components/VideoPlayer';
+import MissingVideosUploader from '../components/MissingVideosUploader';
 import '../App.css'; // Import the custom styles for VideoPlayer
 
 const API_BASE = 'http://localhost:8000';
@@ -14,11 +15,15 @@ const ResultPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Locally provided files if server files are missing
+  const [localRoadFiles, setLocalRoadFiles] = useState([]);
+  const [localFaceFiles, setLocalFaceFiles] = useState([]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Fetch status to get URLs
+        // Fetch status to get URLs and metadata
         const statusRes = await axios.get(`${API_BASE}/status/${jobId}`);
         setJobData(statusRes.data);
 
@@ -42,21 +47,29 @@ const ResultPage = () => {
       let rUrls = [];
       let fUrls = [];
 
-      // Check for local files first (passed via navigation state)
-      if (location.state?.roadFiles && location.state.roadFiles.length > 0) {
+      // Priority:
+      // 1. Manually provided local files in this page
+      // 2. Local files passed via navigation state (from Uploader)
+      // 3. Server URLs (spliced video)
+
+      if (localRoadFiles.length > 0) {
+          rUrls = localRoadFiles.map(f => URL.createObjectURL(f));
+      } else if (location.state?.roadFiles && location.state.roadFiles.length > 0) {
           rUrls = location.state.roadFiles.map(f => URL.createObjectURL(f));
       } else if (jobData?.road_url) {
           rUrls = [`${API_BASE}${jobData.road_url}`];
       }
 
-      if (location.state?.faceFiles && location.state.faceFiles.length > 0) {
+      if (localFaceFiles.length > 0) {
+          fUrls = localFaceFiles.map(f => URL.createObjectURL(f));
+      } else if (location.state?.faceFiles && location.state.faceFiles.length > 0) {
           fUrls = location.state.faceFiles.map(f => URL.createObjectURL(f));
       } else if (jobData?.face_url) {
           fUrls = [`${API_BASE}${jobData.face_url}`];
       }
 
       return { road: rUrls, face: fUrls };
-  }, [jobData, location.state]);
+  }, [jobData, location.state, localRoadFiles, localFaceFiles]);
 
   // Cleanup Blob URLs when unmounting or changing
   useEffect(() => {
@@ -73,6 +86,14 @@ const ResultPage = () => {
           }
       }
   }, [videoUrls]);
+
+  const handleMissingFiles = (road, face) => {
+    console.log("Setting local files:", road.length, face.length);
+    setLocalRoadFiles(road);
+    setLocalFaceFiles(face);
+  };
+
+  const hasVideos = videoUrls.road.length > 0 && videoUrls.face.length > 0;
 
   if (loading) {
     return (
@@ -102,7 +123,16 @@ const ResultPage = () => {
           <Link to="/analyze" className="btn btn-cyber">New Analysis</Link>
        </div>
 
-       {results && (
+       {results && !hasVideos && jobData && (
+         <MissingVideosUploader 
+            roadMeta={jobData.road_metadata}
+            faceMeta={jobData.face_metadata}
+            results={results}
+            onFilesUploaded={handleMissingFiles}
+         />
+       )}
+
+       {results && hasVideos && (
           <VideoPlayer 
             results={results} 
             roadUrls={videoUrls.road}

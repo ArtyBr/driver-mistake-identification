@@ -47,11 +47,15 @@ async def upload_videos(
     
     # --- Process Road Videos ---
     road_parts = []
+    road_filenames = []
+    road_sizes = []
     for i, file_obj in enumerate(video_road):
         part_path = job_dir / f"road_part_{i:03d}.mp4"
         with open(part_path, "wb") as buffer:
             shutil.copyfileobj(file_obj.file, buffer)
         road_parts.append(part_path)
+        road_filenames.append(file_obj.filename)
+        road_sizes.append(part_path.stat().st_size)
         
     road_final_path = job_dir / "road.mp4"
     if not splice_videos(road_parts, road_final_path):
@@ -66,11 +70,15 @@ async def upload_videos(
 
     # --- Process Face Videos ---
     face_parts = []
+    face_filenames = []
+    face_sizes = []
     for i, file_obj in enumerate(video_face):
         part_path = job_dir / f"face_part_{i:03d}.mp4"
         with open(part_path, "wb") as buffer:
             shutil.copyfileobj(file_obj.file, buffer)
         face_parts.append(part_path)
+        face_filenames.append(file_obj.filename)
+        face_sizes.append(part_path.stat().st_size)
         
     face_final_path = job_dir / "face.mp4"
     if not splice_videos(face_parts, face_final_path):
@@ -83,11 +91,13 @@ async def upload_videos(
         for p in face_parts:
             if p.exists(): p.unlink()
         
-    # Create DB entry
-    database.create_job(job_id, str(road_final_path), str(face_final_path))
+    # Create DB entry with metadata
+    road_meta = {"filenames": road_filenames, "count": len(road_filenames), "sizes": road_sizes}
+    face_meta = {"filenames": face_filenames, "count": len(face_filenames), "sizes": face_sizes}
+    database.create_job(job_id, str(road_final_path), str(face_final_path), road_meta, face_meta)
     
     # Trigger background task
-    background_tasks.add_task(run_analysis_process, job_id, str(road_final_path), str(face_final_path), keep_videos=keep_videos)
+    background_tasks.add_task(run_analysis_process, job_id, str(road_final_path), str(face_final_path), keep_videos=keep_videos, road_metadata=road_meta, face_metadata=face_meta)
     
     return {"job_id": job_id}
 
@@ -184,6 +194,8 @@ async def get_status(job_id: str):
         "progress": job["progress"],
         "road_url": road_url,
         "face_url": face_url,
+        "road_metadata": job.get("road_metadata"),
+        "face_metadata": job.get("face_metadata"),
         "error": job["error"]
     }
 

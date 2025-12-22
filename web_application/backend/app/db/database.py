@@ -19,6 +19,8 @@ def init_db() -> None:
             status TEXT NOT NULL,
             road_path TEXT,
             face_path TEXT,
+            road_metadata TEXT,
+            face_metadata TEXT,
             result TEXT,
             error TEXT,
             progress INTEGER DEFAULT 0,
@@ -28,12 +30,12 @@ def init_db() -> None:
     conn.commit()
     conn.close()
 
-def create_job(job_id: str, road_path: str, face_path: str) -> None:
+def create_job(job_id: str, road_path: str, face_path: str, road_metadata: Dict = None, face_metadata: Dict = None) -> None:
     """Creates a new job record."""
     conn = get_db_connection()
     conn.execute(
-        'INSERT INTO jobs (id, status, road_path, face_path) VALUES (?, ?, ?, ?)',
-        (job_id, 'PENDING', road_path, face_path)
+        'INSERT INTO jobs (id, status, road_path, face_path, road_metadata, face_metadata) VALUES (?, ?, ?, ?, ?, ?)',
+        (job_id, 'PENDING', road_path, face_path, json.dumps(road_metadata) if road_metadata else None, json.dumps(face_metadata) if face_metadata else None)
     )
     conn.commit()
     conn.close()
@@ -46,12 +48,13 @@ def get_job(job_id: str) -> Optional[Dict[str, Any]]:
     
     if job:
         job_dict = dict(job)
-        # Parse the JSON result if it exists
-        if job_dict.get('result'):
-            try:
-                job_dict['result'] = json.loads(job_dict['result'])
-            except json.JSONDecodeError:
-                pass # Keep as string or handle error if needed
+        # Parse JSON fields
+        for field in ['result', 'road_metadata', 'face_metadata']:
+            if job_dict.get(field):
+                try:
+                    job_dict[field] = json.loads(job_dict[field])
+                except json.JSONDecodeError:
+                    pass
         return job_dict
     return None
 

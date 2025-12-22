@@ -59,9 +59,14 @@ def main():
     parser.add_argument("--road", required=True)
     parser.add_argument("--face", required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument("--road_meta", type=str, help="JSON string of road video metadata")
+    parser.add_argument("--face_meta", type=str, help="JSON string of face video metadata")
     args_cli = parser.parse_args()
 
     try:
+        road_meta = json.loads(args_cli.road_meta) if args_cli.road_meta else None
+        face_meta = json.loads(args_cli.face_meta) if args_cli.face_meta else None
+
         logger.info(f"Starting analysis for:\nRoad: {args_cli.road}\nFace: {args_cli.face}")
 
         # Config Setup
@@ -99,7 +104,12 @@ def main():
         # Run
         custom_paths = {"road": args_cli.road, "face": args_cli.face}
         logger.info("Running processing loop...")
-        processor.run(export_json=True, output_json_path=args_cli.output, custom_video_paths=custom_paths)
+        processor.run(
+            export_json=True, 
+            output_json_path=args_cli.output, 
+            custom_video_paths=custom_paths,
+            metadata={"road": road_meta, "face": face_meta}
+        )
         
         logger.info("Analysis completed successfully.")
 
