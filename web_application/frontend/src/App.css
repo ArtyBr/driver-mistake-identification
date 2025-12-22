@@ -1,33 +1,4 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
-
-.app-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-
-.uploader-box {
-  padding: 40px;
-  border: 2px dashed #646cff;
-  border-radius: 12px;
-  background-color: #1a1a1a;
-  color: white;
-}
-
-.input-group {
-  margin: 20px 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-
+/* Video Player Styles */
 .video-dashboard {
   width: 100%;
   display: flex;
@@ -43,17 +14,20 @@
   padding: 10px;
   border-radius: 8px;
   color: white;
+  flex-wrap: wrap; /* responsive */
 }
 
 .video-wrapper {
   position: relative;
   flex: 1;
+  min-width: 300px; /* responsive */
   max-width: 640px;
 }
 
 .video-wrapper video {
   width: 100%;
   border-radius: 4px;
+  display: block;
 }
 
 .overlay-canvas {
@@ -81,7 +55,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  height: 65px; /* Increased space for two tracks */
+  height: 65px; 
 }
 
 .timeline-slider {
@@ -93,12 +67,12 @@
   cursor: pointer;
   z-index: 10;
   position: absolute;
-  top: 0px; /* Align to top of wrapper */
+  top: 0px; 
   background: transparent;
-  height: 25px; /* Limit interaction height to top area */
+  height: 25px; 
 }
 
-/* Thumb styling for Chrome/Safari/Edge/Opera */
+/* Thumb styling */
 .timeline-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -109,12 +83,11 @@
   cursor: pointer;
   border: 2px solid #fff;
   box-shadow: 0 0 4px rgba(0,0,0,0.5);
-  margin-top: -2px; /* Center in its 25px height container, which is above tracks */
+  margin-top: -2px; 
   position: relative;
   z-index: 10;
 }
 
-/* Thumb styling for Firefox */
 .timeline-slider::-moz-range-thumb {
   width: 16px;
   height: 16px;
@@ -127,7 +100,7 @@
 
 .timeline-events-track {
   position: absolute;
-  top: 30px; /* Shifted down to clear the thumb area */
+  top: 30px; 
   left: 68px;
   width: calc(100% - 87px);
   height: 10px;
@@ -140,7 +113,7 @@
 
 .timeline-face-track {
   position: absolute;
-  top: 45px; /* Below the events track */
+  top: 45px; 
   left: 68px;
   width: calc(100% - 87px);
   height: 10px;
@@ -192,7 +165,7 @@
   opacity: 1;
   box-shadow: 0 0 2px #ffd700;
   border: 1px solid #ffd700;
-  z-index: 6; /* Ensure playback active is on top of hover if they overlap */
+  z-index: 6; 
 }
 
 .timeline-cursor {
@@ -223,7 +196,7 @@
   border-radius: 8px;
   color: #ccc;
   font-size: 0.9em;
-  margin-top: -10px; /* Pull it closer to controls */
+  margin-top: -10px; 
   margin-bottom: 10px;
 }
 
@@ -255,24 +228,6 @@
   height: 12px;
   border-radius: 2px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.current-status-box {
-  background: #1a1a1a;
-  padding: 15px;
-  border-radius: 8px;
-  text-align: center;
-  border: 1px solid #444;
-  color: white;
-}
-
-.status-display {
-  font-size: 1.5em;
-  font-weight: bold;
-  color: #646cff;
-  margin-top: 5px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
 }
 
 .play-button {
@@ -315,7 +270,7 @@
   border-radius: 4px;
   cursor: pointer;
   border: 1px solid #444;
-  border-left: 5px solid #666; /* Base left border */
+  border-left: 5px solid #666; 
   color: white;
   transition: all 0.2s ease;
 }
@@ -409,7 +364,7 @@
   font-weight: 500;
   color: #fff;
   text-align: left;
-  padding-left: 33%;
+  padding-left: 10%;
   flex: 1;
   min-width: 0;
 }
@@ -435,27 +390,20 @@
   color: #646cff;
 }
 
-.error {
-  color: #ff4d4d;
+/* Scrollbar styling for lists */
+.event-list::-webkit-scrollbar, .log-list::-webkit-scrollbar {
+  width: 8px;
 }
 
-.progress-container {
-  width: 100%;
-  background-color: #333;
-  border-radius: 10px;
-  margin: 20px 0;
-  overflow: hidden;
-  color: white;
+.event-list::-webkit-scrollbar-track, .log-list::-webkit-scrollbar-track {
+  background: #1a1a1a;
 }
 
-.progress-bar {
-  height: 20px;
-  background-color: #646cff;
-  width: 0%;
-  transition: width 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  color: white;
+.event-list::-webkit-scrollbar-thumb, .log-list::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+.event-list::-webkit-scrollbar-thumb:hover, .log-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }

@@ -81,39 +81,66 @@ function Uploader({ onUploadSuccess }) {
   }
 
   return (
-    <div className="uploader-box">
-      <h2>Upload New Analysis</h2>
-      <div className="input-group">
-        <label>Road Video (Front Facing):</label>
-        <input type="file" accept="video/*" onChange={(e) => setRoadFile(e.target.files[0])} />
+    <div className="card shadow-sm">
+      <div className="card-header bg-primary text-white">
+        <h4 className="mb-0">Upload New Analysis</h4>
       </div>
-      <div className="input-group">
-        <label>Driver Video (Face Facing):</label>
-        <input type="file" accept="video/*" onChange={(e) => setFaceFile(e.target.files[0])} />
-      </div>
-      {error && <p className="error">{error}</p>}
-      
-      <div className="actions-row" style={{ display: 'flex', gap: '20px', marginTop: '20px', alignItems: 'flex-end' }}>
-        <button onClick={handleUpload} disabled={uploading}>
-          {uploading ? 'Uploading...' : 'Start New Analysis'}
+      <div className="card-body">
+        {error && <div className="alert alert-danger">{error}</div>}
+        
+        <div className="mb-4">
+          <label className="form-label fw-bold">Road Video (Front Facing):</label>
+          <input 
+            className="form-control" 
+            type="file" 
+            accept="video/*" 
+            onChange={(e) => setRoadFile(e.target.files[0])} 
+          />
+        </div>
+        
+        <div className="mb-4">
+          <label className="form-label fw-bold">Driver Video (Face Facing):</label>
+          <input 
+            className="form-control" 
+            type="file" 
+            accept="video/*" 
+            onChange={(e) => setFaceFile(e.target.files[0])} 
+          />
+        </div>
+        
+        <button 
+          className="btn btn-primary w-100 mb-4" 
+          onClick={handleUpload} 
+          disabled={uploading}
+        >
+          {uploading ? (
+            <span><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Uploading...</span>
+          ) : 'Start New Analysis'}
         </button>
         
-        <div className="separator" style={{ width: '1px', background: '#444', height: '40px' }}></div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <label style={{ fontSize: '0.9em', color: '#888' }}>Load Previous Analysis:</label>
-          <div style={{ display: 'flex', gap: '10px' }}>
+        <hr className="my-4" />
+        
+        <h5 className="mb-3 text-secondary">Or Load Previous Analysis</h5>
+        <div className="row g-2 align-items-end">
+          <div className="col-md-8">
+            <label className="form-label small text-muted">Select Analysis:</label>
             <select 
+              className="form-select"
               value={selectedAnalysis} 
               onChange={(e) => setSelectedAnalysis(e.target.value)}
-              style={{ padding: '8px', borderRadius: '4px', background: '#333', color: 'white', border: '1px solid #555' }}
             >
               <option value="">-- Test Data (Default) --</option>
               {analyses.map(name => (
                 <option key={name} value={name}>{name}</option>
               ))}
             </select>
-            <button onClick={handleLoadAnalysis} disabled={uploading} style={{ backgroundColor: '#444' }}>
+          </div>
+          <div className="col-md-4">
+            <button 
+              className="btn btn-outline-secondary w-100" 
+              onClick={handleLoadAnalysis} 
+              disabled={uploading}
+            >
               Load Analysis
             </button>
           </div>

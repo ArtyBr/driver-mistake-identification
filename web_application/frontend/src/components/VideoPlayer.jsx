@@ -126,15 +126,41 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
     }
   }, [currentTime, history, activeLogIndex])
 
-  // Scroll to active item
-  useEffect(() => {
-    if (activeLogIndex !== -1 && itemRefs.current[activeLogIndex]) {
-      itemRefs.current[activeLogIndex].scrollIntoView({
-        behavior: 'smooth',
-        block: 'center'
-      })
+  // Helper to find the specific log index for a given segment
+  const getLogIndexForSegment = (segment) => {
+    if (!segment) return -1
+    // Find the latest history item that started at or before the segment
+    // and matches the state.
+    // Since history is sorted by time, we can search backwards or iterate to find best candidate.
+    let bestIndex = -1
+    for (let i = 0; i < history.length; i++) {
+      const item = history[i]
+      if (item.time <= segment.startTime + 0.1) { // small epsilon for float comparison
+         if (item.to === segment.state) {
+           bestIndex = i
+         }
+      } else {
+        // history items are now future of segment start
+        break
+      }
     }
-  }, [activeLogIndex])
+    return bestIndex
+  }
+
+  // Scroll to active log item when hovering face segment
+  useEffect(() => {
+    if (hoveredFaceSegmentIndex !== null) {
+      const segment = faceSegments[hoveredFaceSegmentIndex]
+      const logIndex = getLogIndexForSegment(segment)
+      
+      if (logIndex !== -1 && itemRefs.current[logIndex]) {
+        itemRefs.current[logIndex].scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest'
+        })
+      }
+    }
+  }, [hoveredFaceSegmentIndex, faceSegments, history])
 
   // Scroll to active event item (for hover or playback)
   useEffect(() => {
@@ -159,26 +185,7 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
   }, [hoveredEventIndex, currentTime, results])
 
   // Scroll to active log item when hovering face segment
-  useEffect(() => {
-    if (hoveredFaceSegmentIndex !== null) {
-      // Find the log item that corresponds to this face segment
-      const segment = faceSegments[hoveredFaceSegmentIndex]
-      if (segment) {
-        // Find the history item where the transition TO matches the segment state
-        // and the time is at or just before the segment start
-        const logIndex = history.findIndex(item => 
-          item.to === segment.state && Math.abs(item.time - segment.startTime) < 1.0
-        )
-        
-        if (logIndex !== -1 && itemRefs.current[logIndex]) {
-          itemRefs.current[logIndex].scrollIntoView({
-            behavior: 'smooth',
-            block: 'nearest'
-          })
-        }
-      }
-    }
-  }, [hoveredFaceSegmentIndex, faceSegments, history])
+  // (Removed previous duplicate effect)
 
   // Draw loop
   useEffect(() => {
@@ -522,10 +529,8 @@ function VideoPlayer({ results, roadUrl, faceUrl }) {
               const isHovered = i === hoveredLogIndex
               
               // Check if this log corresponds to the hovered face segment
-              const isSegmentHovered = hoveredFaceSegmentIndex !== null && (() => {
-                const segment = faceSegments[hoveredFaceSegmentIndex]
-                return segment && item.to === segment.state && Math.abs(item.time - segment.startTime) < 1.0
-              })()
+              const isSegmentHovered = hoveredFaceSegmentIndex !== null && 
+                                     getLogIndexForSegment(faceSegments[hoveredFaceSegmentIndex]) === i
               
               return (
                 <div
