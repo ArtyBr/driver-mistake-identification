@@ -8,7 +8,7 @@ from sqlmodel import Session
 from ..core.config import UPLOAD_DIR
 from ..db.database import get_session
 from ..services.job_service import JobService
-from ..models.schemas import JobCreateResponse, JobStatusResponse, AnalysisListResponse
+from ..models.schemas import JobCreateResponse, JobStatusResponse, AnalysisListResponse, JobUpdate
 from ..models.job import Job
 
 router = APIRouter()
@@ -23,6 +23,7 @@ async def upload_videos(
     video_road: List[UploadFile] = File(...),
     video_face: List[UploadFile] = File(...),
     keep_videos: bool = Form(False),
+    name: Optional[str] = Form(None),
     service: JobService = Depends(get_job_service)
 ):
     """
@@ -33,6 +34,11 @@ async def upload_videos(
         raise HTTPException(status_code=400, detail="Both road and face videos are required")
 
     job = service.create_job(video_road, video_face, background_tasks, keep_videos)
+    
+    # Update name if provided
+    if name:
+        service.update_job_name(job.id, name)
+        
     return {"job_id": job.id}
 
 @router.get("/list_analyses", response_model=AnalysisListResponse)
@@ -43,6 +49,23 @@ async def list_analyses(service: JobService = Depends(get_job_service)):
     """
     analyses = service.list_analyses()
     return {"analyses": analyses}
+
+@router.put("/job/{job_id}/name", response_model=JobStatusResponse)
+async def update_job_name(job_id: str, update: JobUpdate, service: JobService = Depends(get_job_service)):
+    """
+    Updates the name of an existing job.
+    """
+    job = service.update_job_name(job_id, update.name)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+        
+    # Return basic status structure
+    return {
+        "status": job.status,
+        "name": job.name,
+        "progress": job.progress,
+        "error": job.error
+    }
 
 @router.post("/run_test", response_model=JobCreateResponse)
 async def run_test(analysis_id: Optional[str] = None, service: JobService = Depends(get_job_service)):
@@ -103,6 +126,7 @@ async def get_status(job_id: str, service: JobService = Depends(get_job_service)
 
     return {
         "status": job.status,
+        "name": job.name,
         "progress": job.progress,
         "road_url": road_url,
         "face_url": face_url,

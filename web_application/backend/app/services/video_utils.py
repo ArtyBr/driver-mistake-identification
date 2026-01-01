@@ -91,3 +91,32 @@ def splice_videos(input_paths: List[Path], output_path: Path) -> bool:
                 list_file_path.unlink()
             except OSError:
                 pass
+
+def get_video_duration(video_path: Path) -> float:
+    """
+    Returns the duration of the video in seconds using ffprobe.
+    """
+    try:
+        cmd = [
+            "ffprobe", 
+            "-v", "error", 
+            "-show_entries", "format=duration", 
+            "-of", "default=noprint_wrappers=1:nokey=1", 
+            str(video_path)
+        ]
+        
+        # Prepare environment
+        env = os.environ.copy()
+        if "LD_LIBRARY_PATH" in env:
+            del env["LD_LIBRARY_PATH"]
+
+        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        
+        if result.returncode == 0:
+            return float(result.stdout.strip())
+        else:
+            logger.error(f"ffprobe error: {result.stderr}")
+            return 0.0
+    except Exception as e:
+        logger.error(f"Error getting duration for {video_path}: {e}")
+        return 0.0

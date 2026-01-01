@@ -6,6 +6,7 @@ class Job(SQLModel, table=True):
     __tablename__ = "jobs"
     id: str = Field(primary_key=True)
     status: str
+    name: Optional[str] = None
     road_path: Optional[str] = None
     face_path: Optional[str] = None
     # Storing JSON as strings for SQLite simplicity

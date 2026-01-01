@@ -32,11 +32,22 @@ export const uploadVideos = async (formData, onProgress) => {
 
 /**
  * Lists available completed analyses.
- * @returns {Promise<Array<string>>} List of analysis names.
+ * @returns {Promise<Array<{id: string, name: string, video_count: number, duration_seconds: number, created_at: string}>>} List of analyses with metadata.
  */
 export const listAnalyses = async () => {
   const response = await api.get('/list_analyses');
   return response.data.analyses;
+};
+
+/**
+ * Updates the name of a job.
+ * @param {string} jobId
+ * @param {string} name
+ * @returns {Promise<Object>} Updated job status.
+ */
+export const updateJobName = async (jobId, name) => {
+  const response = await api.put(`/job/${jobId}/name`, { name });
+  return response.data;
 };
 
 /**

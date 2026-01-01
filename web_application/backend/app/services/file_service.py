@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Tuple
 from fastapi import UploadFile
 from ..core.config import UPLOAD_DIR
-from .video_utils import splice_videos
+from .video_utils import splice_videos, get_video_duration
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +22,9 @@ class FileService:
             shutil.rmtree(job_dir)
 
     @staticmethod
-    def process_uploads(job_dir: Path, files: List[UploadFile], prefix: str) -> Tuple[Path, List[str], List[int]]:
+    def process_uploads(job_dir: Path, files: List[UploadFile], prefix: str) -> Tuple[Path, List[str], List[int], float]:
         """
-        Saves uploaded chunks, splices them, and returns (final_path, filenames, sizes).
+        Saves uploaded chunks, splices them, and returns (final_path, filenames, sizes, duration).
         """
         parts_paths = []
         filenames = []
@@ -49,5 +49,6 @@ class FileService:
             for p in parts_paths:
                 if p.exists():
                     p.unlink()
-                    
-        return final_path, filenames, sizes
+        
+        duration = get_video_duration(final_path)
+        return final_path, filenames, sizes, duration

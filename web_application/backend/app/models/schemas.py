@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any, List
 
 class JobStatusResponse(BaseModel):
     status: str
+    name: Optional[str] = None
     progress: Optional[int] = 0
     road_url: Optional[str] = None
     face_url: Optional[str] = None
@@ -13,5 +14,15 @@ class JobStatusResponse(BaseModel):
 class JobCreateResponse(BaseModel):
     job_id: str
 
+class AnalysisItem(BaseModel):
+    id: str
+    name: str
+    video_count: Optional[int] = 0
+    duration_seconds: Optional[float] = 0.0
+    created_at: Optional[Any] = None 
+
 class AnalysisListResponse(BaseModel):
-    analyses: List[str]
+    analyses: List[AnalysisItem]
+
+class JobUpdate(BaseModel):
+    name: str

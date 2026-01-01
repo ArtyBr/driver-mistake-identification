@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { listAnalyses } from '../../services/api'
+import { listAnalyses, updateJobName } from '../../services/api'
 import FileDropZone from '../common/FileDropZone'
 import { useJobUpload } from '../../hooks/useJob'
 
@@ -7,6 +7,7 @@ function Uploader({ onUploadSuccess }) {
   const [roadFiles, setRoadFiles] = useState([])
   const [faceFiles, setFaceFiles] = useState([])
   const [keepVideos, setKeepVideos] = useState(false)
+  const [uploadName, setUploadName] = useState("")
   const [analyses, setAnalyses] = useState([])
   const [selectedAnalysis, setSelectedAnalysis] = useState("")
   
@@ -54,7 +55,7 @@ function Uploader({ onUploadSuccess }) {
     }
 
     try {
-        const jobId = await upload(roadFiles, faceFiles, keepVideos);
+        const jobId = await upload(roadFiles, faceFiles, keepVideos, uploadName);
         onUploadSuccess(jobId, {}, { roadFiles, faceFiles });
     } catch (e) {
         // Error is handled in hook
@@ -70,6 +71,40 @@ function Uploader({ onUploadSuccess }) {
       // Error handled in hook
     }
   }
+
+  const handleRename = async () => {
+    if (!selectedAnalysis) return;
+    
+    const currentAnalysis = analyses.find(a => a.id === selectedAnalysis);
+    const newName = prompt("Enter new name for this analysis:", currentAnalysis?.name || "");
+    
+    if (newName && newName.trim() !== "") {
+        try {
+            await updateJobName(selectedAnalysis, newName);
+            // Refresh list
+            const data = await listAnalyses();
+            setAnalyses(data);
+        } catch (e) {
+            console.error("Failed to rename:", e);
+            setLocalError("Failed to update name.");
+        }
+    }
+  }
+
+  const formatDuration = (seconds) => {
+      if (!seconds) return "Unknown duration";
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = Math.floor(seconds % 60);
+      return `${minutes}m ${remainingSeconds}s`;
+  }
+  
+  const formatDate = (dateString) => {
+      if (!dateString) return "Unknown date";
+      return new Date(dateString).toLocaleDateString(undefined, {
+          year: 'numeric', month: 'short', day: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+      });
+  }
   
   const displayError = localError || uploadError;
 
@@ -82,6 +117,16 @@ function Uploader({ onUploadSuccess }) {
         {displayError && <div className="alert alert-danger">{displayError}</div>}
         
         <div className="row">
+          <div className="col-md-12 mb-3">
+             <label className="form-label text-white">Analysis Name (Optional)</label>
+             <input 
+                type="text" 
+                className="form-control form-control-cyber" 
+                placeholder="e.g. Morning Commute Sept 2025"
+                value={uploadName}
+                onChange={(e) => setUploadName(e.target.value)}
+             />
+          </div>
           <div className="col-md-6">
             <FileDropZone 
               label="Road Video (Front Facing)" 
@@ -145,21 +190,44 @@ function Uploader({ onUploadSuccess }) {
         <hr className="my-4 border-secondary" />
         
         <h5 className="mb-3 text-muted">Or Load Previous Analysis</h5>
-        <div className="row g-2 align-items-end">
-          <div className="col-md-8">
-            <label className="form-label small text-muted">Select Analysis:</label>
-            <select 
-              className="form-select form-control-cyber"
-              value={selectedAnalysis} 
-              onChange={(e) => setSelectedAnalysis(e.target.value)}
-            >
-              <option value="">-- Test Data (Default) --</option>
-              {analyses.map(name => (
-                <option key={name} value={name}>{name}</option>
-              ))}
-            </select>
+        <div className="row g-2">
+          <div className="col-md-12 mb-2">
+            <div className="analysis-list" style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid rgba(0, 243, 255, 0.2)', borderRadius: '4px' }}>
+                <div 
+                    className={`p-2 border-bottom border-secondary ${selectedAnalysis === "" ? "bg-secondary bg-opacity-25" : ""}`}
+                    onClick={() => setSelectedAnalysis("")}
+                    style={{ cursor: 'pointer' }}
+                >
+                    <div className="fw-bold">Test Data (Default)</div>
+                    <div className="small text-muted">Pre-loaded example data</div>
+                </div>
+                {analyses.map(analysis => (
+                    <div 
+                        key={analysis.id}
+                        className={`p-2 border-bottom border-secondary ${selectedAnalysis === analysis.id ? "bg-secondary bg-opacity-25" : ""}`}
+                        onClick={() => setSelectedAnalysis(analysis.id)}
+                        style={{ cursor: 'pointer' }}
+                    >
+                        <div className="fw-bold text-cyber-blue">{analysis.name}</div>
+                        <div className="small text-muted d-flex justify-content-between">
+                            <span>{analysis.video_count} videos • {formatDuration(analysis.duration_seconds)}</span>
+                            <span>{formatDate(analysis.created_at)}</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
           </div>
-          <div className="col-md-4">
+          <div className="col-md-6">
+             <button 
+              className="btn btn-outline-cyber w-100" 
+              onClick={handleRename}
+              disabled={!selectedAnalysis}
+              title="Rename Analysis"
+            >
+              RENAME SELECTED
+            </button>
+          </div>
+          <div className="col-md-6">
             <button 
               className="btn btn-cyber w-100" 
               onClick={handleLoadAnalysis} 

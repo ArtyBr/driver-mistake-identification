@@ -6,7 +6,7 @@ export const useJobUpload = () => {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState(null);
 
-  const upload = useCallback(async (roadFiles, faceFiles, keepVideos) => {
+  const upload = useCallback(async (roadFiles, faceFiles, keepVideos, name) => {
     setIsUploading(true);
     setProgress(0);
     setError(null);
@@ -15,6 +15,9 @@ export const useJobUpload = () => {
     roadFiles.forEach(file => formData.append('video_road', file));
     faceFiles.forEach(file => formData.append('video_face', file));
     formData.append('keep_videos', keepVideos);
+    if (name) {
+        formData.append('name', name);
+    }
 
     try {
       const data = await uploadVideos(formData, setProgress);
