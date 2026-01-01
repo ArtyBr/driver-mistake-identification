@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react'
-import { uploadVideos, listAnalyses, runTestAnalysis, getJobStatus } from '../services/api'
-import FileDropZone from './FileDropZone'
+import { listAnalyses } from '../../services/api'
+import FileDropZone from '../common/FileDropZone'
+import { useJobUpload } from '../../hooks/useJob'
 
 function Uploader({ onUploadSuccess }) {
   const [roadFiles, setRoadFiles] = useState([])
   const [faceFiles, setFaceFiles] = useState([])
   const [keepVideos, setKeepVideos] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
-  const [error, setError] = useState(null)
   const [analyses, setAnalyses] = useState([])
   const [selectedAnalysis, setSelectedAnalysis] = useState("")
+  
+  const { upload, loadAnalysis, progress, isUploading, error: uploadError } = useJobUpload();
+  const [localError, setLocalError] = useState(null);
 
   useEffect(() => {
     // Fetch available analyses
@@ -29,11 +30,10 @@ function Uploader({ onUploadSuccess }) {
   }
 
   const handleUpload = async () => {
-    setError(null)
-    setUploadProgress(0)
+    setLocalError(null);
 
     if (!roadFiles || roadFiles.length === 0 || !faceFiles || faceFiles.length === 0) {
-      setError("Please select both road and face videos.")
+      setLocalError("Please select both road and face videos.")
       return
     }
 
@@ -41,61 +41,37 @@ function Uploader({ onUploadSuccess }) {
     for (const file of roadFiles) {
       const err = validateFile(file);
       if (err) {
-        setError(`Road Video Error: ${err}`);
+        setLocalError(`Road Video Error: ${err}`);
         return;
       }
     }
     for (const file of faceFiles) {
       const err = validateFile(file);
       if (err) {
-        setError(`Driver Video Error: ${err}`);
+        setLocalError(`Driver Video Error: ${err}`);
         return;
       }
     }
 
-    setUploading(true)
-
-    const formData = new FormData()
-    
-    // Append all road files
-    roadFiles.forEach(file => {
-        formData.append('video_road', file)
-    });
-
-    // Append all face files
-    faceFiles.forEach(file => {
-        formData.append('video_face', file)
-    });
-
-    // Append keep_videos flag
-    formData.append('keep_videos', keepVideos);
-
     try {
-      const data = await uploadVideos(formData, setUploadProgress)
-      const statusData = await getJobStatus(data.job_id)
-      onUploadSuccess(data.job_id, statusData, { roadFiles, faceFiles })
-    } catch (err) {
-      console.error(err)
-      setError(err.response?.data?.detail || "Upload failed. Check your connection or file size.")
-    } finally {
-      setUploading(false)
+        const jobId = await upload(roadFiles, faceFiles, keepVideos);
+        onUploadSuccess(jobId, {}, { roadFiles, faceFiles });
+    } catch (e) {
+        // Error is handled in hook
     }
   }
 
   const handleLoadAnalysis = async () => {
-    setUploading(true)
-    setError(null)
+    setLocalError(null);
     try {
-      const data = await runTestAnalysis(selectedAnalysis)
-      const statusData = await getJobStatus(data.job_id)
-      onUploadSuccess(data.job_id, statusData)
-    } catch (err) {
-      console.error(err)
-      setError(err.response?.data?.detail || "Failed to load analysis.")
-    } finally {
-      setUploading(false)
+      const jobId = await loadAnalysis(selectedAnalysis);
+      onUploadSuccess(jobId, {});
+    } catch (e) {
+      // Error handled in hook
     }
   }
+  
+  const displayError = localError || uploadError;
 
   return (
     <div className="card-cyber shadow-sm">
@@ -103,7 +79,7 @@ function Uploader({ onUploadSuccess }) {
         <h4 className="mb-0">Upload New Analysis</h4>
       </div>
       <div className="card-body">
-        {error && <div className="alert alert-danger">{error}</div>}
+        {displayError && <div className="alert alert-danger">{displayError}</div>}
         
         <div className="row">
           <div className="col-md-6">
@@ -141,17 +117,17 @@ function Uploader({ onUploadSuccess }) {
           </label>
         </div>
         
-        {uploading && uploadProgress > 0 && uploadProgress < 100 && (
+        {isUploading && progress > 0 && progress < 100 && (
           <div className="progress mb-3">
             <div 
               className="progress-bar progress-bar-striped progress-bar-animated" 
               role="progressbar" 
-              style={{ width: `${uploadProgress}%` }} 
-              aria-valuenow={uploadProgress} 
+              style={{ width: `${progress}%` }} 
+              aria-valuenow={progress} 
               aria-valuemin="0" 
               aria-valuemax="100"
             >
-              Uploading {uploadProgress}%
+              Uploading {progress}%
             </div>
           </div>
         )}
@@ -159,9 +135,9 @@ function Uploader({ onUploadSuccess }) {
         <button 
           className="btn btn-cyber-primary w-100 mb-4" 
           onClick={handleUpload} 
-          disabled={uploading}
+          disabled={isUploading}
         >
-          {uploading ? (
+          {isUploading ? (
             <span><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...</span>
           ) : 'START NEW ANALYSIS'}
         </button>
@@ -187,7 +163,7 @@ function Uploader({ onUploadSuccess }) {
             <button 
               className="btn btn-cyber w-100" 
               onClick={handleLoadAnalysis} 
-              disabled={uploading}
+              disabled={isUploading}
             >
               LOAD ANALYSIS
             </button>

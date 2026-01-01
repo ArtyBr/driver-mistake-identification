@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import FileDropZone from './FileDropZone';
+import FileDropZone from '../common/FileDropZone';
 
 const MissingVideosUploader = ({ roadMeta, faceMeta, results, onFilesUploaded }) => {
   const [roadFiles, setRoadFiles] = useState([]);

@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .core.config import UPLOAD_DIR, PROJECT_NAME, VERSION
 from .db import database
+from .models.job import Job
 from .api import routes
 
 app = FastAPI(title=PROJECT_NAME, version=VERSION)

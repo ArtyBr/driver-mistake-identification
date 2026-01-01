@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import VideoPlayer from '../components/VideoPlayer';
-import MissingVideosUploader from '../components/MissingVideosUploader';
+import VideoPlayer from '../components/features/VideoPlayer';
+import MissingVideosUploader from '../components/features/MissingVideosUploader';
 import '../App.css'; // Import the custom styles for VideoPlayer
 
 const API_BASE = 'http://localhost:8000';

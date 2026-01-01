@@ -1,5 +1,6 @@
 import subprocess
 import logging
+import os
 from pathlib import Path
 from typing import List
 
@@ -64,8 +65,14 @@ def splice_videos(input_paths: List[Path], output_path: Path) -> bool:
             "-c", "copy", str(output_path), "-y"
         ]
         
+        # Prepare environment: remove LD_LIBRARY_PATH to avoid conflicts 
+        # between conda libraries and system ffmpeg
+        env = os.environ.copy()
+        if "LD_LIBRARY_PATH" in env:
+            del env["LD_LIBRARY_PATH"]
+
         # Capture output for debugging
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
         
         if result.returncode != 0:
             logger.error(f"FFmpeg error: {result.stderr}")

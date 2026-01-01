@@ -3,9 +3,9 @@ import VideoDisplay from './video_player/VideoDisplay'
 import Timeline from './video_player/Timeline'
 import LogViewer from './video_player/LogViewer'
 import Legend from './video_player/Legend'
-import { useVideoPlayback } from '../hooks/useVideoPlayback'
-import { useVideoAnalysisData } from '../hooks/useVideoAnalysisData'
-import { useVideoCanvas } from '../hooks/useVideoCanvas'
+import { useVideoPlayback } from '../../hooks/useVideoPlayback'
+import { useVideoAnalysisData } from '../../hooks/useVideoAnalysisData'
+import { useVideoCanvas } from '../../hooks/useVideoCanvas'
 
 function VideoPlayer({ results, roadUrls, faceUrls }) {
   // DOM Refs

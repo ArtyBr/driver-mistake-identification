@@ -4,10 +4,30 @@ import re
 import logging
 import traceback
 from pathlib import Path
+from sqlmodel import Session
 from ..core.config import PROJECT_ROOT, UPLOAD_DIR
-from ..db import database
+from ..db.database import engine
+from ..models.job import Job
 
 logger = logging.getLogger(__name__)
+
+def update_job(job_id: str, status: str = None, progress: int = None, error: str = None, result: dict = None):
+    """Helper to update job in a fresh session."""
+    with Session(engine) as session:
+        job = session.get(Job, job_id)
+        if job:
+            if status: 
+                job.status = status
+            if progress is not None: 
+                job.progress = progress
+            if error: 
+                job.error = error
+            if result: 
+                job.result = json.dumps(result)
+                job.status = "COMPLETED"
+                job.progress = 100
+            session.add(job)
+            session.commit()
 
 def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_videos: bool = False, road_metadata: dict = None, face_metadata: dict = None) -> None:
     """
@@ -16,7 +36,7 @@ def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_video
     """
     try:
         logger.info(f"Starting analysis for Job {job_id}")
-        database.update_job_status(job_id, "PROCESSING")
+        update_job(job_id, status="PROCESSING")
         
         output_json_path = UPLOAD_DIR / job_id / "results.json"
         script_path = PROJECT_ROOT / "combined_analysis/run_headless.py"
@@ -55,7 +75,7 @@ def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_video
                 if match:
                     try:
                         progress = int(match.group(1))
-                        database.update_job_status(job_id, "PROCESSING", progress=progress)
+                        update_job(job_id, status="PROCESSING", progress=progress)
                     except ValueError:
                         pass
         
@@ -65,7 +85,7 @@ def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_video
             with open(output_json_path, 'r') as f:
                 analysis_result = json.load(f)
             
-            database.update_job_result(job_id, analysis_result)
+            update_job(job_id, result=analysis_result)
             
             # Cleanup videos if not keeping them
             if not keep_videos:
@@ -86,9 +106,9 @@ def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_video
                 error_msg = "Output JSON was not created by subprocess."
             
             logger.error(f"Job {job_id} failed: {error_msg}")
-            database.update_job_status(job_id, "FAILED", error=error_msg)
+            update_job(job_id, status="FAILED", error=error_msg)
             
     except Exception as e:
         logger.error(f"Job {job_id} exception: {e}")
         traceback.print_exc()
-        database.update_job_status(job_id, "FAILED", error=str(e))
+        update_job(job_id, status="FAILED", error=str(e))

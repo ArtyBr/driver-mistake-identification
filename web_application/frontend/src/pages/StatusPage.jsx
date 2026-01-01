@@ -1,44 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
-
-const API_BASE = 'http://localhost:8000';
+import { useJobStatus } from '../hooks/useJob';
 
 const StatusPage = () => {
   const { jobId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const [status, setStatus] = useState('PENDING');
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState(null);
+  
+  const { status, progress, error } = useJobStatus(jobId);
 
   useEffect(() => {
-    let interval;
-    if (jobId && (status !== 'COMPLETED' && status !== 'FAILED')) {
-      interval = setInterval(async () => {
-        try {
-          const res = await axios.get(`${API_BASE}/status/${jobId}`);
-          console.log(`Polling status for ${jobId}:`, res.data);
-          
-          setStatus(res.data.status);
-          if (res.data.progress) {
-            setProgress(res.data.progress);
-          }
-          if (res.data.status === 'COMPLETED') {
-            clearInterval(interval);
-            navigate(`/results/${jobId}`, { state: location.state });
-          } else if (res.data.status === 'FAILED') {
-            setError(res.data.error || "Analysis failed due to an unknown error.");
-            clearInterval(interval);
-          }
-        } catch (err) {
-          console.error("Error polling status:", err);
-          setError("Connection error. Retrying...");
-        }
-      }, 2000);
+    if (status === 'COMPLETED') {
+      navigate(`/results/${jobId}`, { state: location.state });
     }
-    return () => clearInterval(interval);
-  }, [jobId, status, navigate, location.state]);
+  }, [status, jobId, navigate, location.state]);
 
   return (
     <div className="container mt-5">
