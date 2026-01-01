@@ -51,14 +51,14 @@ The system follows the Service-Repository Pattern on the backend and a Hook-Base
 *   **Key Tech**: FastAPI, SQLModel (ORM), SQLite, FFmpeg, PyTorch (via subprocess).
 *   **Design**:
     *   **Thin Controllers (api/)**: Only handle HTTP details (status codes, request parsing).
-    *   **Rich Services (services/)**: Contain the actual logic (e.g., "Splicing video parts", "Creating job records").
+    *   **Rich Services (services/)**: Contain the actual logic (analysis_service.py, file_service.py, job_service.py, video_utils.py).
     *   **Async Workers**: Video analysis runs in a background thread/process to prevent blocking the API.
 
 ### Frontend (React)
 *   **Role**: User Interface. It handles file selection, upload progress tracking, and complex result visualization.
 *   **Key Tech**: React 19, Vite, Bootstrap 5, Axios.
 *   **Design**:
-    *   **Custom Hooks (hooks/)**: Encapsulate complex logic like "Polling for status" or "Syncing two videos".
+    *   **Custom Hooks (hooks/)**: Encapsulate complex logic (useJob.js, useVideoAnalysisData.js, useVideoCanvas.js, useVideoPlayback.js).
     *   **Local-First Playback**: Uses browser Blob URLs to play videos instantly without waiting for server round-trips during the session.
 
 ## Quick Start

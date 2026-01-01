@@ -8,8 +8,7 @@ The backend serves as the Command & Control center for the Driver Mistake Identi
 backend/
 ├── app/
 │   ├── api/
-│   │   └── routes.py           # Endpoint definitions. Maps URLs (e.g., /upload) to Service functions.
-│   │
+    │   │   └── routes.py           # Endpoint definitions. Maps URLs (/upload, /list_analyses, /run_test, /status/{job_id}, /results/{job_id}) to Service functions.│   │
 │   ├── core/
 │   │   └── config.py           # Global settings: File paths, Log levels, Project Root resolution.
 │   │
@@ -60,7 +59,7 @@ We selected our technology stack to maximize developer velocity, type safety, an
 
 ### 1. Service-Repository Pattern
 We moved logic out of routes.py into services/.
-*   **Why?** It allows us to reuse logic (e.g., creating a job) from different contexts (HTTP request vs. CLI tool) and makes unit testing easier.
+*   **Why?** It allows us to reuse logic (creating a job, managing files, running analysis, processing video) from different contexts (HTTP request vs. CLI tool) and makes unit testing easier.
 *   **Flow**: Request -> Route -> JobService -> FileService -> Database.
 
 ### 2. FFmpeg Splicing

@@ -8,7 +8,7 @@ The frontend is a modern Single Page Application (SPA) built with React 19 and V
 frontend/
 ├── src/
 │   ├── components/
-│   │   ├── common/             # Generic UI atoms (Buttons, DropZones).
+│   │   ├── common/             # Generic UI atoms (FileDropZone.jsx).
 │   │   │   └── FileDropZone.jsx
 │   │   │
 │   │   └── features/           # Domain-specific functional blocks.
