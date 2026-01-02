@@ -6,10 +6,12 @@ from insightface.app import FaceAnalysis
 import config
 
 class FaceAnalyzer:
-    def __init__(self, models_dir: Path):
+    def __init__(self, models_dir):
+        # Enable CUDA with CPU fallback
         self.app = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         self.app.prepare(ctx_id=0, det_size=(640, 640))
         
+        models_dir = Path(models_dir)
         print("Loading Face Analysis Models...")
         self.svm = self._load_model(models_dir / 'svm_head_pose_model.pkl')
         self.pca = self._load_model(models_dir / 'pca_head_pose_model.pkl')

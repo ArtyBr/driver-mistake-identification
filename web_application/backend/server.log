@@ -1,0 +1,33 @@
+INFO:     Started server process [13500]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:45332 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45324 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40714 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40720 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44710 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44726 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42874 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42890 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42874 - "OPTIONS /job/2025_0901_210641_004610F/name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42890 - "PUT /job/2025_0901_210641_004610F/name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42874 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42890 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42874 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42890 - "POST /run_test?analysis_id=2025_0901_210641_004610F HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42874 - "GET /status/539b03bc-3be9-4e39-a19d-8bb14268c701 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42890 - "GET /status/539b03bc-3be9-4e39-a19d-8bb14268c701 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42874 - "GET /status/539b03bc-3be9-4e39-a19d-8bb14268c701 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42890 - "GET /status/539b03bc-3be9-4e39-a19d-8bb14268c701 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42874 - "GET /status/539b03bc-3be9-4e39-a19d-8bb14268c701 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42890 - "GET /results/539b03bc-3be9-4e39-a19d-8bb14268c701 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42874 - "GET /results/539b03bc-3be9-4e39-a19d-8bb14268c701 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40986 - "GET /status/539b03bc-3be9-4e39-a19d-8bb14268c701 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40994 - "GET /status/539b03bc-3be9-4e39-a19d-8bb14268c701 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40986 - "GET /results/539b03bc-3be9-4e39-a19d-8bb14268c701 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40994 - "GET /results/539b03bc-3be9-4e39-a19d-8bb14268c701 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40994 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40986 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40994 - "GET /list_analyses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40986 - "GET /list_analyses HTTP/1.1" 200 OK

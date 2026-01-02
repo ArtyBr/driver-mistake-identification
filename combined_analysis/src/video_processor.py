@@ -1,9 +1,10 @@
 import cv2
 import numpy as np
 import config
+import json
 from tqdm import tqdm
 from pathlib import Path
-from utils import setup_video_paths
+from utils import setup_video_paths, scale_lane_coeffs
 from visualization import VideoVisualizer
 from safety_monitor import ManeuverValidator
 import gc
@@ -19,20 +20,32 @@ class VideoProcessor:
         
         self.state_history = []
         self.last_state = None
+        self.all_events = []
 
-    def run(self):
+    def run(self, export_json=False, output_json_path=None, custom_video_paths=None, metadata=None):
         # 1. Setup Video Capture
-        cap_road, cap_face, start_frame, end_frame, fps = self._setup_video_capture()
+        if custom_video_paths:
+             cap_road, cap_face, start_frame, end_frame, fps = self._setup_custom_video_capture(custom_video_paths)
+        else:
+             cap_road, cap_face, start_frame, end_frame, fps = self._setup_video_capture()
+
         if not cap_road: return
 
-        # 2. Setup Video Writer
-        out_writer, w, h = self._setup_video_writer(cap_road, fps)
+        # 2. Setup Video Writer (only if not exporting JSON or if we want both)
+        out_writer = None
+        w, h = 0, 0
+        if not export_json and self.args.savedir:
+             out_writer, w, h = self._setup_video_writer(cap_road, fps)
 
         num_frames = end_frame - start_frame
         print(f"Processing frames {start_frame} to {end_frame} ({num_frames} frames) @ {fps} FPS...")
 
+        # Data collection containers
+        timeline_events = []
+        frame_data = []
+
         try:
-            for _ in tqdm(range(num_frames)):
+            for _ in tqdm(range(num_frames), mininterval=2.0):
                 # 3. Read Frames
                 ret_r, frame_road = cap_road.read()
                 ret_f, frame_face = cap_face.read()
@@ -42,16 +55,51 @@ class VideoProcessor:
 
                 current_time = cap_road.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
 
-                # 4. Process Frame
-                vis_road = self._process_single_frame(frame_road, frame_face, current_time)
+                if export_json:
+                    # Headless processing
+                    frame_info = self._process_single_frame_headless(frame_road, frame_face, current_time)
+                    frame_data.append(frame_info)
+                else:
+                    # 4. Process Frame (Visual)
+                    vis_road = self._process_single_frame(frame_road, frame_face, current_time)
 
-                # 5. Display & Write
-                if self.args.show:
-                    cv2.imshow('Combined Analysis', vis_road)
-                    if cv2.waitKey(1) & 0xFF == ord('q'): break
+                    # 5. Display & Write
+                    if self.args.show:
+                        cv2.imshow('Combined Analysis', vis_road)
+                        if cv2.waitKey(1) & 0xFF == ord('q'): break
 
-                if out_writer and out_writer.isOpened():
-                    out_writer.write(cv2.resize(vis_road, (w, h)))
+                    if out_writer and out_writer.isOpened():
+                        out_writer.write(cv2.resize(vis_road, (w, h)))
+            
+            if export_json:
+                # Compile final JSON
+                final_events = []
+                for alert in self.all_events:
+                    final_events.append({
+                        "timestamp": alert.timestamp,
+                        "type": "safety_alert",
+                        "severity": alert.severity,
+                        "message": alert.message,
+                        "duration": 2.0
+                    })
+                
+                result = {
+                    "meta": {
+                        "duration": num_frames / fps,
+                        "fps": fps,
+                        "road_file": Path(custom_video_paths.get('road')).name if custom_video_paths else "unknown",
+                        "face_file": Path(custom_video_paths.get('face')).name if custom_video_paths else "unknown",
+                        "road_metadata": metadata.get('road') if metadata else None,
+                        "face_metadata": metadata.get('face') if metadata else None
+                    },
+                    "timeline_events": final_events,
+                    "frame_data": frame_data
+                }
+                
+                if output_json_path:
+                    with open(output_json_path, 'w') as f:
+                        json.dump(result, f)
+                return result
 
         except KeyboardInterrupt:
             print("\nInterrupted by user")
@@ -150,6 +198,7 @@ class VideoProcessor:
                     result = self.safety_monitor.validate_lane_change(direction, current_time, self.state_history)
                     if result:
                         self.safety_monitor.active_alerts.append(result)
+                        self.all_events.append(result)
                         print(f"[{current_time:.2f}s] {result.message}")
 
         # Visualization Composition
@@ -179,3 +228,83 @@ class VideoProcessor:
         # Prune
         self.state_history = [s for s in self.state_history if (current_time - s['timestamp']) <= config.HISTORY_DURATION]
         if not self.state_history: self.last_state = None
+
+    def _setup_custom_video_capture(self, custom_video_paths):
+        path_road = custom_video_paths.get('road')
+        path_face = custom_video_paths.get('face')
+        
+        cap_road = cv2.VideoCapture(path_road)
+        cap_face = cv2.VideoCapture(path_face)
+        
+        if not cap_road.isOpened():
+            raise Exception(f"Cannot open road video: {path_road}")
+        
+        fps = cap_road.get(cv2.CAP_PROP_FPS)
+        fps = 30.0 if not (1 < fps <= 120) else fps
+        total_frames = int(cap_road.get(cv2.CAP_PROP_FRAME_COUNT))
+
+        start_frame = max(0, int(self.args.start_seconds * fps))
+        if self.args.end_seconds is not None:
+            end_frame = min(total_frames, int(self.args.end_seconds * fps))
+        else:
+            end_frame = total_frames
+
+        cap_road.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+        cap_face.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+        
+        return cap_road, cap_face, start_frame, end_frame, fps
+
+    def _process_single_frame_headless(self, frame_road, frame_face, current_time):
+        # Lane Processing
+        vis_road, lane_data, cross_events = self.lane_wrapper.process_frame(frame_road)
+
+        # Face Processing
+        frame_face, face_info = self.face_analyzer.process_frame(frame_face)
+        
+        # Update History
+        self._update_history(face_info, current_time)
+
+        # --- SAFETY CHECKS ---
+        self.safety_monitor.prune_alerts(current_time)
+        
+        if cross_events:
+            for event in cross_events:
+                direction = event.get('direction')
+                if direction:
+                    result = self.safety_monitor.validate_lane_change(direction, current_time, self.state_history)
+                    if result:
+                        self.safety_monitor.active_alerts.append(result)
+                        self.all_events.append(result)
+        
+        # Serialize Lane Data (Coefficients only)
+        serialized_lanes = []
+        if lane_data:
+            # Scale to target resolution
+            scaled_lanes = scale_lane_coeffs(
+                lane_data, 
+                src_w=config.MODEL_WIDTH, src_h=config.MODEL_HEIGHT,
+                dst_w=config.TARGET_WIDTH, dst_h=config.TARGET_HEIGHT
+            )
+            
+            for track in scaled_lanes:
+                coeffs, t_id, conf, age, events = track
+                # Store coefficients [a, b, c] rounded to 6 decimal places
+                serialized_lanes.append([round(float(x), 6) for x in coeffs])
+
+        # Serialize Face Info (Essential fields only)
+        serialized_face = {}
+        if face_info:
+            serialized_face = {
+                'yaw': round(float(face_info.get('yaw', 0)), 2),
+                'pitch': round(float(face_info.get('pitch', 0)), 2),
+                'roll': round(float(face_info.get('roll', 0)), 2),
+                'label': face_info.get('label', 'N/A'),
+                'nose_2d': [int(x) for x in face_info.get('nose_2d')] if face_info.get('nose_2d') else None
+            }
+
+        return {
+            "time": round(float(current_time), 3),
+            "lane_lines": serialized_lanes,
+            "face_info": serialized_face,
+            "current_state": self.last_state
+        }
