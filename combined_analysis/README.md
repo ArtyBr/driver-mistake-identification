@@ -1,10 +1,10 @@
-# Unified Driver Mistake Identification System
+# 🏎️ Unified Driver Mistake Identification System
 
 This system represents a comprehensive, multi-modal computer vision pipeline designed to automatically detect potential driving errors. Its primary function is to correlate vehicle maneuvers—specifically lane changes and lateral deviations—with driver attention metrics derived from head pose analysis. By integrating state-of-the-art Lane Detection with robust Face Analysis, the system acts as an automated "driving instructor" or safety monitor, capable of flagging unsafe behaviors such as merging without checking mirrors or drifting out of lanes while distracted.
 
 ---
 
-## System Architecture
+## 🏗️ System Architecture
 
 The system operates as a synchronized, dual-stream processing pipeline. It ingests two concurrent video feeds: the **Road View** (a forward-facing camera capturing the environment) and the **Driver View** (an interior-facing camera capturing the driver). These streams are processed in parallel but synchronized temporally to ensure that events outside the car can be causally linked to actions inside the car.
 
@@ -19,27 +19,27 @@ graph TD
         Sync[Frame Synchronization & Time Alignment]
         
         subgraph "Lane Analysis Module"
-            LD[LaneAtt Detector (ResNet18)] -->|Raw Polynomial Coeffs| KF[Kalman Filter Tracker]
+            LD["LaneAtt Detector (ResNet18)"] -->|Raw Polynomial Coeffs| KF[Kalman Filter Tracker]
             KF -->|Smoothed State Vectors| LE[Lane Event Logic]
             LE -->|Event Trigger: Lane Cross| SM
         end
 
         subgraph "Driver Analysis Module"
-            FD[InsightFace Detector] -->|BBox + 5 Landmarks| HP[Head Pose Estimation]
-            HP -->|Euler Angles (Yaw/Pitch/Roll)| PCA[PCA Dimensionality Reduction]
+            FD[InsightFace Detector] -->|"BBox + 5 Landmarks"| HP[Head Pose Estimation]
+            HP -->|"Euler Angles (Yaw/Pitch/Roll)"| PCA[PCA Dimensionality Reduction]
             PCA -->|Transformed Features| Gaze[SVM Gaze Classifier]
-            Gaze -->|Semantic State: Mirror/Radio| Hist[State History Buffer]
-            Hist -->|Contextual Window (5s)| SM
+            Gaze -->|"Semantic State: Mirror/Radio"| Hist[State History Buffer]
+            Hist -->|"Contextual Window (5s)"| SM
         end
 
         subgraph "Safety Logic Engine"
             SM[Safety Monitor / Validator] -->|Query Context| Hist
-            SM -->|Evaluation: Safe/Unsafe| Alert[Alert System]
+            SM -->|"Evaluation: Safe/Unsafe"| Alert[Alert System]
         end
     end
 
     subgraph Outputs
-        Vis[Visualizer Overlay (OpenCV)]
+        Vis["Visualizer Overlay (OpenCV)"]
         JSON[Structured Analysis Report]
     end
 
@@ -53,7 +53,7 @@ graph TD
 
 ---
 
-## Component Details
+## 🧩 Component Details
 
 ### 1. Video Processing & Synchronization (`video_processor.py`)
 **Role:** The Central Controller and Timekeeper.
@@ -93,12 +93,12 @@ The validation process follows a strict "Trigger-Query" pattern.
 1.  **Trigger:** The Lane Tracker reports a `Lane Change Event` (e.g., moving Left).
 2.  **Query:** The Safety Monitor looks back into the `state_history`. It filters for the specific safety action required for that maneuver (e.g., "Did we see the `Left Mirror` state in the last 5 seconds?").
 3.  **Decision:**
-    *   **SAFE (INFO):** If the required state exists in the history window, the maneuver is validated. The system logs this as a safe lane change.
-    *   **UNSAFE (CRITICAL):** If the required state is absent (i.e., the driver looked only `Forward` or at the `Radio` before merging), the system flags this as a critical safety violation ("Blind Merge").
+    *   **✅ SAFE (INFO):** If the required state exists in the history window, the maneuver is validated. The system logs this as a safe lane change.
+    *   **❌ UNSAFE (CRITICAL):** If the required state is absent (i.e., the driver looked only `Forward` or at the `Radio` before merging), the system flags this as a critical safety violation ("Blind Merge").
 
 ---
 
-## Design Decisions & Rationale
+## 🛡️ Design Decisions & Rationale
 
 ### Why Head Pose instead of Eye Gaze?
 We deliberately chose Head Pose estimation over direct Eye Gaze tracking. Eye tracking is incredibly sensitive to image quality; it fails when the driver wears sunglasses, glasses with thick rims, or when the camera resolution is low (common in dashcams). Furthermore, the geometry of a car cabin means drivers *must* rotate their heads to check side mirrors effectively (the "shoulder check" or simply turning to see the mirror). Head pose provides a macro-signal that is far more robust to noise, occlusion, and lighting changes, providing high reliability without requiring expensive hardware or per-driver calibration.
@@ -113,7 +113,7 @@ We could have trained a single large Neural Network to take video as input and o
 
 ---
 
-## Usage Guide
+## 🚀 Usage Guide
 
 ### Prerequisites
 *   **Python 3.9+**: Required for compatibility with modern PyTorch and InsightFace versions.
