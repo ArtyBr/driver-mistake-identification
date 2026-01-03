@@ -7,6 +7,7 @@ from pathlib import Path
 from utils import setup_video_paths, scale_lane_coeffs
 from visualization import VideoVisualizer
 from safety_monitor import ManeuverValidator
+from give_way_detector import GiveWayDetector
 import gc
 import torch
 
@@ -14,6 +15,7 @@ class VideoProcessor:
     def __init__(self, lane_wrapper, face_analyzer, args):
         self.lane_wrapper = lane_wrapper
         self.face_analyzer = face_analyzer
+        self.give_way_detector = GiveWayDetector(lane_wrapper)
         self.args = args
         self.visualizer = VideoVisualizer()
         self.safety_monitor = ManeuverValidator()
@@ -176,6 +178,11 @@ class VideoProcessor:
         # Lane Processing
         vis_road, lane_data, cross_events = self.lane_wrapper.process_frame(frame_road)
 
+        # Give Way / Horizontal Line Processing
+        # Give Way / Horizontal Line Processing
+        horizontal_lines = self.give_way_detector.detect(frame_road, lane_coeffs=lane_data)
+        self.visualizer.draw_horizontal_lines(vis_road, horizontal_lines)
+
         # Face Processing
         frame_face, face_info = self.face_analyzer.process_frame(frame_face)
         
@@ -258,6 +265,10 @@ class VideoProcessor:
         # Lane Processing
         vis_road, lane_data, cross_events = self.lane_wrapper.process_frame(frame_road)
 
+        # Give Way Processing
+        # Give Way / Horizontal Line Processing
+        horizontal_lines = self.give_way_detector.detect(frame_road, lane_coeffs=lane_data)
+
         # Face Processing
         frame_face, face_info = self.face_analyzer.process_frame(frame_face)
         
@@ -291,6 +302,11 @@ class VideoProcessor:
                 # Store coefficients [a, b, c] rounded to 6 decimal places
                 serialized_lanes.append([round(float(x), 6) for x in coeffs])
 
+        # Serialize Horizontal Lines
+        serialized_horizontal_lines = []
+        for h_line in horizontal_lines:
+             serialized_horizontal_lines.append([round(float(x), 6) for x in h_line])
+
         # Serialize Face Info (Essential fields only)
         serialized_face = {}
         if face_info:
@@ -305,6 +321,7 @@ class VideoProcessor:
         return {
             "time": round(float(current_time), 3),
             "lane_lines": serialized_lanes,
+            "horizontal_lines": serialized_horizontal_lines,
             "face_info": serialized_face,
             "current_state": self.last_state
         }

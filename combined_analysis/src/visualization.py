@@ -200,3 +200,15 @@ class VideoVisualizer:
             cv2.line(frame, nose_2d, p2, (255, 0, 0), 3)
 
         return frame
+
+    def draw_horizontal_lines(self, vis_road, lines, color=(0, 255, 255), thickness=3):
+        """
+        Draws horizontal lines defined by [x1, y1, x2, y2].
+        """
+        if not lines:
+            return
+
+        for line in lines:
+            x1, y1, x2, y2 = line
+            cv2.line(vis_road, (x1, y1), (x2, y2), color, thickness)
+
