@@ -174,7 +174,7 @@ class VideoProcessor:
 
     def _process_single_frame(self, frame_road, frame_face, current_time):
         # Lane Processing
-        vis_road, lane_data, cross_events = self.lane_wrapper.process_frame(frame_road)
+        vis_road, lane_data, cross_events = self.lane_wrapper.process_frame(frame_road, show_dets=self.args.show_dets)
 
         # Face Processing
         frame_face, face_info = self.face_analyzer.process_frame(frame_face)
@@ -256,7 +256,7 @@ class VideoProcessor:
 
     def _process_single_frame_headless(self, frame_road, frame_face, current_time):
         # Lane Processing
-        vis_road, lane_data, cross_events = self.lane_wrapper.process_frame(frame_road)
+        vis_road, lane_data, cross_events = self.lane_wrapper.process_frame(frame_road, show_dets=False)
 
         # Face Processing
         frame_face, face_info = self.face_analyzer.process_frame(frame_face)

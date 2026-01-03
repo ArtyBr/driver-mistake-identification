@@ -36,6 +36,7 @@ def main():
     parser.add_argument('--video_base', required=True, help='Base video path (no I.mp4/F.mp4 suffix)')
     parser.add_argument('--savedir', default='./results', help='Output directory')
     parser.add_argument('--show', action='store_true', help='Show visualization')
+    parser.add_argument('--show_dets', action='store_true', help='Show raw lane detections as dotted lines')
     parser.add_argument('--load_from', default='best.pth', help='Model weights')
     
     parser.add_argument('--start_seconds', type=float, default=0.0,
@@ -50,6 +51,25 @@ def main():
     cfg.load_from = args.load_from
     cfg.show = False 
     cfg.savedir = None 
+
+    # --- PATCH FOR CONDLANE / INFERENCE ---
+    # Force batch_size to 1 for inference to avoid shape mismatch errors (e.g., in Transformer aggregator)
+    if hasattr(cfg, 'batch_size'):
+        cfg.batch_size = 1
+    
+    # Fix aggregator pos_shape if it exists (CondLaneNet specific)
+    if hasattr(cfg, 'aggregator') and 'pos_shape' in cfg.aggregator:
+        # pos_shape is typically (batch_size, 10, 25). We need to set the first dim to 1.
+        ps = list(cfg.aggregator['pos_shape'])
+        ps[0] = 1
+        cfg.aggregator['pos_shape'] = tuple(ps)
+
+    # Fix heads location_configs if it exists (CondLaneNet specific)
+    if hasattr(cfg, 'heads') and 'location_configs' in cfg.heads:
+        if 'size' in cfg.heads['location_configs']:
+             ls = list(cfg.heads['location_configs']['size'])
+             ls[0] = 1 # Set batch size dim to 1
+             cfg.heads['location_configs']['size'] = tuple(ls)
 
     lanedet_dir = LANE_DET_PATH / 'lanedet'
     if hasattr(cfg, 'heads'): fix_anchor_path(cfg.heads, lanedet_dir)

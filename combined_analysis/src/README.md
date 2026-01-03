@@ -70,3 +70,6 @@ Handles all UI and HUD elements.
 
 - **Adding new maneuvers**: Add a validation method in `ManeuverValidator` and trigger it in `VideoProcessor` when the corresponding environment event is detected.
 - **Adding new face states**: Update `CLASS_NAMES` in `config.py` and ensure the SVM model in `face_analysis/models/` is trained for the new classes.
+
+to run:
+`python3 ./combined_analysis/main.py ./lane_detection/lanedet/configs/condlane/resnet101_culane.py     --video_base /media/arty/3A30-14F9/Videos/13_09_25_me_to_cov_day/2025_0913_103653_007442      --load_from ./lane_detection/lanedet/weights/condlane_r101_culane.pth   --show --show_dets`
