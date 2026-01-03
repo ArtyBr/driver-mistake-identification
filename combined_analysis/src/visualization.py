@@ -200,3 +200,39 @@ class VideoVisualizer:
             cv2.line(frame, nose_2d, p2, (255, 0, 0), 3)
 
         return frame
+
+    def draw_vehicle_distance(self, vis_road, vehicles):
+        """
+        Draws bounding boxes and distance info for detected vehicles.
+        Only shows vehicles within 15 meters.
+        """
+        if not vehicles:
+            return
+
+        for v in vehicles:
+            x1, y1, x2, y2 = v['bbox']
+            label = v['label']
+            dist = v['distance']
+            
+            # Filter: Only show if within 15m
+            if dist >= 15:
+                continue
+
+            # Distance-based Color Coding
+            if dist < 5:
+                color = (0, 0, 255)    # Red (Danger - Too Close)
+            else:
+                color = (0, 165, 255)  # Orange (Warning)
+            
+            # Draw Box
+            cv2.rectangle(vis_road, (x1, y1), (x2, y2), color, 2)
+            
+            # Draw Label & Distance
+            text = f"{label}: {dist:.1f}m"
+            
+            # Calculate position above the box
+            t_x = x1
+            t_y = y1 - 10
+            if t_y < 20: t_y = y1 + 20 
+            
+            draw_styled_text(vis_road, text, (t_x, t_y), 0.6, color, 1)

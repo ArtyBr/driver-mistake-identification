@@ -7,6 +7,7 @@ from pathlib import Path
 from utils import setup_video_paths, scale_lane_coeffs
 from visualization import VideoVisualizer
 from safety_monitor import ManeuverValidator
+from vehicle_detector import VehicleDetector
 import gc
 import torch
 
@@ -17,10 +18,19 @@ class VideoProcessor:
         self.args = args
         self.visualizer = VideoVisualizer()
         self.safety_monitor = ManeuverValidator()
+        self.vehicle_detector = VehicleDetector()
         
         self.state_history = []
         self.last_state = None
         self.all_events = []
+        
+        # Optimization: Frame Skipping
+        self.frame_count = 0
+        self.skip_rate = 3
+        self.last_vehicles = []
+        self.last_lane_vis = None
+        self.last_lane_data = []
+        self.last_cross_events = []
 
     def run(self, export_json=False, output_json_path=None, custom_video_paths=None, metadata=None):
         # 1. Setup Video Capture
@@ -173,8 +183,20 @@ class VideoProcessor:
         return out_writer, w, h
 
     def _process_single_frame(self, frame_road, frame_face, current_time):
-        # Lane Processing
+        # Lane Processing (Run every frame for smooth tracking)
         vis_road, lane_data, cross_events = self.lane_wrapper.process_frame(frame_road)
+
+        # Vehicle Detection (Run every N frames)
+        if self.frame_count % self.skip_rate == 0:
+            vehicles = self.vehicle_detector.detect(frame_road)
+            self.last_vehicles = vehicles
+        else:
+            vehicles = self.last_vehicles
+
+        self.visualizer.draw_vehicle_distance(vis_road, vehicles)
+        
+        # Increment counter
+        self.frame_count += 1
 
         # Face Processing
         frame_face, face_info = self.face_analyzer.process_frame(frame_face)
@@ -258,6 +280,15 @@ class VideoProcessor:
         # Lane Processing
         vis_road, lane_data, cross_events = self.lane_wrapper.process_frame(frame_road)
 
+        # Vehicle Detection (Run every N frames)
+        if self.frame_count % self.skip_rate == 0:
+            vehicles = self.vehicle_detector.detect(frame_road)
+            self.last_vehicles = vehicles
+        else:
+            vehicles = self.last_vehicles
+            
+        self.frame_count += 1
+
         # Face Processing
         frame_face, face_info = self.face_analyzer.process_frame(frame_face)
         
@@ -301,10 +332,21 @@ class VideoProcessor:
                 'label': face_info.get('label', 'N/A'),
                 'nose_2d': [int(x) for x in face_info.get('nose_2d')] if face_info.get('nose_2d') else None
             }
+        
+        # Serialize Vehicles
+        serialized_vehicles = []
+        for v in vehicles:
+            serialized_vehicles.append({
+                'label': v['label'],
+                'score': round(v['score'], 2),
+                'distance': round(v['distance'], 1),
+                'bbox': v['bbox']
+            })
 
         return {
             "time": round(float(current_time), 3),
             "lane_lines": serialized_lanes,
             "face_info": serialized_face,
+            "vehicles": serialized_vehicles,
             "current_state": self.last_state
         }
