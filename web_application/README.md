@@ -4,6 +4,34 @@ This directory contains the full-stack web application for the **Driver Mistake 
 
 ---
 
+## High-Level Workflow & Technology
+
+This diagram illustrates the user journey from upload to results, highlighting the specific technologies that power each step of the process.
+
+```mermaid
+graph LR
+    subgraph "Frontend (React)"
+        User((User)) -->|1. Uploads Videos| UI[Web Interface]
+        UI -->|5. Views Results| User
+    end
+
+    subgraph "Backend (FastAPI)"
+        UI -->|2. Sends Files| API[API Server]
+        API -->|3. Stores Job| DB[(SQLite Database)]
+        API -->|4. Starts Task| Worker[Background Worker]
+    end
+
+    subgraph "AI Engine (PyTorch)"
+        Worker -->|Analyzes| Lanes[Lane Detection]
+        Worker -->|Analyzes| Face[Face Analysis]
+        Lanes & Face -->|Generates| Report[Safety Report]
+    end
+    
+    Report -->|Updates| DB
+```
+
+---
+
 ## System Architecture
 
 The application is architected to decouple the heavy computational load of machine learning inference from the user interface. It employs an asynchronous worker pattern where the API server delegates analysis tasks to background processes.
