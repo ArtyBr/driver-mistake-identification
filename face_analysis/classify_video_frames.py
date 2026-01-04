@@ -8,7 +8,8 @@ def classify_video_frames(video_path):
     Keys:
     '1': Save to 'right_mirror'
     '2': Save to 'looking_ahead'
-    '3': Save to 'left_mirror'
+    '3': Save to 'rear_mirror'
+    '4': Save to 'left_mirror'
     'q': Quit
     Any other key: Skip frame
     """
@@ -24,7 +25,8 @@ def classify_video_frames(video_path):
     class_map = {
         '1': 'right_mirror',
         '2': 'looking_ahead',
-        '3': 'left_mirror',
+        '3': 'rear_mirror',
+        '4': 'left_mirror',
     }
 
     dir_paths = {}
@@ -36,7 +38,8 @@ def classify_video_frames(video_path):
     print(f"Data will be saved in: {base_data_dir}")
     print("Press '1' for 'right_mirror'")
     print("Press '2' for 'looking_ahead'")
-    print("Press '3' for 'left_mirror'")
+    print("Press '3' for 'rear_mirror'")
+    print("Press '4' for 'left_mirror'")
     print("Press 'q' to quit")
     print("Press any other key to skip a frame.")
 
@@ -47,7 +50,7 @@ def classify_video_frames(video_path):
         return
 
     frame_index = 0
-    window_name = "Classify Frame | 1: Right | 2: Ahead | 3: Left | q: Quit"
+    window_name = "Classify Frame | 1: Right | 2: Ahead | 3: Rear | 4: Left | q: Quit"
 
     while cap.isOpened():
         ret, frame = cap.read()
