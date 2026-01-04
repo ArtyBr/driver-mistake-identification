@@ -1,90 +1,221 @@
 # Driver Mistake Identification - Web Application
 
-This directory contains the full stack web application for the Driver Mistake Identification system. It is designed as a modular Client-Server-Worker system to handle heavy video processing tasks while maintaining a responsive user interface.
+This directory contains the full-stack web application for the **Driver Mistake Identification** system. It transforms the core computer vision analysis pipeline into a user-friendly, interactive product. The application is designed as a modular **Client-Server-Worker** system to handle heavy video processing tasks while maintaining a responsive user interface.
 
-## Project Structure Overview
+---
 
-The application is strictly separated into a Backend API and a Frontend UI.
+## System Architecture
 
+The application is architected to decouple the heavy computational load of machine learning inference from the user interface. It employs an asynchronous worker pattern where the API server delegates analysis tasks to background processes.
+
+```mermaid
+graph TD
+    subgraph Client ["Client (Browser)"]
+        UI[React Frontend]
+    end
+
+    subgraph Server ["Backend Server (FastAPI)"]
+        API[API Routes]
+        JobMgr[Job Service]
+        SubProc[Subprocess Manager]
+    end
+
+    subgraph Storage ["Persistence"]
+        DB[(SQLite Job DB)]
+        FS[File System /uploads]
+    end
+
+    subgraph Worker ["Analysis Engine"]
+        Headless["run_headless.py"]
+        Lane[Lane Detector]
+        Face[Face Analyzer]
+    end
+
+    %% Upload Flow
+    UI -->|1. Upload Videos| API
+    API -->|2. Save Files| FS
+    API -->|3. Create Job| DB
+    API -->|4. Return JobID| UI
+
+    %% Execution Flow
+    API -->|5. Spawn Task| JobMgr
+    JobMgr -->|6. Fork Process| SubProc
+    SubProc -->|7. Execute Script| Headless
+    
+    %% Analysis Flow
+    Headless -->|Read Video| FS
+    Headless --> Lane
+    Headless --> Face
+    Lane & Face -->|Results| Headless
+    Headless -->|8. Write JSON| FS
+    
+    %% Progress Tracking
+    Headless -.->|Stdout: '35%'| SubProc
+    SubProc -->|9. Update Progress| DB
+
+    %% Polling Flow
+    UI -->|10. Poll /status/:id| API
+    API -->|Read Status| DB
+    API -->|Return Status| UI
 ```
+
+### Key Architectural Decisions
+
+1.  **Asynchronous Worker Pattern**:
+    *   **Why?** Video analysis takes significantly longer (minutes) than standard HTTP timeout limits (seconds). Blocking a request for the duration of the analysis would cause the browser to timeout and the UI to freeze.
+    *   **How?** The backend accepts the files, returns a `job_id` immediately, and spawns a detached subprocess (`run_analysis_process`) to run the heavy lifting.
+
+2.  **Short Polling for State Management**:
+    *   **Why?** We chose simple short polling (every 2s) over WebSockets. Since the analysis is a long-running batch process rather than a real-time chat stream, the overhead of establishing and maintaining WebSocket connections was unnecessary complexity. Polling is stateless, robust, and trivial to debug.
+
+3.  **Subprocess Integration**:
+    *   **Why?** Python's Global Interpreter Lock (GIL) can bottleneck CPU-bound tasks like video processing if run within the same thread/process as the AsyncIO API server.
+    *   **How?** The `analysis_service.py` spawns a completely separate OS process for `combined_analysis/run_headless.py`. This ensures the API remains responsive even while the CPU is pegged at 100% by the neural networks.
+
+---
+
+## Tech Stack
+
+### Frontend (Client)
+
+*   **React 19**
+    *   **Why**: The latest standard for building interactive User Interfaces, offering improved concurrent rendering and state management features.
+    *   **How**: Serves as the foundation for the Single Page Application (SPA), managing the DOM updates, component lifecycle, and application state.
+*   **Vite**
+    *   **Why**: Provides significantly faster development startup times and optimized production builds compared to legacy tools like Webpack.
+    *   **How**: Handles Hot Module Replacement (HMR) during development and bundles the JavaScript/CSS assets for deployment.
+*   **Bootstrap 5**
+    *   **Why**: A reliable, grid-based CSS framework that ensures the application is responsive and visually consistent with minimal custom CSS.
+    *   **How**: Used for all layout structures (Containers, Rows, Columns) and UI components (Modals, Progress Bars, Buttons).
+*   **Axios**
+    *   **Why**: Offers a more powerful and configurable API than the native `fetch`, including automatic JSON transformation and better error handling.
+    *   **How**: Manages all HTTP communication with the backend, including the multipart/form-data requests for large video uploads.
+
+### Backend (Server)
+
+*   **FastAPI**
+    *   **Why**: A high-performance Python web framework that supports asynchronous programming out of the box, which is critical for handling I/O bound operations like file uploads.
+    *   **How**: Defines the REST API endpoints, validates request data using Pydantic, and orchestrates the service layer.
+*   **SQLModel**
+    *   **Why**: Combines the power of SQLAlchemy (ORM) with the simplicity of Pydantic (validation), reducing boilerplate code.
+    *   **How**: Defines the database schema (e.g., `Job` table) and handles all database interactions (CRUD operations).
+*   **SQLite**
+    *   **Why**: A serverless, zero-configuration database engine. It is ideal for this local-first application where setting up a separate Postgres/MySQL server would be overkill.
+    *   **How**: Stores persistent data about analysis jobs (IDs, status, timestamps, and paths to result files) in a local `jobs.db` file.
+*   **Python Subprocess**
+    *   **Why**: Necessary to bypass the Global Interpreter Lock (GIL) and run heavy computation without blocking the web server's event loop.
+    *   **How**: Used to fork a new process that executes the `run_headless.py` script, isolating the analysis environment from the API environment.
+
+### Analysis Engine (Worker)
+
+*   **PyTorch**
+    *   **Why**: The de facto standard for deep learning research and deployment. It provides the necessary tensor operations and GPU acceleration.
+    *   **How**: Loads and executes the LaneAtt (Lane Detection) neural network model.
+*   **OpenCV**
+    *   **Why**: The industry standard for real-time computer vision. It is highly optimized for C++ under the hood.
+    *   **How**: Handles video file reading (decoding frames), image transformations (resizing, normalization), and visualization (drawing lines on frames).
+*   **InsightFace**
+    *   **Why**: A specialized library that provides state-of-the-art pre-trained models for face analysis.
+    *   **How**: Detects faces in the video stream and regresses the 5 facial landmarks used to calculate head pose angles.
+
+---
+
+## Project Structure
+
+The codebase is strictly separated into `backend` and `frontend` directories to mimic a production microservices layout.
+
+```text
 web_application/
-├── backend/            # FastAPI Server (Python)
-│   ├── app/            # Application Logic (Source Code)
-│   │   ├── api/        # REST Endpoints (Routes)
-│   │   ├── core/       # Global Configuration & Logging
-│   │   ├── db/         # Database Connection & Initialization
-│   │   ├── models/     # SQLModel Database Schemas
-│   │   └── services/   # Business Logic & Orchestration
-│   ├── start_server.sh # Launch Script
-│   └── jobs.db         # SQLite Database (Auto-generated)
-├── frontend/           # React UI (JavaScript/Vite)
-│   ├── src/            # Source Code
-│   │   ├── components/ # Reusable UI Modules (common/ & features/)
-│   │   ├── hooks/      # Custom React Hooks (Logic separation)
-│   │   ├── pages/      # Route-level Views
-│   │   └── services/   # API Client
-│   └── dist/           # Production Build Artifacts
-├── uploads/            # Shared Storage for Videos & Results
-└── README.md           # This file
+├── backend/                  # Python API Server
+│   ├── app/
+│   │   ├── api/              # REST Endpoints (Routes)
+│   │   ├── core/             # Global Config & Settings
+│   │   ├── db/               # Database Connection
+│   │   ├── models/           # SQLModel Schemas (Job, User)
+│   │   └── services/         # Business Logic Layer
+│   │       ├── analysis_service.py # Spawns the subprocess
+│   │       └── file_service.py     # Handles uploads & cleanup
+│   ├── start_server.sh       # Convenience launch script
+│   └── jobs.db               # SQLite Database (Auto-created)
+│
+├── frontend/                 # React UI
+│   ├── src/
+│   │   ├── components/       # Reusable UI Blocks
+│   │   ├── hooks/            # Custom Logic (useJob, useVideo)
+│   │   ├── pages/            # Main Views (Upload, Dashboard)
+│   │   └── services/         # API Wrapper
+│   └── package.json          # Dependencies
+│
+└── uploads/                  # Shared Storage
+    └── {job_id}/             # Isolated directory per job
+        ├── results.json      # Final analysis report
+        ├── road.mp4          # Source video
+        └── face.mp4          # Source video
 ```
 
-## Design Rationale
+---
 
-This project was architected to balance the computational intensity of machine learning with the need for a smooth user experience. The following design choices were made to meet these requirements:
+## Deep Dive: Components
 
-### 1. Client-Server-Worker Architecture
-*   **Choice**: We adopted an asynchronous Worker pattern. The HTTP API accepts the job, returns a `job_id` immediately, and processes the video in the background.
-*   **Justification**: Machine learning inference on video files takes significant time (often longer than HTTP timeout limits). A synchronous "Monolithic" approach where the user waits for the response would lead to browser timeouts and a frozen UI.
-*   **Comparison**: A Serverless (Lambda/Cloud Functions) approach was considered but rejected due to the cold-start latency of loading large PyTorch models and the constraints on execution time and memory for video processing.
+### Backend Services
+*   **`analysis_service.py`**: The bridge between the Web and the AI. It constructs the CLI command to run `combined_analysis/run_headless.py`. Crucially, it monitors the `stdout` of that subprocess to catch progress bars (e.g., `35%|`) and updates the database in real-time so the frontend shows a progress bar.
+*   **`file_service.py`**: Handles the complexity of file I/O. It ensures unique IDs for every job, creates isolated directories, and manages file cleanup to prevent disk bloat.
 
-### 2. Communication Strategy: Short Polling
-*   **Choice**: The frontend polls the `/status/{job_id}` endpoint every 2 seconds.
-*   **Justification**: Short polling is stateless, robust, and easy to implement/debug. Since our analysis jobs are long-running (minutes), the overhead of checking every few seconds is negligible compared to the complexity of maintaining persistent connections.
-*   **Comparison**: WebSockets would offer "real-time" updates but introduce significant state management complexity (handling disconnects, reconnection logic, sticky sessions). Server-Sent Events (SSE) are unidirectional but often blocked by corporate firewalls. Polling proved to be the most reliable solution for this specific use case.
+### Frontend Hooks
+*   **`useJob.js`**: Encapsulates the polling logic. It exposes simple `status`, `progress`, and `result` variables to the view layer, abstracting away the `setInterval` and error handling logic.
+*   **`useVideoPlayback.js`**: A complex hook that synchronizes two `<video>` elements (Road and Driver). It handles "Play", "Pause", and "Seek" events to ensure both videos stay perfectly aligned frame-by-frame.
 
-## Architecture
+---
 
-The system follows the Service-Repository Pattern on the backend and a Hook-Based Component Architecture on the frontend.
+## Setup & Installation
 
-### Backend (FastAPI)
-*   **Role**: Orchestrator. It accepts file uploads, manages job state in a database, and spawns background processes for computer vision analysis.
-*   **Key Tech**: FastAPI, SQLModel (ORM), SQLite, FFmpeg, PyTorch (via subprocess).
-*   **Design**:
-    *   **Thin Controllers (api/)**: Only handle HTTP details (status codes, request parsing).
-    *   **Rich Services (services/)**: Contain the actual logic (analysis_service.py, file_service.py, job_service.py, video_utils.py).
-    *   **Async Workers**: Video analysis runs in a background thread/process to prevent blocking the API.
+### Prerequisites
+*   **Node.js** (v16+) and `npm`
+*   **Python 3.9+** (Conda environment recommended)
+*   **FFmpeg** installed and available in system PATH (for video processing)
 
-### Frontend (React)
-*   **Role**: User Interface. It handles file selection, upload progress tracking, and complex result visualization.
-*   **Key Tech**: React 19, Vite, Bootstrap 5, Axios.
-*   **Design**:
-    *   **Custom Hooks (hooks/)**: Encapsulate complex logic (useJob.js, useVideoAnalysisData.js, useVideoCanvas.js, useVideoPlayback.js).
-    *   **Local-First Playback**: Uses browser Blob URLs to play videos instantly without waiting for server round-trips during the session.
+### 1. Backend Setup
+The backend runs on port `8000`.
 
-## Quick Start
-
-### 1. Start the Backend
 ```bash
 cd backend
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start the server
 ./start_server.sh
 ```
-*   Server runs at: http://localhost:8000
-*   API Docs: http://localhost:8000/docs
+*   **Swagger Docs**: Open `http://localhost:8000/docs` to test API endpoints interactively.
 
-### 2. Start the Frontend
+### 2. Frontend Setup
+The frontend runs on port `5173`.
+
 ```bash
 cd frontend
+
+# Install dependencies
 npm install
+
+# Start development server
 npm run dev
 ```
-*   UI runs at: http://localhost:5173
+*   **Application**: Open `http://localhost:5173` to use the app.
 
-## Key Features
+---
 
-*   **Multi-Part Uploads**: Automatically detects and splices split video files (common in dashcams) using FFmpeg.
-*   **Resilient Analysis**: Runs as a detached process; if the UI closes, the job continues.
-*   **Live Synchronization**: The VideoPlayer component synchronizes two video streams (Road & Face) with frame-perfect accuracy.
-*   **Interactive Visualization**:
-    *   **Lane Overlay**: Draws detected lanes on the HTML5 Canvas over the video.
-    *   **Timeline**: Shows color-coded events (blind-spot checks, distractions) on a navigable bar.
-*   **Job History**: Persists analysis results in jobs.db so they can be reviewed later.
+## API Reference
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/upload` | Uploads Road & Face videos. Returns `job_id`. |
+| `GET` | `/api/status/{job_id}` | Returns `{ status: "PROCESSING", progress: 45 }`. |
+| `GET` | `/api/result/{job_id}` | Returns the full JSON analysis report. |
+| `GET` | `/static/{path}` | Serves video files and assets. |
+
+---
+
+## Common Issues
+
+*   **"Subprocess Failed"**: Check the backend logs. This usually means the `combined_analysis` dependencies (like `dlib` or `insightface`) are missing in the environment running the backend.
+*   **"Video Decode Error"**: Ensure the uploaded videos are standard MP4/H.264 files. Some dashcams use proprietary formats that FFmpeg might struggle with without specific flags.
