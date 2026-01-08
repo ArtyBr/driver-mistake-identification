@@ -63,6 +63,17 @@ const LogViewer = ({
     }
   }, [hoveredEventIndex, currentTime, events]);
 
+  const eventCounts = events.reduce((acc, event) => {
+    if (event.message.includes('UNSAFE:')) {
+      acc.unsafe += 1;
+    } else if (event.message.includes('SAFE:')) {
+      acc.safe += 1;
+    } else {
+      acc.other += 1;
+    }
+    return acc;
+  }, { safe: 0, unsafe: 0, other: 0 });
+
   return (
     <div className="logs-row">
       <div className="face-log">
@@ -103,6 +114,19 @@ const LogViewer = ({
 
       <div className="events-timeline">
         <h3>Detected Events</h3>
+        <div className="events-summary" style={{ 
+          padding: '0 10px', 
+          marginBottom: '15px', 
+          fontSize: '0.9em', 
+          display: 'flex', 
+          gap: '15px',
+          borderBottom: '1px solid var(--border-color)',
+          paddingBottom: '10px'
+        }}>
+             <span style={{ color: 'var(--accent-success)', fontWeight: 'bold' }}>Safe: {eventCounts.safe}</span>
+             <span style={{ color: 'var(--accent-danger)', fontWeight: 'bold' }}>Unsafe: {eventCounts.unsafe}</span>
+             {eventCounts.other > 0 && <span style={{ color: 'var(--text-muted)' }}>Other: {eventCounts.other}</span>}
+        </div>
         <div className="event-list">
           {events.map((event, i) => {
             const isTimeActive = currentTime >= (event.timestamp - 5) && currentTime <= event.timestamp

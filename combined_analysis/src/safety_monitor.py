@@ -23,10 +23,14 @@ class ManeuverValidator:
         # 1. Determine required check based on direction
         # direction comes from LaneTracker: "left-to-right" or "right-to-left"
         required_check = None
+        maneuver_desc = "Lane Change"
+        
         if direction == "left-to-right":
             required_check = "Right Mirror"
+            maneuver_desc = "Right Lane Change"
         elif direction == "right-to-left":
             required_check = "Left Mirror"
+            maneuver_desc = "Left Lane Change"
         
         if not required_check:
             return SafetyEvent(current_time, f"Unknown Lane Change: {direction}", False, "lane_change", "INFO")
@@ -53,7 +57,7 @@ class ManeuverValidator:
         if found_check:
             return SafetyEvent(
                 timestamp=current_time,
-                message=f"SAFE: {required_check} checked before merging.",
+                message=f"SAFE: {required_check} checked before {maneuver_desc}.",
                 is_safe=True,
                 maneuver_type="lane_change",
                 severity="INFO"
@@ -61,7 +65,7 @@ class ManeuverValidator:
         else:
             return SafetyEvent(
                 timestamp=current_time,
-                message=f"UNSAFE: No {required_check} check detected!",
+                message=f"UNSAFE: No {required_check} check detected during {maneuver_desc}!",
                 is_safe=False,
                 maneuver_type="lane_change",
                 severity="CRITICAL"
