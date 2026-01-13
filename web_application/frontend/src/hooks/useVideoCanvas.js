@@ -10,11 +10,15 @@ export function useVideoCanvas(
   partDurations
 ) {
   const [currentFaceState, setCurrentFaceState] = useState("N/A");
+  const lastRenderedState = useRef("N/A");
+  const lastFrameIndex = useRef(0);
 
   useEffect(() => {
     let animationFrameId;
     let videoCallbackId;
-    let lastRenderedState = null;
+    
+    // Reset index when results change
+    lastFrameIndex.current = 0;
 
     const draw = () => {
       const ctx = canvasRef.current?.getContext('2d');
@@ -37,19 +41,72 @@ export function useVideoCanvas(
         }
         const time = offset + vidTime;
 
-        // Find current frame data
-        const frame = results.frame_data.find((f, i) => {
-          const next = results.frame_data[i + 1];
-          return time >= f.time && (!next || time < next.time);
-        });
+        // Optimized frame lookup
+        let frame = null;
+        if (results && results.frame_data && results.frame_data.length > 0) {
+          const data = results.frame_data;
+          let foundIndex = -1;
+
+          // 1. Optimistic check: sequential playback
+          const lastIdx = lastFrameIndex.current;
+          if (lastIdx < data.length) {
+            const currentF = data[lastIdx];
+            const nextF = data[lastIdx + 1];
+            
+            // Check if still within the last found frame's duration
+            if (time >= currentF.time && (!nextF || time < nextF.time)) {
+              foundIndex = lastIdx;
+            } 
+            // Check if moved to the immediate next frame
+            else if (nextF && time >= nextF.time) {
+               // Small linear search forward (good for small lags/skips)
+               // Limit to small number of frames to avoid lag spikes if large jump
+               for(let k = 1; k < 5; k++) {
+                 if (lastIdx + k < data.length) {
+                   const f = data[lastIdx + k];
+                   const nf = data[lastIdx + k + 1];
+                   if (time >= f.time && (!nf || time < nf.time)) {
+                     foundIndex = lastIdx + k;
+                     break;
+                   }
+                 }
+               }
+            }
+          }
+
+          // 2. Binary search fallback (seeking or large jumps)
+          if (foundIndex === -1) {
+            let low = 0;
+            let high = data.length - 1;
+            while (low <= high) {
+              const mid = Math.floor((low + high) / 2);
+              const f = data[mid];
+              const nf = data[mid + 1];
+              
+              if (time >= f.time && (!nf || time < nf.time)) {
+                foundIndex = mid;
+                break;
+              } else if (time < f.time) {
+                high = mid - 1;
+              } else {
+                low = mid + 1;
+              }
+            }
+          }
+
+          if (foundIndex !== -1) {
+            lastFrameIndex.current = foundIndex;
+            frame = data[foundIndex];
+          }
+        }
 
         if (frame) {
-          if (frame.current_state && frame.current_state !== lastRenderedState) {
+          if (frame.current_state && frame.current_state !== lastRenderedState.current) {
             setCurrentFaceState(frame.current_state);
-            lastRenderedState = frame.current_state;
-          } else if (!frame.current_state && lastRenderedState !== "N/A") {
+            lastRenderedState.current = frame.current_state;
+          } else if (!frame.current_state && lastRenderedState.current !== "N/A") {
             setCurrentFaceState("N/A");
-            lastRenderedState = "N/A";
+            lastRenderedState.current = "N/A";
           }
 
           // Draw Lane Lines
@@ -110,15 +167,16 @@ export function useVideoCanvas(
     };
 
     // Kick off the loop
-    if (roadVideoRef.current && roadVideoRef.current.requestVideoFrameCallback) {
-      videoCallbackId = roadVideoRef.current.requestVideoFrameCallback(draw);
+    const videoEl = roadVideoRef.current;
+    if (videoEl && videoEl.requestVideoFrameCallback) {
+      videoCallbackId = videoEl.requestVideoFrameCallback(draw);
     } else {
       draw();
     }
     
     return () => {
-      if (videoCallbackId && roadVideoRef.current && roadVideoRef.current.cancelVideoFrameCallback) {
-        roadVideoRef.current.cancelVideoFrameCallback(videoCallbackId);
+      if (videoCallbackId && videoEl && videoEl.cancelVideoFrameCallback) {
+        videoEl.cancelVideoFrameCallback(videoCallbackId);
       }
       cancelAnimationFrame(animationFrameId);
     }
