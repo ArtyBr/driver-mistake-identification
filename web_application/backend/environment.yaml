@@ -1,0 +1,45 @@
+name: lanedet_backend
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.8
+  - pip
+  - ffmpeg
+  - libgl  # Needed for OpenCV on Linux sometimes
+  - pip:
+    # Backend Framework
+    - fastapi
+    - uvicorn
+    - python-multipart
+    - sqlmodel
+    - pydantic
+    
+    # Core ML & Data
+    - numpy
+    - pandas
+    - scipy
+    - scikit-learn
+    - scikit-image
+    - tqdm
+    - opencv-python
+    
+    # Torch (Let pip handle compatibility for mmcv)
+    - torch
+    - torchvision
+    
+    # Face Analysis
+    - insightface
+    - onnxruntime
+    
+    # Lane Detection Specifics
+    - addict
+    - pytorch_warmup
+    - p_tqdm
+    - imgaug>=0.4.0
+    - Shapely==1.7.0
+    - ujson==1.35
+    - yapf
+    - albumentations==0.4.6
+    - mmcv==1.2.5
+    - pathspec
