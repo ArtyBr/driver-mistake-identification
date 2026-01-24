@@ -8,6 +8,6 @@ if [ -f server.pid ]; then
     rm server.pid
 fi
 
-nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 600 > server.log 2>&1 &
+nohup uvicorn app.main:app --host 0.0.0.0 --port 7728 --timeout-keep-alive 600 > server.log 2>&1 &
 echo $! > server.pid
 echo "Server started with PID $(cat server.pid)"

@@ -2,6 +2,7 @@ import uuid
 import re
 import json
 import logging
+import subprocess
 from typing import List, Optional
 from pathlib import Path
 from datetime import datetime
@@ -174,36 +175,42 @@ class JobService:
         
     def create_test_job(self, analysis_id: Optional[str] = None) -> Job:
         source_job_id = analysis_id if analysis_id else "test_video"
-        source_dir = UPLOAD_DIR / source_job_id
-        results_path = source_dir / "results.json"
-
-        if not results_path.exists():
-            raise FileNotFoundError(f"Analysis '{source_job_id}' not found or incomplete.")
-
-        with open(results_path, 'r') as f:
-            result_data = json.load(f)
-
-        # Find video files
-        if (source_dir / "road.mp4").exists():
+        
+        # 1. Fetch Result JSON from Remote (into memory only)
+        # We use strict names 'road_test.mp4'/'face_test.mp4' for 'test_video', or standard names otherwise.
+        if source_job_id == "test_video":
+            road_filename = "road_test.mp4"
+            face_filename = "face_test.mp4"
+        else:
             road_filename = "road.mp4"
-        else:
-            road_file = next(source_dir.glob("road_*.mp4"), None)
-            road_filename = road_file.name if road_file else "road_test.mp4"
-
-        if (source_dir / "face.mp4").exists():
             face_filename = "face.mp4"
-        else:
-            face_file = next(source_dir.glob("face_*.mp4"), None)
-            face_filename = face_file.name if face_file else "face_test.mp4"
 
+        try:
+            logger.info(f"Fetching remote results for {source_job_id}...")
+            # Using specific user and host
+            cmd = ["ssh", "u2204449@remote-49", f"cat ~/cs310_data/uploads/{source_job_id}/results.json"]
+            process = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            
+            if process.returncode != 0:
+                raise FileNotFoundError(f"Remote results not found for {source_job_id}")
+                
+            result_data = json.loads(process.stdout)
+            
+        except Exception as e:
+            logger.error(f"Failed to load remote analysis: {e}")
+            raise FileNotFoundError(f"Could not load remote analysis for {source_job_id}")
+
+        # 2. Create Job Record
+        # We use a special prefix "REMOTE:" to tell the frontend API this is not a local file
         new_job_id = str(uuid.uuid4())
         
         job = Job(
             id=new_job_id,
             status="COMPLETED",
             progress=100,
-            road_path=str(source_dir / road_filename),
-            face_path=str(source_dir / face_filename),
+            # Store the specific remote filenames with prefix
+            road_path=f"REMOTE:{source_job_id}/{road_filename}",
+            face_path=f"REMOTE:{source_job_id}/{face_filename}",
             result=json.dumps(result_data)
         )
         

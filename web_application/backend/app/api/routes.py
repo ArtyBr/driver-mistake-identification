@@ -1,8 +1,10 @@
 import logging
 import json
+import subprocess
 from pathlib import Path
 from typing import List, Optional
 from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException, Form, Depends
+from fastapi.responses import StreamingResponse
 from sqlmodel import Session
 
 from ..core.config import UPLOAD_DIR
@@ -95,10 +97,18 @@ async def get_status(job_id: str, service: JobService = Depends(get_job_service)
     # Calculate relative URLs for static serving
     road_url = ""
     face_url = ""
-    
-    # Logic to resolve path relative to uploads if possible
-    # UPLOAD_DIR = backend/../uploads
-    if job.road_path:
+
+    # Check for REMOTE prefix first
+    if job.road_path and job.road_path.startswith("REMOTE:"):
+        # Format: REMOTE:job_id/filename
+        parts = job.road_path.split(":")
+        if len(parts) > 1:
+            remote_part = parts[1] # e.g., "test_video/road_test.mp4"
+            r_job, r_file = remote_part.split("/")
+            road_url = f"/video/remote/{r_job}/{r_file}"
+
+    # Fallback to local file logic
+    elif job.road_path:
         try:
              path_obj = Path(job.road_path)
              # Use resolve to handle absolute/relative mismatches if files exist
@@ -112,7 +122,15 @@ async def get_status(job_id: str, service: JobService = Depends(get_job_service)
         except Exception:
              pass
 
-    if job.face_path:
+    # Check for REMOTE prefix first
+    if job.face_path and job.face_path.startswith("REMOTE:"):
+        parts = job.face_path.split(":")
+        if len(parts) > 1:
+            remote_part = parts[1]
+            r_job, r_file = remote_part.split("/")
+            face_url = f"/video/remote/{r_job}/{r_file}"
+            
+    elif job.face_path:
         try:
              path_obj = Path(job.face_path)
              if path_obj.exists() and path_obj.is_absolute():
@@ -150,3 +168,19 @@ async def get_results(job_id: str, service: JobService = Depends(get_job_service
         return {"error": job.error}
     else:
         return {"status": job.status}
+
+@router.get("/video/remote/{job_id}/{filename}")
+async def stream_remote_video(job_id: str, filename: str):
+    remote_path = f"~/cs310_data/uploads/{job_id}/{filename}"
+
+    def iterfile():
+        cmd = ["ssh", "u2204449@remote-49", f"cat {remote_path}"]
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        while True:
+            chunk = proc.stdout.read(64 * 1024)  # Read in 1MB chunks
+            if not chunk:
+                break
+            yield chunk
+        proc.wait()
+
+    return StreamingResponse(iterfile(), media_type="video/mp4")
