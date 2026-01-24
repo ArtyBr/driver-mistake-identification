@@ -110,8 +110,9 @@ class JobService:
 
     def list_analyses(self) -> List[AnalysisItem]:
         analyses = []
+        found_ids = set()
         
-        # Get all jobs from DB to look up names
+        # 1. Get all jobs from DB to look up names/metadata
         try:
             statement = select(Job)
             results = self.session.exec(statement).all()
@@ -120,15 +121,67 @@ class JobService:
             logger.error(f"Error fetching jobs from DB: {e}")
             db_jobs = {}
 
-        if UPLOAD_DIR.exists():
-            for path in UPLOAD_DIR.iterdir():
-                if path.is_dir() and (path / "results.json").exists():
-                    job_id = path.name
+        # 2. Fetch directory list from Remote Server
+        remote_user = "u2204449"
+        remote_host = "remote-49"
+        remote_base = "~/cs310_data/uploads"
+        
+        try:
+            # List directories on remote. Using ls -1 to get simple list.
+            # We assume any folder there is a job. Checking for results.json via SSH loop is slow,
+            # so we trust the folder presence or check DB match.
+            cmd = ["ssh", f"{remote_user}@{remote_host}", f"ls -1 {remote_base}"]
+            process = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            
+            if process.returncode == 0:
+                remote_folders = process.stdout.strip().split('\n')
+                
+                for job_id in remote_folders:
+                    if not job_id.strip(): continue
+                    job_id = job_id.strip()
+                    found_ids.add(job_id)
                     
                     name = job_id
                     count = 0
                     duration = 0.0
-                    created_at = datetime.fromtimestamp(path.stat().st_ctime) # Default to file creation time
+                    created_at = datetime.now() # Fallback
+                    
+                    if job_id in db_jobs:
+                        job = db_jobs[job_id]
+                        name = job.name or job_id
+                        if job.created_at:
+                            created_at = job.created_at
+                            
+                        if job.road_metadata:
+                            try:
+                                meta = json.loads(job.road_metadata)
+                                count = meta.get("count", 0)
+                                duration = meta.get("duration", 0.0)
+                            except:
+                                pass
+                    
+                    analyses.append(AnalysisItem(
+                        id=job_id, 
+                        name=name,
+                        video_count=count,
+                        duration_seconds=duration,
+                        created_at=created_at
+                    ))
+        except Exception as e:
+            logger.error(f"Failed to fetch remote analysis list: {e}")
+
+        # 3. Local Scanning Fallback
+        if UPLOAD_DIR.exists():
+            for path in UPLOAD_DIR.iterdir():
+                if path.is_dir() and (path / "results.json").exists():
+                    job_id = path.name
+                    if job_id in found_ids:
+                        continue
+                        
+                    name = job_id
+                    count = 0
+                    duration = 0.0
+                    created_at = datetime.fromtimestamp(path.stat().st_ctime)
                     
                     if job_id in db_jobs:
                         job = db_jobs[job_id]
@@ -137,34 +190,16 @@ class JobService:
                         if job.created_at:
                             created_at = job.created_at
                             
-                        # Extract metadata
                         if job.road_metadata:
                             try:
                                 meta = json.loads(job.road_metadata)
                                 count = meta.get("count", 0)
                                 duration = meta.get("duration", 0.0)
-                                
-                                # Backfill duration if missing and file exists
-                                if duration == 0.0 and job.road_path:
-                                    p = Path(job.road_path)
-                                    if p.exists():
-                                        try:
-                                            duration = get_video_duration(p)
-                                            logger.info(f"Backfilling duration for {job.id}: {duration}")
-                                            # Update DB
-                                            meta["duration"] = duration
-                                            job.road_metadata = json.dumps(meta)
-                                            self.session.add(job)
-                                            self.session.commit()
-                                            self.session.refresh(job)
-                                        except Exception as e:
-                                            logger.error(f"Failed to backfill duration for {job.id}: {e}")
-                                    else:
-                                        logger.warning(f"File not found for {job.id}: {p}")
-                            except Exception as e:
-                                logger.error(f"Error parsing metadata for {job.id}: {e}")
+                            except:
+                                pass
                     
-                    analyses.append(AnalysisItem(                        id=job_id, 
+                    analyses.append(AnalysisItem(
+                        id=job_id, 
                         name=name,
                         video_count=count,
                         duration_seconds=duration,

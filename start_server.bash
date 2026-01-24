@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# Configuration
+PROJECT_ROOT="~/driver-mistake-identification"
+FRONTEND_DIR="$PROJECT_ROOT/web_application/frontend"
+BACKEND_DIR="$PROJECT_ROOT/web_application/backend"
+# Adjust this to your local conda environment path on the Wagtail server
+CONDA_ENV="/home/arty/apps/miniconda3/envs/lane_detection"
+
+BACKEND_PORT=7728
+FRONTEND_PORT=7727
+
+# Setup Environment
+export PATH="$CONDA_ENV/bin:$PATH"
+export PYTHONPATH=$PROJECT_ROOT:$PYTHONPATH
+
+echo ">>> Starting Production Server Deployment"
+echo "Date: $(date)"
+
+# 1. Stop existing processes (cleanup)
+if [ -f "$PROJECT_ROOT/backend.pid" ]; then
+    kill $(cat "$PROJECT_ROOT/backend.pid") 2>/dev/null
+    rm "$PROJECT_ROOT/backend.pid"
+fi
+if [ -f "$PROJECT_ROOT/frontend.pid" ]; then
+    kill $(cat "$PROJECT_ROOT/frontend.pid") 2>/dev/null
+    rm "$PROJECT_ROOT/frontend.pid"
+fi
+
+# 2. Start Backend (FastAPI)
+echo ">>> Starting Backend on port $BACKEND_PORT..."
+cd "$BACKEND_DIR"
+nohup uvicorn app.main:app --host 0.0.0.0 --port $BACKEND_PORT --workers 4 > "$PROJECT_ROOT/backend.log" 2>&1 &
+echo $! > "$PROJECT_ROOT/backend.pid"
+
+# 3. Start Frontend (Serve Build)
+echo ">>> Starting Frontend on port $FRONTEND_PORT..."
+cd "$FRONTEND_DIR"
+
+# Build frontend to ensure .env.production is picked up
+echo "    Building frontend..."
+# We use 'npm install' just in case, though on a stable prod server you might skip it.
+npm install > /dev/null 2>&1
+npm run build > "$PROJECT_ROOT/frontend_build.log" 2>&1
+
+echo "    Serving frontend..."
+# Use 'preview' to serve the 'dist' folder on the specific port
+nohup npm run preview -- --host 0.0.0.0 --port $FRONTEND_PORT > "$PROJECT_ROOT/frontend.log" 2>&1 &
+echo $! > "$PROJECT_ROOT/frontend.pid"
+
+echo ">>> Deployment Complete"
+echo "Backend PID: $(cat $PROJECT_ROOT/backend.pid)"
+echo "Frontend PID: $(cat $PROJECT_ROOT/frontend.pid)"
