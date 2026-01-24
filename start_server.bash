@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # Configuration
-PROJECT_ROOT="~/driver-mistake-identification"
+SYSTEM_ROOT="/dcs/project/safedrive"
+PROJECT_ROOT="$SYSTEM_ROOT/driver-mistake-identification"
 FRONTEND_DIR="$PROJECT_ROOT/web_application/frontend"
 BACKEND_DIR="$PROJECT_ROOT/web_application/backend"
 # Adjust this to your local conda environment path on the Wagtail server
-CONDA_ENV="/home/arty/apps/miniconda3/envs/lane_detection"
+PYTHON_VENV="/dcs/project/safedrive/driver-mistake-identification/web_application/backend/server_env/bin/activate"
 
 BACKEND_PORT=7728
 FRONTEND_PORT=7727
@@ -29,8 +30,9 @@ fi
 
 # 2. Start Backend (FastAPI)
 echo ">>> Starting Backend on port $BACKEND_PORT..."
+source $PYTHON_VENV
 cd "$BACKEND_DIR"
-nohup uvicorn app.main:app --host 0.0.0.0 --port $BACKEND_PORT --workers 4 > "$PROJECT_ROOT/backend.log" 2>&1 &
+nohup uvicorn app.main:app --host 0.0.0.0 --port $BACKEND_PORT --workers 4 --ssl-keyfile "$SYSTEM_ROOT/key.pem" --ssl-certfile "$SYSTEM_ROOT/cert.pem" > "$PROJECT_ROOT/backend.log" 2>&1 &
 echo $! > "$PROJECT_ROOT/backend.pid"
 
 # 3. Start Frontend (Serve Build)
@@ -50,4 +52,4 @@ echo $! > "$PROJECT_ROOT/frontend.pid"
 
 echo ">>> Deployment Complete"
 echo "Backend PID: $(cat $PROJECT_ROOT/backend.pid)"
-echo "Frontend PID: $(cat $PROJECT_ROOT/frontend.pid)"
+echo "Frontend PID: $(cat $PROJECT_ROOT/frontend.pid)
