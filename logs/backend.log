@@ -1,1 +1,14 @@
-nohup: failed to run command 'uvicorn': No such file or directory
+INFO:     Uvicorn running on https://0.0.0.0:7728 (Press CTRL+C to quit)
+INFO:     Started parent process [49655]
+INFO:     Started server process [49670]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Started server process [49669]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Started server process [49672]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Started server process [49671]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.

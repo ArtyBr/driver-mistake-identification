@@ -34,7 +34,7 @@ echo ">>> Starting Backend on port $BACKEND_PORT..."
 source $PYTHON_VENV
 cd "$BACKEND_DIR"
 nohup uvicorn app.main:app --host 0.0.0.0 --port $BACKEND_PORT --workers 4 --ssl-keyfile "$SYSTEM_ROOT/key.pem" --ssl-certfile "$SYSTEM_ROOT/cert.pem" > "$LOG_DIR/backend.log" 2>&1 &
-echo $! > "$PROJECT_ROOT/backend.pid"
+echo $! > "$LOG_DIR/backend.pid"
 
 # 3. Start Frontend (Serve Build)
 echo ">>> Starting Frontend on port $FRONTEND_PORT..."
@@ -53,4 +53,4 @@ echo $! > "$LOG_DIR/frontend.pid"
 
 echo ">>> Deployment Complete"
 echo "Backend PID: $(cat $LOG_DIR/backend.pid)"
-echo "Frontend PID: $(cat $LOG_DIR/frontend.pid)
+echo "Frontend PID: $(cat $LOG_DIR/frontend.pid)"
