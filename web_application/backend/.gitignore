@@ -21,3 +21,5 @@ env/
 # Logs
 *.log
 *.pid
+
+server_env/
