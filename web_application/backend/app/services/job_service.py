@@ -13,7 +13,6 @@ from ..models.job import Job
 from ..models.schemas import AnalysisItem
 from .file_service import FileService
 from .video_utils import get_video_duration
-from ..core.config import UPLOAD_DIR
 from .analysis_service import run_analysis_process
 
 logger = logging.getLogger(__name__)
@@ -170,42 +169,6 @@ class JobService:
         except Exception as e:
             logger.error(f"Failed to fetch remote analysis list: {e}")
 
-        # 3. Local Scanning Fallback
-        if UPLOAD_DIR.exists():
-            for path in UPLOAD_DIR.iterdir():
-                if path.is_dir() and (path / "results.json").exists():
-                    job_id = path.name
-                    if job_id in found_ids:
-                        continue
-                        
-                    name = job_id
-                    count = 0
-                    duration = 0.0
-                    created_at = datetime.fromtimestamp(path.stat().st_ctime)
-                    
-                    if job_id in db_jobs:
-                        job = db_jobs[job_id]
-                        if job.name:
-                            name = job.name
-                        if job.created_at:
-                            created_at = job.created_at
-                            
-                        if job.road_metadata:
-                            try:
-                                meta = json.loads(job.road_metadata)
-                                count = meta.get("count", 0)
-                                duration = meta.get("duration", 0.0)
-                            except:
-                                pass
-                    
-                    analyses.append(AnalysisItem(
-                        id=job_id, 
-                        name=name,
-                        video_count=count,
-                        duration_seconds=duration,
-                        created_at=created_at
-                    ))
-        
         return sorted(analyses, key=lambda x: x.created_at, reverse=True)
         
     def create_test_job(self, analysis_id: Optional[str] = None) -> Job:
@@ -219,46 +182,25 @@ class JobService:
             road_filename = "road.mp4"
             face_filename = "face.mp4"
 
-        result_data = None
-        road_path_val = None
-        face_path_val = None
-
-        # 1. Try Local First
-        local_job_dir = UPLOAD_DIR / source_job_id
-        local_results_path = local_job_dir / "results.json"
-        
-        if local_results_path.exists():
-            try:
-                logger.info(f"Loading local results for {source_job_id}...")
-                with open(local_results_path, 'r') as f:
-                    result_data = json.load(f)
+        # Fetch Remote Results
+        try:
+            logger.info(f"Fetching remote results for {source_job_id}...")
+            # Using specific user and host
+            cmd = ["ssh", "u2204449@remote-49", f"cat ~/cs310_data/uploads/{source_job_id}/results.json"]
+            process = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            
+            if process.returncode != 0:
+                raise FileNotFoundError(f"Remote results not found for {source_job_id}")
                 
-                # Use absolute local paths
-                road_path_val = str(local_job_dir / road_filename)
-                face_path_val = str(local_job_dir / face_filename)
-            except Exception as e:
-                logger.error(f"Failed to load local results: {e}")
-
-        # 2. Fallback to Remote if not found locally
-        if result_data is None:
-            try:
-                logger.info(f"Fetching remote results for {source_job_id}...")
-                # Using specific user and host
-                cmd = ["ssh", "u2204449@remote-49", f"cat ~/cs310_data/uploads/{source_job_id}/results.json"]
-                process = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-                
-                if process.returncode != 0:
-                    raise FileNotFoundError(f"Remote results not found for {source_job_id}")
-                    
-                result_data = json.loads(process.stdout)
-                
-                # If remote, we use the REMOTE: prefix logic
-                road_path_val = f"REMOTE:{source_job_id}/{road_filename}"
-                face_path_val = f"REMOTE:{source_job_id}/{face_filename}"
-                
-            except Exception as e:
-                logger.error(f"Failed to load remote analysis: {e}")
-                raise FileNotFoundError(f"Could not load analysis for {source_job_id} (checked local and remote)")
+            result_data = json.loads(process.stdout)
+            
+            # If remote, we use the REMOTE: prefix logic
+            road_path_val = f"REMOTE:{source_job_id}/{road_filename}"
+            face_path_val = f"REMOTE:{source_job_id}/{face_filename}"
+            
+        except Exception as e:
+            logger.error(f"Failed to load remote analysis: {e}")
+            raise FileNotFoundError(f"Could not load analysis for {source_job_id} (checked remote only)")
 
         # 3. Create Job Record
         new_job_id = str(uuid.uuid4())
