@@ -13,21 +13,39 @@ BACKEND_PORT=7728
 FRONTEND_PORT=7727
 
 # Setup Environment
-export PATH="$CONDA_ENV/bin:$PATH"
 export PYTHONPATH=$PROJECT_ROOT:$PYTHONPATH
+
+# Load NVM if available
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
 echo ">>> Starting Production Server Deployment"
 echo "Date: $(date)"
 
 # 1. Stop existing processes (cleanup)
-if [ -f "$LOG_DIR/backend.pid" ]; then
-    kill $(cat "$LOG_DIR/backend.pid") 2>/dev/null
-    rm "$LOG_DIR/backend.pid"
-fi
-if [ -f "$LOG_DIR/frontend.pid" ]; then
-    kill $(cat "$LOG_DIR/frontend.pid") 2>/dev/null
-    rm "$LOG_DIR/frontend.pid"
-fi
+kill_port() {
+    local PORT=$1
+    if fuser -n tcp $PORT > /dev/null 2>&1; then
+        echo "    Killing process on port $PORT..."
+        fuser -k -n tcp $PORT > /dev/null 2>&1
+        # Wait loop to ensure port is released
+        for i in {1..10}; do
+            if ! fuser -n tcp $PORT > /dev/null 2>&1; then
+                return 0
+            fi
+            sleep 0.5
+        done
+        # If still alive, force kill
+        fuser -k -9 -n tcp $PORT > /dev/null 2>&1
+    fi
+}
+
+echo ">>> Cleaning up old processes..."
+kill_port $BACKEND_PORT
+kill_port $FRONTEND_PORT
+
+rm -f "$LOG_DIR/backend.pid"
+rm -f "$LOG_DIR/frontend.pid"
 
 # 2. Start Backend (FastAPI)
 echo ">>> Starting Backend on port $BACKEND_PORT..."

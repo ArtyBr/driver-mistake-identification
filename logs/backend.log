@@ -1,14 +1,12 @@
+INFO:     Started server process [58316]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
 INFO:     Uvicorn running on https://0.0.0.0:7728 (Press CTRL+C to quit)
-INFO:     Started parent process [49655]
-INFO:     Started server process [49670]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Started server process [49669]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Started server process [49672]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Started server process [49671]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
+2026-01-25 15:33:51,951 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/list_analyses
+2026-01-25 15:33:52,811 - api_logger - INFO - Response: 200 - Took 0.8609s
+INFO:     51.179.198.75:0 - "GET /list_analyses HTTP/1.1" 200 OK
+2026-01-25 15:33:59,899 - api_logger - INFO - Incoming Request: POST https://127.0.0.1:7728/run_test
+2026-01-25 15:33:59,902 - app.services.job_service - INFO - Fetching remote results for test_video...
+2026-01-25 15:34:00,355 - app.services.job_service - ERROR - Failed to load remote analysis: Remote results not found for test_video
+2026-01-25 15:34:00,356 - api_logger - INFO - Response: 404 - Took 0.4569s
+INFO:     51.179.198.75:0 - "POST /run_test HTTP/1.1" 404 Not Found
