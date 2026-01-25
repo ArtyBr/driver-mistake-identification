@@ -201,7 +201,7 @@ function Uploader({ onUploadSuccess }) {
                     <div className="fw-bold">Test Data (Default)</div>
                     <div className="small text-muted">Pre-loaded example data</div>
                 </div>
-                {analyses.map(analysis => (
+                {Array.isArray(analyses) && analyses.map(analysis => (
                     <div 
                         key={analysis.id}
                         className={`p-2 border-bottom border-secondary ${selectedAnalysis === analysis.id ? "bg-secondary bg-opacity-25" : ""}`}

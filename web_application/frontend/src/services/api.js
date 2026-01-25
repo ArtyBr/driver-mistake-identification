@@ -36,7 +36,7 @@ export const uploadVideos = async (formData, onProgress) => {
  */
 export const listAnalyses = async () => {
   const response = await api.get('/list_analyses');
-  return response.data.analyses;
+  return response.data?.analyses || [];
 };
 
 /**
