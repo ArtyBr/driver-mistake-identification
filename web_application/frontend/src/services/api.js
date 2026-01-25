@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+export const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -79,6 +79,23 @@ export const getJobStatus = async (jobId) => {
 export const getJobResults = async (jobId) => {
   const response = await api.get(`/results/${jobId}`);
   return response.data;
+};
+
+/**
+ * Constructs a full URL for a file served by the backend.
+ * @param {string} relativePath 
+ * @returns {string} Full URL.
+ */
+export const getFileUrl = (relativePath) => {
+  if (!relativePath) return '';
+  if (relativePath.startsWith('http') || relativePath.startsWith('blob:')) return relativePath;
+  
+  // Remove trailing slash from base if present
+  const base = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
+  // Ensure leading slash on path
+  const path = relativePath.startsWith('/') ? relativePath : `/${relativePath}`;
+  
+  return `${base}${path}`;
 };
 
 export default api;

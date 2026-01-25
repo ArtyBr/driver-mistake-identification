@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
-import axios from 'axios';
 import VideoPlayer from '../components/features/VideoPlayer';
 import MissingVideosUploader from '../components/features/MissingVideosUploader';
+import { getJobStatus, getJobResults, getFileUrl } from '../services/api';
 import '../App.css'; // Import the custom styles for VideoPlayer
-
-const API_BASE = 'http://localhost:8000';
 
 const ResultPage = () => {
   const { jobId } = useParams();
@@ -24,12 +22,12 @@ const ResultPage = () => {
       try {
         setLoading(true);
         // Fetch status to get URLs and metadata
-        const statusRes = await axios.get(`${API_BASE}/status/${jobId}`);
-        setJobData(statusRes.data);
+        const statusData = await getJobStatus(jobId);
+        setJobData(statusData);
 
         // Fetch results
-        const resultRes = await axios.get(`${API_BASE}/results/${jobId}`);
-        setResults(resultRes.data);
+        const resultsData = await getJobResults(jobId);
+        setResults(resultsData);
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Failed to load results. They might not be ready or the ID is invalid.");
@@ -57,7 +55,7 @@ const ResultPage = () => {
       } else if (location.state?.roadFiles && location.state.roadFiles.length > 0) {
           rUrls = location.state.roadFiles.map(f => URL.createObjectURL(f));
       } else if (jobData?.road_url) {
-          rUrls = [`${API_BASE}${jobData.road_url}`];
+          rUrls = [getFileUrl(jobData.road_url)];
       }
 
       if (localFaceFiles.length > 0) {
@@ -65,7 +63,7 @@ const ResultPage = () => {
       } else if (location.state?.faceFiles && location.state.faceFiles.length > 0) {
           fUrls = location.state.faceFiles.map(f => URL.createObjectURL(f));
       } else if (jobData?.face_url) {
-          fUrls = [`${API_BASE}${jobData.face_url}`];
+          fUrls = [getFileUrl(jobData.face_url)];
       }
 
       return { road: rUrls, face: fUrls };

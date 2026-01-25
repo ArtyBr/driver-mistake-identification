@@ -1,12 +1,26 @@
-INFO:     Started server process [58316]
+INFO:     Started server process [60455]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on https://0.0.0.0:7728 (Press CTRL+C to quit)
-2026-01-25 15:33:51,951 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/list_analyses
-2026-01-25 15:33:52,811 - api_logger - INFO - Response: 200 - Took 0.8609s
+2026-01-25 16:09:29,693 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/list_analyses
+2026-01-25 16:09:30,577 - api_logger - INFO - Response: 200 - Took 0.8841s
 INFO:     51.179.198.75:0 - "GET /list_analyses HTTP/1.1" 200 OK
-2026-01-25 15:33:59,899 - api_logger - INFO - Incoming Request: POST https://127.0.0.1:7728/run_test
-2026-01-25 15:33:59,902 - app.services.job_service - INFO - Fetching remote results for test_video...
-2026-01-25 15:34:00,355 - app.services.job_service - ERROR - Failed to load remote analysis: Remote results not found for test_video
-2026-01-25 15:34:00,356 - api_logger - INFO - Response: 404 - Took 0.4569s
-INFO:     51.179.198.75:0 - "POST /run_test HTTP/1.1" 404 Not Found
+2026-01-25 16:09:32,498 - api_logger - INFO - Incoming Request: POST https://127.0.0.1:7728/run_test
+2026-01-25 16:09:32,502 - app.services.job_service - INFO - Loading local results for test_video...
+2026-01-25 16:09:32,692 - api_logger - INFO - Response: 200 - Took 0.1935s
+INFO:     51.179.198.75:0 - "POST /run_test HTTP/1.1" 200 OK
+2026-01-25 16:09:32,735 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/fa512352-40ca-4573-941f-9feb03e12a42
+2026-01-25 16:09:32,743 - api_logger - INFO - Response: 200 - Took 0.0080s
+INFO:     51.179.198.75:0 - "GET /status/fa512352-40ca-4573-941f-9feb03e12a42 HTTP/1.1" 200 OK
+2026-01-25 16:09:32,830 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/fa512352-40ca-4573-941f-9feb03e12a42
+2026-01-25 16:09:32,835 - api_logger - INFO - Response: 200 - Took 0.0053s
+INFO:     51.179.198.75:0 - "GET /status/fa512352-40ca-4573-941f-9feb03e12a42 HTTP/1.1" 200 OK
+2026-01-25 16:09:32,922 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/fa512352-40ca-4573-941f-9feb03e12a42
+2026-01-25 16:09:32,927 - api_logger - INFO - Response: 200 - Took 0.0053s
+INFO:     51.179.198.75:0 - "GET /status/fa512352-40ca-4573-941f-9feb03e12a42 HTTP/1.1" 200 OK
+2026-01-25 16:09:32,993 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/results/fa512352-40ca-4573-941f-9feb03e12a42
+2026-01-25 16:09:33,323 - api_logger - INFO - Response: 200 - Took 0.3298s
+INFO:     51.179.198.75:0 - "GET /results/fa512352-40ca-4573-941f-9feb03e12a42 HTTP/1.1" 200 OK
+2026-01-25 16:11:42,445 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/list_analyses
+2026-01-25 16:11:43,335 - api_logger - INFO - Response: 200 - Took 0.8896s
+INFO:     51.179.198.75:0 - "GET /list_analyses HTTP/1.1" 200 OK
