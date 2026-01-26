@@ -1,0 +1,28 @@
+/* Analysis List */
+.analysis-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid rgba(0, 210, 223, 0.2);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.analysis-item {
+  padding: 10px 15px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.analysis-item:last-child {
+  border-bottom: none;
+}
+
+.analysis-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.analysis-item.selected {
+  background-color: rgba(13, 110, 253, 0.15);
+  border-left: 3px solid var(--accent-primary);
+}

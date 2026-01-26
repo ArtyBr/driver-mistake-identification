@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export function useVideoCanvas(
   results, 
@@ -116,9 +116,10 @@ export function useVideoCanvas(
       draw();
     }
     
+    const currentRoadVideo = roadVideoRef.current;
     return () => {
-      if (videoCallbackId && roadVideoRef.current && roadVideoRef.current.cancelVideoFrameCallback) {
-        roadVideoRef.current.cancelVideoFrameCallback(videoCallbackId);
+      if (videoCallbackId && currentRoadVideo && currentRoadVideo.cancelVideoFrameCallback) {
+        currentRoadVideo.cancelVideoFrameCallback(videoCallbackId);
       }
       cancelAnimationFrame(animationFrameId);
     }

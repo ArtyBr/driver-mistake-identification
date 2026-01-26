@@ -1,19 +1,19 @@
 import React, { useEffect } from 'react';
+import './VideoDisplay.css';
 
-const VideoDisplay = ({ 
-  roadUrl, 
-  faceUrl, 
-  roadVideoRef, 
-  faceVideoRef, 
-  canvasRef, 
+const VideoDisplay = ({
+  roadUrl,
+  faceUrl,
+  roadVideoRef,
+  faceVideoRef,
+  canvasRef,
   faceCanvasRef,
   onTimeUpdate,
-  onLoadedMetadata,
   onEnded,
+  onLoadedMetadata,
   roadAspectRatio,
   faceAspectRatio
-}) => {
-  // Force video reload when src changes (important for local blobs)
+}) => {  // Force video reload when src changes (important for local blobs)
   useEffect(() => {
     if (roadVideoRef.current) roadVideoRef.current.load();
   }, [roadUrl, roadVideoRef]);

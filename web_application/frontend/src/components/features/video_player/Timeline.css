@@ -1,0 +1,215 @@
+/* Controls & Timeline */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 15px 20px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--cyber-cyan);
+  border-radius: 4px;
+  color: var(--text-main);
+}
+
+@media (max-width: 768px) {
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+    padding: 15px;
+  }
+}
+
+.play-button {
+  min-width: 45px;
+  height: 45px;
+  font-size: 1.2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-panel-lighter);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+@media (max-width: 768px) {
+  .play-button {
+    width: 100%;
+    height: 40px;
+  }
+}
+
+.play-button:hover {
+  background-color: #444;
+  border-color: var(--cyber-cyan);
+  color: var(--cyber-cyan);
+}
+
+.timeline-wrapper {
+  flex-grow: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 80px;
+}
+
+@media (max-width: 576px) {
+  .timeline-wrapper {
+    height: 100px;
+  }
+}
+
+.timeline-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: calc(100% - 85px);
+  left: 65px;
+  margin: 0;
+  cursor: pointer;
+  z-index: 10;
+  position: absolute;
+  top: 5px;
+  background: transparent;
+  height: 25px;
+}
+
+@media (max-width: 576px) {
+  .timeline-slider {
+    width: calc(100% - 70px);
+    left: 50px;
+  }
+}
+
+/* Slider Thumb */
+.timeline-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--cyber-cyan);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 4px rgba(0,0,0,0.5);
+  margin-top: -4px; 
+  position: relative;
+  z-index: 10;
+}
+.timeline-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--cyber-cyan);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 4px rgba(0,0,0,0.5);
+}
+
+/* Tracks */
+.timeline-events-track, .timeline-face-track {
+  position: absolute;
+  left: 70px;
+  width: calc(100% - 90px);
+  height: 10px;
+  pointer-events: none;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@media (max-width: 576px) {
+  .timeline-events-track, .timeline-face-track {
+    left: 55px;
+    width: calc(100% - 75px);
+  }
+}
+
+.timeline-events-track { top: 35px; }
+.timeline-face-track { top: 55px; }
+
+@media (max-width: 576px) {
+  .timeline-events-track { top: 40px; }
+  .timeline-face-track { top: 70px; }
+}
+
+.track-label {
+  position: absolute;
+  left: 0;
+  width: 55px;
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+@media (max-width: 576px) {
+  .track-label {
+    width: 45px;
+    font-size: 10px;
+  }
+}
+
+.events-label { top: 34px; }
+.gaze-label { top: 54px; }
+
+@media (max-width: 576px) {
+  .events-label { top: 39px; }
+  .gaze-label { top: 69px; }
+}
+
+/* Event Bars on Timeline */
+.timeline-event-bar {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  opacity: 0.8;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  pointer-events: auto;
+  border-radius: 1px;
+}
+.timeline-event-bar:hover, .timeline-event-bar.hover-active {
+  opacity: 1;
+  box-shadow: 0 0 4px currentColor;
+  z-index: 100;
+}
+.timeline-event-bar.playback-active {
+  opacity: 1;
+  box-shadow: 0 0 6px #fff;
+  border: 1px solid #fff;
+}
+
+/* Cursor Line */
+.timeline-cursor {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 1px;
+  background-color: #fff;
+  z-index: 10;
+  transform: translateX(-50%);
+  pointer-events: none;
+  box-shadow: 0 0 4px rgba(0,0,0,0.5);
+}
+
+.time-display {
+  width: 150px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 1.1em;
+  color: var(--text-main);
+}
+
+@media (max-width: 768px) {
+  .time-display {
+    width: 100%;
+    text-align: center;
+    font-size: 1em;
+  }
+}

@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useState } from 'react'
 import VideoDisplay from './video_player/VideoDisplay'
 import Timeline from './video_player/Timeline'
 import LogViewer from './video_player/LogViewer'
@@ -41,22 +41,16 @@ function VideoPlayer({ results, roadUrls, faceUrls }) {
     partDurations
   )
 
+  // Derive active log index from current time during render
+  const activeLogIndex = history.findIndex((item, i) => {
+    const next = history[i + 1]
+    return item.time <= currentTime && (!next || next.time > currentTime)
+  })
+
   // Local UI State
-  const [activeLogIndex, setActiveLogIndex] = useState(-1)
   const [hoveredEventIndex, setHoveredEventIndex] = useState(null)
   const [hoveredFaceSegmentIndex, setHoveredFaceSegmentIndex] = useState(null)
   const [hoveredLogIndex, setHoveredLogIndex] = useState(null)
-
-  // Update active log index based on current time
-  useEffect(() => {
-    const index = history.findIndex((item, i) => {
-      const next = history[i + 1]
-      return item.time <= currentTime && (!next || next.time > currentTime)
-    })
-    if (index !== activeLogIndex) {
-      setActiveLogIndex(index)
-    }
-  }, [currentTime, history, activeLogIndex])
 
   const getLogIndexForSegment = (segment) => {
     if (!segment) return -1

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import './Uploader.css'
 import { listAnalyses, updateJobName } from '../../services/api'
 import FileDropZone from '../common/FileDropZone'
 import { useJobUpload } from '../../hooks/useJob'
@@ -57,7 +58,7 @@ function Uploader({ onUploadSuccess }) {
     try {
         const jobId = await upload(roadFiles, faceFiles, keepVideos, uploadName);
         onUploadSuccess(jobId, {}, { roadFiles, faceFiles });
-    } catch (e) {
+    } catch {
         // Error is handled in hook
     }
   }
@@ -67,7 +68,7 @@ function Uploader({ onUploadSuccess }) {
     try {
       const jobId = await loadAnalysis(selectedAnalysis);
       onUploadSuccess(jobId, {});
-    } catch (e) {
+    } catch {
       // Error handled in hook
     }
   }
@@ -192,11 +193,10 @@ function Uploader({ onUploadSuccess }) {
         <h5 className="mb-3 text-muted">Or Load Previous Analysis</h5>
         <div className="row g-2">
           <div className="col-md-12 mb-2">
-            <div className="analysis-list" style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid rgba(0, 243, 255, 0.2)', borderRadius: '4px' }}>
+            <div className="analysis-list">
                 <div 
-                    className={`p-2 border-bottom border-secondary ${selectedAnalysis === "" ? "bg-secondary bg-opacity-25" : ""}`}
+                    className={`analysis-item ${selectedAnalysis === "" ? "selected" : ""}`}
                     onClick={() => setSelectedAnalysis("")}
-                    style={{ cursor: 'pointer' }}
                 >
                     <div className="fw-bold">Test Data (Default)</div>
                     <div className="small text-muted">Pre-loaded example data</div>
@@ -204,9 +204,8 @@ function Uploader({ onUploadSuccess }) {
                 {Array.isArray(analyses) && analyses.map(analysis => (
                     <div 
                         key={analysis.id}
-                        className={`p-2 border-bottom border-secondary ${selectedAnalysis === analysis.id ? "bg-secondary bg-opacity-25" : ""}`}
+                        className={`analysis-item ${selectedAnalysis === analysis.id ? "selected" : ""}`}
                         onClick={() => setSelectedAnalysis(analysis.id)}
-                        style={{ cursor: 'pointer' }}
                     >
                         <div className="fw-bold text-cyber-blue">{analysis.name}</div>
                         <div className="small text-muted d-flex justify-content-between">

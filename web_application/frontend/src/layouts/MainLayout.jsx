@@ -5,11 +5,11 @@ const MainLayout = () => {
   return (
     <div className="d-flex flex-column min-vh-100">
       <header>
-        <nav className="navbar navbar-expand-lg navbar-cyber">
+        <nav className="navbar navbar-expand-lg navbar-dark navbar-cyber">
           <div className="container">
             <Link className="navbar-brand" to="/">SafeDrive AI</Link>
             <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-              <span className="navbar-toggler-icon" style={{ filter: 'invert(1)' }}></span>
+              <span className="navbar-toggler-icon"></span>
             </button>
             <div className="collapse navbar-collapse" id="navbarNav">
               <ul className="navbar-nav ms-auto">

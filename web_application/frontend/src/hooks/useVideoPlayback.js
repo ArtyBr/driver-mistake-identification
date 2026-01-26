@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
 
 export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -13,7 +13,7 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
   const [pendingSeek, setPendingSeek] = useState(null);
 
   // Load durations and dimensions for all parts
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!roadUrls || roadUrls.length === 0) return;
 
     const loadMetadata = async () => {
@@ -62,6 +62,7 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
     };
     
     loadMetadata();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPartIndex(0);
     setCurrentTime(0);
   }, [roadUrls, faceUrls]);

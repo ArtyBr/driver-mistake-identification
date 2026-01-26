@@ -1,8 +1,10 @@
 import React from 'react';
+import './Timeline.css';
 
 const Timeline = ({
   currentTime,
   duration,
+  onSeek,
   events,
   faceSegments,
   history,
@@ -11,14 +13,12 @@ const Timeline = ({
   hoveredFaceSegmentIndex,
   setHoveredFaceSegmentIndex,
   hoveredLogIndex,
-  onSeek,
-  getColorForState,
-  getLogIndexForSegment
+  getColorForState
 }) => {
   return (
     <div className="timeline-wrapper">
       <div className="timeline-events-track">
-        {duration > 0 && events.map((event, i) => {
+        {duration > 0 && events && events.map((event, i) => {
           const startTime = Math.max(0, event.timestamp - 5)
           const endTime = event.timestamp
           const isTimeActive = currentTime >= startTime && currentTime <= endTime
@@ -60,7 +60,7 @@ const Timeline = ({
       </div>
 
       <div className="timeline-face-track">
-        {duration > 0 && faceSegments.map((seg, i) => {
+        {duration > 0 && faceSegments && faceSegments.map((seg, i) => {
           const widthPct = ((seg.endTime - seg.startTime) / duration) * 100
           const leftPct = (seg.startTime / duration) * 100
           

@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import './LogViewer.css';
 
 const LogViewer = ({
   history,
@@ -9,7 +10,6 @@ const LogViewer = ({
   hoveredLogIndex,
   setHoveredLogIndex,
   hoveredFaceSegmentIndex,
-  currentFaceState,
   currentTime,
   onSeek,
   getColorForState,
@@ -26,8 +26,6 @@ const LogViewer = ({
   const scrollToItem = (container, item, block = 'center') => {
     if (!container || !item) return;
     
-    const containerRect = container.getBoundingClientRect();
-    const itemRect = item.getBoundingClientRect();
     const relativeTop = item.offsetTop;
     
     let targetScroll = 0;
