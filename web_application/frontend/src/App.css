@@ -325,6 +325,7 @@ body {
   max-height: 300px;
   overflow-y: auto;
   font-size: 0.95rem;
+  position: relative;
 }
 
 /* List Items */

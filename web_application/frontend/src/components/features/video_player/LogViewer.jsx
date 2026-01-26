@@ -19,14 +19,43 @@ const LogViewer = ({
 }) => {
   const itemRefs = useRef([]);
   const eventItemRefs = useRef([]);
+  const logListRef = useRef(null);
+  const eventListRef = useRef(null);
+
+  // Helper to scroll container to item
+  const scrollToItem = (container, item, block = 'center') => {
+    if (!container || !item) return;
+    
+    const containerRect = container.getBoundingClientRect();
+    const itemRect = item.getBoundingClientRect();
+    const relativeTop = item.offsetTop;
+    
+    let targetScroll = 0;
+    if (block === 'center') {
+      targetScroll = relativeTop - (container.clientHeight / 2) + (item.clientHeight / 2);
+    } else {
+      // nearest logic
+      const scrollTop = container.scrollTop;
+      const scrollBottom = scrollTop + container.clientHeight;
+      if (relativeTop < scrollTop) {
+        targetScroll = relativeTop;
+      } else if (relativeTop + item.clientHeight > scrollBottom) {
+        targetScroll = relativeTop - container.clientHeight + item.clientHeight;
+      } else {
+        return; // Already in view
+      }
+    }
+
+    container.scrollTo({
+      top: targetScroll,
+      behavior: 'smooth'
+    });
+  };
 
   // Auto-scroll log list on playback
   useEffect(() => {
     if (activeLogIndex !== -1 && itemRefs.current[activeLogIndex] && hoveredLogIndex === null && hoveredFaceSegmentIndex === null) {
-      itemRefs.current[activeLogIndex].scrollIntoView({
-        behavior: 'smooth',
-        block: 'center'
-      })
+      scrollToItem(logListRef.current, itemRefs.current[activeLogIndex], 'center');
     }
   }, [activeLogIndex, hoveredLogIndex, hoveredFaceSegmentIndex]);
 
@@ -37,10 +66,7 @@ const LogViewer = ({
       const logIndex = getLogIndexForSegment(segment)
       
       if (logIndex !== -1 && itemRefs.current[logIndex]) {
-        itemRefs.current[logIndex].scrollIntoView({
-          behavior: 'smooth',
-          block: 'center'
-        })
+        scrollToItem(logListRef.current, itemRefs.current[logIndex], 'center');
       }
     }
   }, [hoveredFaceSegmentIndex, faceSegments, history, getLogIndexForSegment]);
@@ -54,12 +80,8 @@ const LogViewer = ({
     })
 
     if (activeEventIndex !== -1 && eventItemRefs.current[activeEventIndex]) {
-      if (hoveredEventIndex !== null) {
-          eventItemRefs.current[activeEventIndex].scrollIntoView({
-            behavior: 'smooth',
-            block: 'nearest'
-          })
-      }
+      const block = hoveredEventIndex !== null ? 'nearest' : 'center';
+      scrollToItem(eventListRef.current, eventItemRefs.current[activeEventIndex], block);
     }
   }, [hoveredEventIndex, currentTime, events]);
 
@@ -67,7 +89,7 @@ const LogViewer = ({
     <div className="logs-row">
       <div className="face-log">
         <h3>Face Direction Log (Transitions)</h3>
-        <div className="log-list">
+        <div className="log-list" ref={logListRef}>
           {history.map((item, i) => {
             const isCurrent = i === activeLogIndex
             const isHovered = i === hoveredLogIndex
@@ -103,7 +125,7 @@ const LogViewer = ({
 
       <div className="events-timeline">
         <h3>Detected Events</h3>
-        <div className="event-list">
+        <div className="event-list" ref={eventListRef}>
           {events.map((event, i) => {
             const isTimeActive = currentTime >= (event.timestamp - 5) && currentTime <= event.timestamp
             const isHovered = i === hoveredEventIndex
