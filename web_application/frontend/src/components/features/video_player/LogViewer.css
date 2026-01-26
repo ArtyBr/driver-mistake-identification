@@ -52,6 +52,7 @@
   overflow-y: auto;
   font-size: 0.95rem;
   position: relative;
+  overflow-anchor: none;
 }
 
 /* List Items */

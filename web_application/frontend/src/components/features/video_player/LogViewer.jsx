@@ -22,6 +22,9 @@ const LogViewer = ({
   const logListRef = useRef(null);
   const eventListRef = useRef(null);
 
+  const lastScrolledLogIndex = useRef(-1);
+  const lastScrolledEventIndex = useRef(-1);
+
   // Helper to scroll container to item
   const scrollToItem = (container, item, block = 'center') => {
     if (!container || !item) return;
@@ -44,16 +47,22 @@ const LogViewer = ({
       }
     }
 
-    container.scrollTo({
-      top: targetScroll,
-      behavior: 'smooth'
-    });
+    // Only scroll if target is significantly different from current
+    if (Math.abs(container.scrollTop - targetScroll) > 2) {
+      container.scrollTo({
+        top: targetScroll,
+        behavior: 'smooth'
+      });
+    }
   };
 
   // Auto-scroll log list on playback
   useEffect(() => {
-    if (activeLogIndex !== -1 && itemRefs.current[activeLogIndex] && hoveredLogIndex === null && hoveredFaceSegmentIndex === null) {
+    if (activeLogIndex !== -1 && itemRefs.current[activeLogIndex] && 
+        hoveredLogIndex === null && hoveredFaceSegmentIndex === null &&
+        activeLogIndex !== lastScrolledLogIndex.current) {
       scrollToItem(logListRef.current, itemRefs.current[activeLogIndex], 'center');
+      lastScrolledLogIndex.current = activeLogIndex;
     }
   }, [activeLogIndex, hoveredLogIndex, hoveredFaceSegmentIndex]);
 
@@ -65,6 +74,7 @@ const LogViewer = ({
       
       if (logIndex !== -1 && itemRefs.current[logIndex]) {
         scrollToItem(logListRef.current, itemRefs.current[logIndex], 'center');
+        lastScrolledLogIndex.current = logIndex;
       }
     }
   }, [hoveredFaceSegmentIndex, faceSegments, history, getLogIndexForSegment]);
@@ -77,9 +87,11 @@ const LogViewer = ({
        return isTimeActive || isHovered
     })
 
-    if (activeEventIndex !== -1 && eventItemRefs.current[activeEventIndex]) {
+    if (activeEventIndex !== -1 && eventItemRefs.current[activeEventIndex] && 
+        activeEventIndex !== lastScrolledEventIndex.current) {
       const block = hoveredEventIndex !== null ? 'nearest' : 'center';
       scrollToItem(eventListRef.current, eventItemRefs.current[activeEventIndex], block);
+      lastScrolledEventIndex.current = activeEventIndex;
     }
   }, [hoveredEventIndex, currentTime, events]);
 
