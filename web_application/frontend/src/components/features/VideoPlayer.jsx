@@ -17,9 +17,11 @@ function VideoPlayer({ results, roadUrls, faceUrls }) {
   // Custom Hooks for logic separation
   const {
     isPlaying,
+    isBuffering,
     currentTime,
     duration,
     currentPartIndex,
+    activePartIndex,
     partDurations,
     roadAspectRatio,
     faceAspectRatio,
@@ -37,7 +39,7 @@ function VideoPlayer({ results, roadUrls, faceUrls }) {
     faceVideoRef,
     canvasRef,
     faceCanvasRef,
-    currentPartIndex,
+    activePartIndex,
     partDurations
   )
 
@@ -92,6 +94,7 @@ function VideoPlayer({ results, roadUrls, faceUrls }) {
         onLoadedMetadata={() => {}} // Handled by hook
         roadAspectRatio={roadAspectRatio}
         faceAspectRatio={faceAspectRatio}
+        isBuffering={isBuffering}
       />
 
       <div className="controls">

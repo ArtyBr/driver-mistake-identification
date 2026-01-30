@@ -6,7 +6,7 @@ export function useVideoCanvas(
   faceVideoRef, 
   canvasRef, 
   faceCanvasRef, 
-  currentPartIndex, 
+  activePartIndex, 
   partDurations
 ) {
   const [currentFaceState, setCurrentFaceState] = useState("N/A");
@@ -32,16 +32,30 @@ export function useVideoCanvas(
         // Calculate global time
         const vidTime = roadVideo.currentTime;
         let offset = 0;
-        for (let i = 0; i < currentPartIndex; i++) {
+        for (let i = 0; i < activePartIndex; i++) {
             offset += partDurations[i] || 0;
         }
         const time = offset + vidTime;
 
-        // Find current frame data
-        const frame = results.frame_data.find((f, i) => {
-          const next = results.frame_data[i + 1];
-          return time >= f.time && (!next || time < next.time);
-        });
+        // Binary search for current frame data
+        let frame = null;
+        let low = 0;
+        let high = results.frame_data.length - 1;
+        
+        while (low <= high) {
+          const mid = Math.floor((low + high) / 2);
+          const f = results.frame_data[mid];
+          const next = results.frame_data[mid + 1];
+          
+          if (time >= f.time && (!next || time < next.time)) {
+            frame = f;
+            break;
+          } else if (time < f.time) {
+            high = mid - 1;
+          } else {
+            low = mid + 1;
+          }
+        }
 
         if (frame) {
           if (frame.current_state && frame.current_state !== lastRenderedState) {
@@ -123,7 +137,7 @@ export function useVideoCanvas(
       }
       cancelAnimationFrame(animationFrameId);
     }
-  }, [results, currentPartIndex, partDurations, roadVideoRef, faceVideoRef, canvasRef, faceCanvasRef]);
+  }, [results, activePartIndex, partDurations, roadVideoRef, faceVideoRef, canvasRef, faceCanvasRef]);
 
   return { currentFaceState };
 }

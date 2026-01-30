@@ -12,7 +12,8 @@ const VideoDisplay = ({
   onEnded,
   onLoadedMetadata,
   roadAspectRatio,
-  faceAspectRatio
+  faceAspectRatio,
+  isBuffering
 }) => {  // Force video reload when src changes (important for local blobs)
   useEffect(() => {
     if (roadVideoRef.current) roadVideoRef.current.load();
@@ -24,6 +25,12 @@ const VideoDisplay = ({
 
   return (
     <div className="video-container">
+      {isBuffering && (
+        <div className="video-buffering-overlay">
+          <div className="spinner"></div>
+          <span>Loading video...</span>
+        </div>
+      )}
       <div className="video-wrapper road" style={{ aspectRatio: roadAspectRatio }}>
         <video
           ref={roadVideoRef}

@@ -1,8 +1,0 @@
-
-> frontend@0.0.0 preview
-> vite preview --host 0.0.0.0 --port 7727
-
-Port 7727 is in use, trying another one...
-Port 7728 is in use, trying another one...
-  ➜  Local:   http://localhost:7729/
-  ➜  Network: http://137.205.116.231:7729/
