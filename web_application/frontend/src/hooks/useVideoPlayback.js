@@ -97,19 +97,60 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
     return offset + localTime;
   }, [partDurations]);
 
+  // Helper to check if a video has enough buffer
+  const checkBuffer = useCallback((vid) => {
+    if (!vid) return false;
+    if (vid.error) return false;
+    // If ended, we definitely have enough
+    if (vid.ended) return true;
+    // If the browser says we have enough data to play through, trust it.
+    if (vid.readyState === 4) return true;
+    
+    const ct = vid.currentTime;
+    const dur = vid.duration;
+    // If close to end, we have enough
+    if (dur > 0 && dur - ct < 1.0) return true; 
+
+    const buffered = vid.buffered;
+    // Dynamic threshold: 2 seconds or remaining time, whichever is smaller
+    const requiredBuffer = Math.min(2.0, dur - ct);
+
+    for (let i = 0; i < buffered.length; i++) {
+        if (buffered.start(i) <= ct + 0.5 && buffered.end(i) >= ct) {
+             const ahead = buffered.end(i) - ct;
+             if (ahead >= requiredBuffer) return true;
+        }
+    }
+    return false;
+  }, []);
+
   const updateBuffering = useCallback(() => {
     const roadVid = roadVideoRef.current;
     const faceVid = faceVideoRef.current;
     if (!roadVid || !faceVid) return;
 
+    const roadWaiting = roadWaitingRef.current;
+    const faceWaiting = faceWaitingRef.current;
+    const isSeeking = isSeekingRef.current;
+    
     const roadReady = roadVid.readyState >= 3; // HAVE_FUTURE_DATA
     const faceReady = faceVid.readyState >= 3;
     
-    const isActuallyBuffering = roadWaitingRef.current || faceWaitingRef.current || 
-                               isSeekingRef.current || !roadReady || !faceReady;
-    
-    setIsBuffering(isActuallyBuffering);
-  }, [roadVideoRef, faceVideoRef]);
+    // ENTER buffering if forced to wait/seek or not ready
+    if (roadWaiting || faceWaiting || isSeeking || !roadReady || !faceReady) {
+        setIsBuffering(true);
+    } else {
+        // EXIT buffering only if we have enough buffer (hysteresis)
+        setIsBuffering(wasBuffering => {
+            if (wasBuffering) {
+                const rEnough = checkBuffer(roadVid);
+                const fEnough = checkBuffer(faceVid);
+                return !(rEnough && fEnough); // Keep buffering if not enough
+            }
+            return false; // Not buffering
+        });
+    }
+  }, [roadVideoRef, faceVideoRef, checkBuffer]);
 
   // Handle Seeking
   const handleSeek = (globalTime) => {
@@ -143,7 +184,7 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
     }
     
     setCurrentTime(globalTime);
-    updateBuffering(); // Immediately show loading state
+    updateBuffering(); // Will set isBuffering=true immediately
 
     if (targetIndex !== currentPartIndex) {
         setPendingSeek(localTime);
@@ -157,21 +198,19 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
         }
     }
     
-    // Safety timeout to clear isSeeking if no event fires (e.g. video fails to seek)
     seekTimeoutRef.current = setTimeout(() => { 
         if (isSeekingRef.current) {
             console.warn("Seek timed out, force clearing seeking state");
             isSeekingRef.current = false; 
             updateBuffering();
         }
-    }, 5000); // Increased to 5s to allow for buffering
+    }, 5000); 
   };
 
   // Handle Play/Pause
   const togglePlay = () => {
     const roadVid = roadVideoRef.current;
-    const faceVid = faceVideoRef.current;
-    if (!roadVid || !faceVid) return;
+    if (!roadVid) return;
 
     const isLastPart = currentPartIndex === (roadUrls.length - 1);
     const isEnded = roadVid.ended || (roadVid.duration > 0 && Math.abs(roadVid.currentTime - roadVid.duration) < 0.2);
@@ -182,21 +221,37 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
       return;
     }
 
-    if (isPlaying) {
-      roadVid.pause();
-      faceVid.pause();
-      setIsPlaying(false);
-    } else {
-      // Check if we can actually play (both not waiting)
-      if (!roadWaitingRef.current && !faceWaitingRef.current) {
-          roadVid.play().catch(e => console.error("Play error:", e));
-          faceVid.play().catch(e => console.error("Play error:", e));
-      }
-      setIsPlaying(true);
-    }
+    setIsPlaying(p => !p);
   };
 
-  // Handle Part Switching and Metadata loading
+  // Centralized Playback Control Effect
+  useEffect(() => {
+      const roadVid = roadVideoRef.current;
+      const faceVid = faceVideoRef.current;
+      if (!roadVid || !faceVid) return;
+
+      if (isPlaying && !isBuffering) {
+          // Both should play
+          if (roadVid.paused && roadVid.readyState >= 2) {
+              roadVid.play().catch(e => {
+                  // Ignore abort errors which happen on rapid pause/play
+                  if (e.name !== 'AbortError') console.error("Road play error:", e);
+              });
+          }
+          if (faceVid.paused && faceVid.readyState >= 2) {
+              faceVid.play().catch(e => {
+                  if (e.name !== 'AbortError') console.error("Face play error:", e);
+              });
+          }
+      } else {
+          // Should pause
+          if (!roadVid.paused) roadVid.pause();
+          if (!faceVid.paused) faceVid.pause();
+      }
+  }, [isPlaying, isBuffering, roadVideoRef, faceVideoRef]);
+
+
+  // Handle Part Switching and Events
   useEffect(() => {
       const roadVid = roadVideoRef.current;
       const faceVid = faceVideoRef.current;
@@ -212,10 +267,6 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
                   roadVid.currentTime = targetTime;
                   if (faceVid.readyState >= 1) faceVid.currentTime = targetTime;
               }
-              if (isPlaying && roadVid.readyState >= 3 && faceVid.readyState >= 3) {
-                  roadVid.play().catch(() => {});
-                  faceVid.play().catch(() => {});
-              }
           }
           updateBuffering();
       };
@@ -223,29 +274,13 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
       const onWaiting = (e) => {
           if (e.target === roadVid) roadWaitingRef.current = true;
           if (e.target === faceVid) faceWaitingRef.current = true;
-          
           updateBuffering();
-
-          // If one waits, pause both to sync
-          roadVid.pause();
-          faceVid.pause();
       };
 
       const onCanPlay = (e) => {
           if (e.target === roadVid) roadWaitingRef.current = false;
           if (e.target === faceVid) faceWaitingRef.current = false;
-          
           updateBuffering();
-
-          // Resume ONLY if both are ready, we are "playing", and NOT seeking
-          if (isPlaying && !roadWaitingRef.current && !faceWaitingRef.current && !isSeekingRef.current) {
-              const roadReady = roadVid.readyState >= 3;
-              const faceReady = faceVid.readyState >= 3;
-              if (roadReady && faceReady) {
-                  roadVid.play().catch(() => {});
-                  faceVid.play().catch(() => {});
-              }
-          }
       };
 
       const onSeeking = () => {
@@ -254,27 +289,19 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
       };
 
       const onSeeked = () => {
-          // Both videos must finish seeking
           const isRoadSeeking = roadVid.seeking;
           const isFaceSeeking = (faceVid.readyState >= 1) ? faceVid.seeking : false;
 
           if (!isRoadSeeking && !isFaceSeeking) {
-            
             // Check if we actually reached the target time
-            // We only check roadVid for simplicity as faceVid syncs to it
-            // Calculate local target time based on currentPart
             let offset = 0;
             for(let i=0; i<currentPartIndex; i++) offset += partDurations[i] || 0;
             
-            // If we have a specific target time set by handleSeek
             if (targetSeekTimeRef.current !== null) {
                 const localTarget = Math.max(0, targetSeekTimeRef.current - offset);
                 const diff = Math.abs(roadVid.currentTime - localTarget);
                 
-                // If we are far off (> 0.5s), it means the seek "completed" but didn't reach the target
-                // (likely clamped to buffered range). We should stay in "seeking" state.
                 if (diff > 0.5) {
-                   // Do not clear isSeekingRef
                    // Ensure we are paused while we wait
                    roadVid.pause();
                    faceVid.pause();
@@ -283,27 +310,21 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
             }
             
             isSeekingRef.current = false;
-            targetSeekTimeRef.current = null; // Reset target
+            targetSeekTimeRef.current = null;
             
             if (seekTimeoutRef.current) {
                 clearTimeout(seekTimeoutRef.current);
                 seekTimeoutRef.current = null;
             }
             updateBuffering();
-            
-            if (isPlaying && !roadWaitingRef.current && !faceWaitingRef.current) {
-                roadVid.play().catch(() => {});
-                faceVid.play().catch(() => {});
-            }
           }
       };
       
-      // Monitor buffering progress to re-trigger seek if needed
       const onProgress = () => {
           const roadVid = roadVideoRef.current;
           if (!roadVid) return;
 
-          // Update buffered ranges state
+          // Update buffered ranges state (only for road video for now)
           let offset = 0;
           for(let i=0; i<currentPartIndex; i++) offset += partDurations[i] || 0;
 
@@ -317,15 +338,12 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
           }
           setBufferedRanges(ranges);
 
+          // Seek retry logic
           if (isSeekingRef.current && targetSeekTimeRef.current !== null) {
               const localTarget = Math.max(0, targetSeekTimeRef.current - offset);
-              
-              // Check if the buffered ranges now include our target
               for(let i=0; i<buffered.length; i++) {
                   if (buffered.start(i) <= localTarget && buffered.end(i) >= localTarget) {
-                      // We have data! Retry the seek if we aren't there yet
                       if (Math.abs(roadVid.currentTime - localTarget) > 0.5) {
-                          console.log("Buffered range covers target, re-seeking...");
                           roadVid.currentTime = localTarget;
                           if(faceVid.readyState >= 1) faceVid.currentTime = localTarget;
                       }
@@ -333,6 +351,12 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
                   }
               }
           }
+          
+          updateBuffering(); // Check if we have enough buffer now
+      };
+      
+      const onFaceProgress = () => {
+          updateBuffering();
       };
 
       roadVid.addEventListener('loadedmetadata', onLoadedMetadata);
@@ -349,6 +373,7 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
       faceVid.addEventListener('canplay', onCanPlay);
       faceVid.addEventListener('seeking', onSeeking);
       faceVid.addEventListener('seeked', onSeeked);
+      faceVid.addEventListener('progress', onFaceProgress);
       
       if (roadVid.readyState >= 1 && activePartIndex === currentPartIndex) {
           if (pendingSeek !== null) {
@@ -373,15 +398,16 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
           faceVid.removeEventListener('canplay', onCanPlay);
           faceVid.removeEventListener('seeking', onSeeking);
           faceVid.removeEventListener('seeked', onSeeked);
+          faceVid.removeEventListener('progress', onFaceProgress);
       }
-  }, [currentPartIndex, activePartIndex, isPlaying, pendingSeek, roadVideoRef, faceVideoRef, updateBuffering, partDurations]);
+  }, [currentPartIndex, activePartIndex, pendingSeek, roadVideoRef, faceVideoRef, updateBuffering, partDurations]); // Removed isPlaying from dep as it is handled in separate effect
 
   const onTimeUpdate = () => {
     const roadVid = roadVideoRef.current;
     const faceVid = faceVideoRef.current;
     if (!roadVid || isSeekingRef.current || pendingSeek !== null || roadWaitingRef.current || faceWaitingRef.current) return;
     
-    // Sync face video if it drifts significantly, but ONLY if it's not already doing something
+    // Sync face video if it drifts significantly
     if (faceVid && !faceVid.seeking && !faceWaitingRef.current && Math.abs(roadVid.currentTime - faceVid.currentTime) > 0.3) {
         faceVid.currentTime = roadVid.currentTime;
     }
