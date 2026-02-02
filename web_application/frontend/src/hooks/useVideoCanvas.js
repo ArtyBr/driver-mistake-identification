@@ -15,8 +15,9 @@ export function useVideoCanvas(
     let animationFrameId;
     let videoCallbackId;
     let lastRenderedState = null;
+    let lastIndex = 0;
 
-    const draw = () => {
+    const draw = (now, metadata) => {
       const ctx = canvasRef.current?.getContext('2d');
       const faceCtx = faceCanvasRef.current?.getContext('2d');
       const roadVideo = roadVideoRef.current;
@@ -30,30 +31,64 @@ export function useVideoCanvas(
         faceCtx.clearRect(0, 0, faceCanvasRef.current.width, faceCanvasRef.current.height);
 
         // Calculate global time
-        const vidTime = roadVideo.currentTime;
+        const vidTime = (metadata && metadata.mediaTime !== undefined) ? metadata.mediaTime : roadVideo.currentTime;
         let offset = 0;
         for (let i = 0; i < activePartIndex; i++) {
             offset += partDurations[i] || 0;
         }
         const time = offset + vidTime;
 
-        // Binary search for current frame data
+        // Search for current frame data
         let frame = null;
-        let low = 0;
-        let high = results.frame_data.length - 1;
-        
-        while (low <= high) {
-          const mid = Math.floor((low + high) / 2);
-          const f = results.frame_data[mid];
-          const next = results.frame_data[mid + 1];
+        let foundLinear = false;
+
+        // Optimization: Linear check from lastIndex for forward playback
+        if (lastIndex < results.frame_data.length) {
+          // Check current cached index
+          const curr = results.frame_data[lastIndex];
+          const next = results.frame_data[lastIndex + 1];
+
+          if (curr && time >= curr.time && (!next || time < next.time)) {
+            frame = curr;
+            foundLinear = true;
+          } 
+          // Check next few frames (forward playback)
+          else if (next && time >= next.time) {
+             let steps = 0;
+             for (let i = lastIndex + 1; i < results.frame_data.length; i++) {
+                 const f = results.frame_data[i];
+                 const n = results.frame_data[i+1];
+                 if (time >= f.time && (!n || time < n.time)) {
+                     frame = f;
+                     lastIndex = i;
+                     foundLinear = true;
+                     break;
+                 }
+                 steps++;
+                 if (steps > 10) break; // Fallback to binary search if not found quickly
+             }
+          }
+        }
+
+        if (!foundLinear) {
+          // Binary search (fallback for seek or first render)
+          let low = 0;
+          let high = results.frame_data.length - 1;
           
-          if (time >= f.time && (!next || time < next.time)) {
-            frame = f;
-            break;
-          } else if (time < f.time) {
-            high = mid - 1;
-          } else {
-            low = mid + 1;
+          while (low <= high) {
+            const mid = Math.floor((low + high) / 2);
+            const f = results.frame_data[mid];
+            const next = results.frame_data[mid + 1];
+            
+            if (time >= f.time && (!next || time < next.time)) {
+              frame = f;
+              lastIndex = mid;
+              break;
+            } else if (time < f.time) {
+              high = mid - 1;
+            } else {
+              low = mid + 1;
+            }
           }
         }
 
