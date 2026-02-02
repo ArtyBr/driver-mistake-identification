@@ -3,7 +3,7 @@ import json
 import subprocess
 from pathlib import Path
 from typing import List, Optional
-from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException, Form, Depends
+from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException, Form, Depends, Header, Request
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session
 
@@ -170,38 +170,93 @@ async def get_results(job_id: str, service: JobService = Depends(get_job_service
         return {"status": job.status}
 
 @router.get("/video/remote/{job_id}/{filename}")
-async def stream_remote_video(job_id: str, filename: str):
+async def stream_remote_video(
+    job_id: str, 
+    filename: str, 
+    request: Request,
+    range: str = Header(None)
+):
     """
     Streams a video file directly from the large storage directory.
-    Replaces previous SSH-based retrieval.
+    Supports HTTP Range requests for seeking and robust playback.
     """
     base_path = Path("/dcs/large/safedrive_cs310_2526/uploads")
     # precise construction to prevent traversal
     safe_path = base_path / job_id / filename
     
     # Ensure the path is actually within the intended directory (security check)
-    # resolve() handles '..' but we need to be careful. 
-    # Since we construct it with known parts, basic check might suffice, 
-    # but resolve + startswith is safer.
     try:
         resolved_path = safe_path.resolve()
         resolved_base = base_path.resolve()
         if not resolved_path.is_relative_to(resolved_base):
              raise HTTPException(status_code=403, detail="Access denied")
     except Exception:
-         # Path resolution failed (e.g. strict non-existence checks)
-         # We can just proceed to check existence
          pass
 
     if not safe_path.exists():
         raise HTTPException(status_code=404, detail="Video file not found")
+        
+    file_size = safe_path.stat().st_size
+    start = 0
+    end = file_size - 1
+    chunk_size = 1024 * 1024 # Default 1MB chunks
 
-    def iterfile():
-        with open(safe_path, "rb") as f:
-            while True:
-                chunk = f.read(1024 * 1024)  # 1MB chunks
-                if not chunk:
+    # Handle Range Header
+    if range:
+        try:
+            # Parse "bytes=0-", "bytes=100-200", or "bytes=-500"
+            range_str = range.replace("bytes=", "")
+            range_parts = range_str.split("-")
+            
+            if range_parts[0] == "":
+                # Suffix range: bytes=-500 (last 500 bytes)
+                suffix = int(range_parts[1])
+                start = max(0, file_size - suffix)
+                end = file_size - 1
+            elif len(range_parts) > 1 and range_parts[1] == "":
+                 # Prefix range: bytes=500- (from 500 to end)
+                 start = int(range_parts[0])
+                 end = file_size - 1
+            else:
+                 # Standard range: bytes=0-500
+                 start = int(range_parts[0])
+                 end = int(range_parts[1])
+            
+            # Ensure valid range
+            if start >= file_size:
+                # 416 Range Not Satisfiable
+                raise HTTPException(status_code=416, detail="Requested Range Not Satisfiable")
+                
+            # Correct end if it exceeds file size
+            end = min(end, file_size - 1)
+        except ValueError:
+             # Malformed range header, ignore and send full file
+             pass
+
+    # Calculate content length for this response
+    content_length = (end - start) + 1
+
+    def iterfile(path, start_byte, length):
+        with open(path, "rb") as f:
+            f.seek(start_byte)
+            remaining = length
+            while remaining > 0:
+                read_size = min(chunk_size, remaining)
+                data = f.read(read_size)
+                if not data:
                     break
-                yield chunk
+                remaining -= len(data)
+                yield data
 
-    return StreamingResponse(iterfile(), media_type="video/mp4")
+    headers = {
+        "Content-Range": f"bytes {start}-{end}/{file_size}",
+        "Accept-Ranges": "bytes",
+        "Content-Length": str(content_length),
+    }
+
+    return StreamingResponse(
+        iterfile(safe_path, start, content_length),
+        status_code=206, # Partial Content
+        headers=headers,
+        media_type="video/mp4"
+    )

@@ -13,11 +13,31 @@ const Timeline = ({
   hoveredFaceSegmentIndex,
   setHoveredFaceSegmentIndex,
   hoveredLogIndex,
-  getColorForState
+  getColorForState,
+  bufferedRanges = []
 }) => {
   return (
     <div className="timeline-wrapper">
       <div className="timeline-events-track">
+        {/* Buffered Ranges Layer */}
+        {duration > 0 && bufferedRanges.map((range, i) => {
+           const startPct = (range.start / duration) * 100;
+           const widthPct = ((range.end - range.start) / duration) * 100;
+           return (
+             <div 
+               key={`buf-${i}`}
+               style={{
+                 position: 'absolute',
+                 left: `${startPct}%`,
+                 width: `${widthPct}%`,
+                 height: '100%',
+                 backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                 zIndex: 0
+               }}
+             />
+           );
+        })}
+
         {duration > 0 && events && events.map((event, i) => {
           const startTime = Math.max(0, event.timestamp - 5)
           const endTime = event.timestamp

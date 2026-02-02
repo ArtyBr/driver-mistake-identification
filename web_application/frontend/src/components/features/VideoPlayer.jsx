@@ -28,7 +28,8 @@ function VideoPlayer({ results, roadUrls, faceUrls }) {
     handleSeek,
     togglePlay,
     onTimeUpdate,
-    onPartEnded
+    onPartEnded,
+    bufferedRanges
   } = useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
 
   const { history, faceSegments } = useVideoAnalysisData(results)
@@ -116,6 +117,7 @@ function VideoPlayer({ results, roadUrls, faceUrls }) {
           onSeek={handleSeek}
           getColorForState={getColorForState}
           getLogIndexForSegment={getLogIndexForSegment}
+          bufferedRanges={bufferedRanges}
         />
 
         <span className="time-display">{currentTime.toFixed(2)} / {duration.toFixed(2)}s</span>

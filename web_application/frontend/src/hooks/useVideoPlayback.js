@@ -13,6 +13,7 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
   const [activePartIndex, setActivePartIndex] = useState(0);
   const [pendingSeek, setPendingSeek] = useState(null);
   const [isBuffering, setIsBuffering] = useState(false);
+  const [bufferedRanges, setBufferedRanges] = useState([]); // Array of {start, end} in global time
   
   // Internal state to track what the video element is actually playing
   const isSeekingRef = useRef(false);
@@ -299,13 +300,27 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
       
       // Monitor buffering progress to re-trigger seek if needed
       const onProgress = () => {
+          const roadVid = roadVideoRef.current;
+          if (!roadVid) return;
+
+          // Update buffered ranges state
+          let offset = 0;
+          for(let i=0; i<currentPartIndex; i++) offset += partDurations[i] || 0;
+
+          const ranges = [];
+          const buffered = roadVid.buffered;
+          for (let i = 0; i < buffered.length; i++) {
+              ranges.push({
+                  start: buffered.start(i) + offset,
+                  end: buffered.end(i) + offset
+              });
+          }
+          setBufferedRanges(ranges);
+
           if (isSeekingRef.current && targetSeekTimeRef.current !== null) {
-              let offset = 0;
-              for(let i=0; i<currentPartIndex; i++) offset += partDurations[i] || 0;
               const localTarget = Math.max(0, targetSeekTimeRef.current - offset);
               
               // Check if the buffered ranges now include our target
-              const buffered = roadVid.buffered;
               for(let i=0; i<buffered.length; i++) {
                   if (buffered.start(i) <= localTarget && buffered.end(i) >= localTarget) {
                       // We have data! Retry the seek if we aren't there yet
@@ -406,6 +421,7 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
     handleSeek,
     togglePlay,
     onTimeUpdate,
-    onPartEnded
+    onPartEnded,
+    bufferedRanges
   };
 }
