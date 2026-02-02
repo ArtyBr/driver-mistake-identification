@@ -66,47 +66,71 @@
 .timeline-slider {
   -webkit-appearance: none;
   appearance: none;
-  width: calc(100% - 85px);
-  left: 65px;
+  width: calc(100% - 78px);
+  left: 64px;
   margin: 0;
-  cursor: pointer;
+  cursor: pointer; /* Ensure pointer cursor on the slider area */
   z-index: 10;
   position: absolute;
-  top: 5px;
+  top: 0; /* Cover the area from top */
   background: transparent;
-  height: 25px;
+  height: 35px; /* Increase height to cover handle area up to the events track */
 }
 
 @media (max-width: 576px) {
   .timeline-slider {
-    width: calc(100% - 70px);
-    left: 50px;
+    width: calc(100% - 63px);
+    left: 49px;
   }
 }
 
-/* Slider Thumb */
+/* Slider Thumb (Hidden but interactive) */
 .timeline-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 12px;
-  height: 12px;
-  background: var(--cyber-cyan);
-  border: 2px solid #fff;
+  width: 16px; /* Match handle size */
+  height: 16px;
+  background: transparent;
+  border: none;
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 0 4px rgba(0,0,0,0.5);
-  margin-top: -4px; 
+  margin-top: 0; /* Adjust if needed */
   position: relative;
   z-index: 10;
+  box-sizing: border-box;
 }
 .timeline-slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+/* Custom Handle (Synced via JS) */
+.timeline-handle {
+  position: absolute;
+  width: 16px; /* Larger handle */
+  height: 16px; /* Larger handle */
   background: var(--cyber-cyan);
   border: 2px solid #fff;
   border-radius: 50%;
-  cursor: pointer;
   box-shadow: 0 0 4px rgba(0,0,0,0.5);
+  transform: translateX(-50%); /* Center on the percentage point */
+  pointer-events: none; /* Allow clicks to pass through to the input */
+  z-index: 20;
+  top: -28px; /* Adjusted for larger size and position */
+  transition: transform 0.2s ease, background-color 0.2s; /* Smooth transition */
+}
+
+
+
+@media (max-width: 576px) {
+  .timeline-handle {
+    top: -35px; /* Aligns with slider top (40px - 5px) */
+  }
 }
 
 /* Tracks */

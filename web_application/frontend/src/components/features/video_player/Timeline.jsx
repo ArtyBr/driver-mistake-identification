@@ -18,6 +18,16 @@ const Timeline = ({
 }) => {
   return (
     <div className="timeline-wrapper">
+      <input
+        type="range"
+        min="0"
+        max={duration}
+        step="0.01"
+        value={currentTime}
+        onChange={(e) => onSeek(parseFloat(e.target.value))}
+        className="timeline-slider"
+      />
+
       <div className="timeline-events-track">
         {/* Buffered Ranges Layer */}
         {duration > 0 && bufferedRanges.map((range, i) => {
@@ -77,6 +87,14 @@ const Timeline = ({
             left: `${(currentTime / duration) * 100}%`
           }}
         />
+
+        {/* Custom Handle (Synced with Cursor) */}
+        <div 
+          className="timeline-handle"
+          style={{
+            left: `${(currentTime / duration) * 100}%`
+          }}
+        />
       </div>
 
       <div className="timeline-face-track">
@@ -121,16 +139,6 @@ const Timeline = ({
         />
       </div>
 
-      <input
-        type="range"
-        min="0"
-        max={duration}
-        step="0.01"
-        value={currentTime}
-        onChange={(e) => onSeek(parseFloat(e.target.value))}
-        className="timeline-slider"
-      />
-      
       <span className="track-label events-label">Events</span>
       <span className="track-label gaze-label">Gaze</span>
     </div>
