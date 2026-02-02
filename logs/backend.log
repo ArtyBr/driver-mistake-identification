@@ -1,32 +1,84 @@
-INFO:     Started server process [83497]
+INFO:     Started server process [100756]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on https://0.0.0.0:7728 (Press CTRL+C to quit)
-2026-01-30 11:59:20,559 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/list_analyses
-2026-01-30 11:59:21,588 - api_logger - INFO - Response: 200 - Took 1.0292s
-INFO:     172.25.15.154:0 - "GET /list_analyses HTTP/1.1" 200 OK
-2026-01-30 11:59:22,584 - api_logger - INFO - Incoming Request: POST https://127.0.0.1:7728/run_test
-2026-01-30 11:59:22,586 - app.services.job_service - INFO - Fetching remote results for test_video...
-2026-01-30 11:59:23,255 - api_logger - INFO - Response: 200 - Took 0.6709s
-INFO:     172.25.15.154:0 - "POST /run_test HTTP/1.1" 200 OK
-2026-01-30 11:59:23,360 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/26de783b-2d2e-4529-af2c-62c25431d6e2
-2026-01-30 11:59:23,368 - api_logger - INFO - Response: 200 - Took 0.0082s
-INFO:     172.25.15.154:0 - "GET /status/26de783b-2d2e-4529-af2c-62c25431d6e2 HTTP/1.1" 200 OK
-2026-01-30 11:59:23,448 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/26de783b-2d2e-4529-af2c-62c25431d6e2
-2026-01-30 11:59:23,453 - api_logger - INFO - Response: 200 - Took 0.0048s
-INFO:     172.25.15.154:0 - "GET /status/26de783b-2d2e-4529-af2c-62c25431d6e2 HTTP/1.1" 200 OK
-2026-01-30 11:59:23,512 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/26de783b-2d2e-4529-af2c-62c25431d6e2
-2026-01-30 11:59:23,516 - api_logger - INFO - Response: 200 - Took 0.0044s
-INFO:     172.25.15.154:0 - "GET /status/26de783b-2d2e-4529-af2c-62c25431d6e2 HTTP/1.1" 200 OK
-2026-01-30 11:59:23,544 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/results/26de783b-2d2e-4529-af2c-62c25431d6e2
-2026-01-30 11:59:23,882 - api_logger - INFO - Response: 200 - Took 0.3388s
-INFO:     172.25.15.154:0 - "GET /results/26de783b-2d2e-4529-af2c-62c25431d6e2 HTTP/1.1" 200 OK
-2026-01-30 11:59:24,178 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/test_video/face_test.mp4
-2026-01-30 11:59:24,188 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/test_video/face_test.mp4
-2026-01-30 11:59:24,188 - api_logger - INFO - Response: 200 - Took 0.0105s
-INFO:     172.25.15.154:0 - "GET /video/remote/test_video/face_test.mp4 HTTP/1.1" 200 OK
-2026-01-30 11:59:24,195 - api_logger - INFO - Response: 200 - Took 0.0063s
-INFO:     172.25.15.154:0 - "GET /video/remote/test_video/face_test.mp4 HTTP/1.1" 200 OK
-2026-01-30 11:59:29,848 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/test_video/road_test.mp4
-2026-01-30 11:59:29,850 - api_logger - INFO - Response: 200 - Took 0.0019s
-INFO:     172.25.15.154:0 - "GET /video/remote/test_video/road_test.mp4 HTTP/1.1" 200 OK
+2026-02-02 10:50:18,526 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/list_analyses
+2026-02-02 10:50:19,724 - app.services.job_service - ERROR - Failed to fetch analysis list from storage: [Errno 13] Permission denied: '/dcs/large/safedrive_cs310_2526/uploads'
+2026-02-02 10:50:19,733 - api_logger - INFO - Response: 200 - Took 1.2077s
+INFO:     172.25.68.123:0 - "GET /list_analyses HTTP/1.1" 200 OK
+2026-02-02 10:50:25,987 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/list_analyses
+2026-02-02 10:50:26,657 - app.services.job_service - ERROR - Failed to fetch analysis list from storage: [Errno 13] Permission denied: '/dcs/large/safedrive_cs310_2526/uploads'
+2026-02-02 10:50:26,665 - api_logger - INFO - Response: 200 - Took 0.6781s
+INFO:     172.25.68.123:0 - "GET /list_analyses HTTP/1.1" 200 OK
+2026-02-02 11:01:51,728 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/list_analyses
+2026-02-02 11:01:52,484 - api_logger - INFO - Response: 200 - Took 0.7562s
+INFO:     172.25.68.123:0 - "GET /list_analyses HTTP/1.1" 200 OK
+2026-02-02 11:01:54,833 - api_logger - INFO - Incoming Request: POST https://127.0.0.1:7728/run_test
+2026-02-02 11:01:54,837 - app.services.job_service - INFO - Fetching results for test_video from /dcs/large/safedrive_cs310_2526/uploads/test_video/results.json...
+2026-02-02 11:01:55,043 - api_logger - INFO - Response: 200 - Took 0.2097s
+INFO:     172.25.68.123:0 - "POST /run_test HTTP/1.1" 200 OK
+2026-02-02 11:01:55,068 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/da7076dc-579b-4f32-8b53-88c21d7004b1
+2026-02-02 11:01:55,076 - api_logger - INFO - Response: 200 - Took 0.0081s
+INFO:     172.25.68.123:0 - "GET /status/da7076dc-579b-4f32-8b53-88c21d7004b1 HTTP/1.1" 200 OK
+2026-02-02 11:01:55,122 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/da7076dc-579b-4f32-8b53-88c21d7004b1
+2026-02-02 11:01:55,126 - api_logger - INFO - Response: 200 - Took 0.0043s
+INFO:     172.25.68.123:0 - "GET /status/da7076dc-579b-4f32-8b53-88c21d7004b1 HTTP/1.1" 200 OK
+2026-02-02 11:01:55,173 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/da7076dc-579b-4f32-8b53-88c21d7004b1
+2026-02-02 11:01:55,177 - api_logger - INFO - Response: 200 - Took 0.0044s
+INFO:     172.25.68.123:0 - "GET /status/da7076dc-579b-4f32-8b53-88c21d7004b1 HTTP/1.1" 200 OK
+2026-02-02 11:01:55,203 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/results/da7076dc-579b-4f32-8b53-88c21d7004b1
+2026-02-02 11:01:55,545 - api_logger - INFO - Response: 200 - Took 0.3417s
+INFO:     172.25.68.123:0 - "GET /results/da7076dc-579b-4f32-8b53-88c21d7004b1 HTTP/1.1" 200 OK
+2026-02-02 11:01:55,875 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/test_video/road_test.mp4
+2026-02-02 11:01:55,879 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/test_video/road_test.mp4
+2026-02-02 11:01:55,888 - api_logger - INFO - Response: 200 - Took 0.0128s
+INFO:     172.25.68.123:0 - "GET /video/remote/test_video/road_test.mp4 HTTP/1.1" 200 OK
+2026-02-02 11:01:55,889 - api_logger - INFO - Response: 200 - Took 0.0101s
+INFO:     172.25.68.123:0 - "GET /video/remote/test_video/road_test.mp4 HTTP/1.1" 200 OK
+2026-02-02 11:01:55,891 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/test_video/face_test.mp4
+2026-02-02 11:01:55,893 - api_logger - INFO - Response: 200 - Took 0.0022s
+INFO:     172.25.68.123:0 - "GET /video/remote/test_video/face_test.mp4 HTTP/1.1" 200 OK
+2026-02-02 11:01:56,161 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/test_video/face_test.mp4
+2026-02-02 11:01:56,163 - api_logger - INFO - Response: 200 - Took 0.0021s
+INFO:     172.25.68.123:0 - "GET /video/remote/test_video/face_test.mp4 HTTP/1.1" 200 OK
+2026-02-02 11:02:03,460 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/list_analyses
+2026-02-02 11:02:04,178 - api_logger - INFO - Response: 200 - Took 0.7181s
+INFO:     172.25.68.123:0 - "GET /list_analyses HTTP/1.1" 200 OK
+2026-02-02 11:02:05,131 - api_logger - INFO - Incoming Request: POST https://127.0.0.1:7728/run_test
+2026-02-02 11:02:05,133 - app.services.job_service - INFO - Fetching results for test_video from /dcs/large/safedrive_cs310_2526/uploads/test_video/results.json...
+2026-02-02 11:02:05,325 - api_logger - INFO - Response: 200 - Took 0.1932s
+INFO:     172.25.68.123:0 - "POST /run_test HTTP/1.1" 200 OK
+2026-02-02 11:02:05,397 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/9f664cd2-c6b8-4be9-89f0-496ce6fd3964
+2026-02-02 11:02:05,401 - api_logger - INFO - Response: 200 - Took 0.0044s
+INFO:     172.25.68.123:0 - "GET /status/9f664cd2-c6b8-4be9-89f0-496ce6fd3964 HTTP/1.1" 200 OK
+2026-02-02 11:02:05,468 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/9f664cd2-c6b8-4be9-89f0-496ce6fd3964
+2026-02-02 11:02:05,473 - api_logger - INFO - Response: 200 - Took 0.0045s
+INFO:     172.25.68.123:0 - "GET /status/9f664cd2-c6b8-4be9-89f0-496ce6fd3964 HTTP/1.1" 200 OK
+2026-02-02 11:02:05,528 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/9f664cd2-c6b8-4be9-89f0-496ce6fd3964
+2026-02-02 11:02:05,531 - api_logger - INFO - Response: 200 - Took 0.0038s
+INFO:     172.25.68.123:0 - "GET /status/9f664cd2-c6b8-4be9-89f0-496ce6fd3964 HTTP/1.1" 200 OK
+2026-02-02 11:02:05,590 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/results/9f664cd2-c6b8-4be9-89f0-496ce6fd3964
+2026-02-02 11:02:06,006 - api_logger - INFO - Response: 200 - Took 0.4164s
+INFO:     172.25.68.123:0 - "GET /results/9f664cd2-c6b8-4be9-89f0-496ce6fd3964 HTTP/1.1" 200 OK
+2026-02-02 11:02:12,027 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/list_analyses
+2026-02-02 11:02:12,660 - api_logger - INFO - Response: 200 - Took 0.6321s
+INFO:     172.25.68.123:0 - "GET /list_analyses HTTP/1.1" 200 OK
+2026-02-02 11:02:13,608 - api_logger - INFO - Incoming Request: POST https://127.0.0.1:7728/run_test
+2026-02-02 11:02:13,610 - app.services.job_service - INFO - Fetching results for test_video from /dcs/large/safedrive_cs310_2526/uploads/test_video/results.json...
+2026-02-02 11:02:13,746 - api_logger - INFO - Response: 200 - Took 0.1372s
+INFO:     172.25.68.123:0 - "POST /run_test HTTP/1.1" 200 OK
+2026-02-02 11:02:13,801 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/c1d11ba3-fe40-438e-9b5d-a9250e708e19
+2026-02-02 11:02:13,806 - api_logger - INFO - Response: 200 - Took 0.0044s
+INFO:     172.25.68.123:0 - "GET /status/c1d11ba3-fe40-438e-9b5d-a9250e708e19 HTTP/1.1" 200 OK
+2026-02-02 11:02:13,853 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/c1d11ba3-fe40-438e-9b5d-a9250e708e19
+2026-02-02 11:02:13,857 - api_logger - INFO - Response: 200 - Took 0.0041s
+INFO:     172.25.68.123:0 - "GET /status/c1d11ba3-fe40-438e-9b5d-a9250e708e19 HTTP/1.1" 200 OK
+2026-02-02 11:02:13,905 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/c1d11ba3-fe40-438e-9b5d-a9250e708e19
+2026-02-02 11:02:13,909 - api_logger - INFO - Response: 200 - Took 0.0039s
+INFO:     172.25.68.123:0 - "GET /status/c1d11ba3-fe40-438e-9b5d-a9250e708e19 HTTP/1.1" 200 OK
+2026-02-02 11:02:13,935 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/results/c1d11ba3-fe40-438e-9b5d-a9250e708e19
+2026-02-02 11:02:14,299 - api_logger - INFO - Response: 200 - Took 0.3642s
+INFO:     172.25.68.123:0 - "GET /results/c1d11ba3-fe40-438e-9b5d-a9250e708e19 HTTP/1.1" 200 OK
+2026-02-02 11:02:20,388 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/list_analyses
+2026-02-02 11:02:21,019 - api_logger - INFO - Response: 200 - Took 0.6309s
+INFO:     172.25.68.123:0 - "GET /list_analyses HTTP/1.1" 200 OK

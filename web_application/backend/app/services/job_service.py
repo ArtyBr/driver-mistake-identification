@@ -120,54 +120,46 @@ class JobService:
             logger.error(f"Error fetching jobs from DB: {e}")
             db_jobs = {}
 
-        # 2. Fetch directory list from Remote Server
-        remote_user = "u2204449"
-        remote_host = "remote-49"
-        remote_base = "~/cs310_data/uploads"
+        # 2. Fetch directory list from Local Large Storage
+        local_base = Path("/dcs/large/safedrive_cs310_2526/uploads/")
         
         try:
-            # List directories on remote. Using ls -1 to get simple list.
-            # We assume any folder there is a job. Checking for results.json via SSH loop is slow,
-            # so we trust the folder presence or check DB match.
-            cmd = ["ssh", f"{remote_user}@{remote_host}", f"ls -1 {remote_base}"]
-            process = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
-            
-            if process.returncode == 0:
-                remote_folders = process.stdout.strip().split('\n')
-                
-                for job_id in remote_folders:
-                    if not job_id.strip(): continue
-                    job_id = job_id.strip()
-                    found_ids.add(job_id)
-                    
-                    name = job_id
-                    count = 0
-                    duration = 0.0
-                    created_at = datetime.now() # Fallback
-                    
-                    if job_id in db_jobs:
-                        job = db_jobs[job_id]
-                        name = job.name or job_id
-                        if job.created_at:
-                            created_at = job.created_at
-                            
-                        if job.road_metadata:
-                            try:
-                                meta = json.loads(job.road_metadata)
-                                count = meta.get("count", 0)
-                                duration = meta.get("duration", 0.0)
-                            except:
-                                pass
-                    
-                    analyses.append(AnalysisItem(
-                        id=job_id, 
-                        name=name,
-                        video_count=count,
-                        duration_seconds=duration,
-                        created_at=created_at
-                    ))
+            if local_base.exists() and local_base.is_dir():
+                for entry in local_base.iterdir():
+                    if entry.is_dir():
+                        job_id = entry.name
+                        found_ids.add(job_id)
+                        
+                        name = job_id
+                        count = 0
+                        duration = 0.0
+                        created_at = datetime.now() # Fallback
+                        
+                        if job_id in db_jobs:
+                            job = db_jobs[job_id]
+                            name = job.name or job_id
+                            if job.created_at:
+                                created_at = job.created_at
+                                
+                            if job.road_metadata:
+                                try:
+                                    meta = json.loads(job.road_metadata)
+                                    count = meta.get("count", 0)
+                                    duration = meta.get("duration", 0.0)
+                                except:
+                                    pass
+                        
+                        analyses.append(AnalysisItem(
+                            id=job_id, 
+                            name=name,
+                            video_count=count,
+                            duration_seconds=duration,
+                            created_at=created_at
+                        ))
+            else:
+                 logger.warning(f"Large storage directory not found: {local_base}")
         except Exception as e:
-            logger.error(f"Failed to fetch remote analysis list: {e}")
+            logger.error(f"Failed to fetch analysis list from storage: {e}")
 
         return sorted(analyses, key=lambda x: x.created_at, reverse=True)
         
@@ -182,25 +174,26 @@ class JobService:
             road_filename = "road.mp4"
             face_filename = "face.mp4"
 
-        # Fetch Remote Results
+        # Fetch Results from Local Large Storage
+        local_base = Path("/dcs/large/safedrive_cs310_2526/uploads/")
+        result_path = local_base / source_job_id / "results.json"
+
         try:
-            logger.info(f"Fetching remote results for {source_job_id}...")
-            # Using specific user and host
-            cmd = ["ssh", "u2204449@remote-49", f"cat ~/cs310_data/uploads/{source_job_id}/results.json"]
-            process = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            logger.info(f"Fetching results for {source_job_id} from {result_path}...")
             
-            if process.returncode != 0:
-                raise FileNotFoundError(f"Remote results not found for {source_job_id}")
+            if not result_path.exists():
+                raise FileNotFoundError(f"Results not found for {source_job_id}")
                 
-            result_data = json.loads(process.stdout)
+            with open(result_path, "r") as f:
+                result_data = json.load(f)
             
-            # If remote, we use the REMOTE: prefix logic
+            # Use REMOTE: prefix so that routes.py handles the path via stream_remote_video
             road_path_val = f"REMOTE:{source_job_id}/{road_filename}"
             face_path_val = f"REMOTE:{source_job_id}/{face_filename}"
             
         except Exception as e:
-            logger.error(f"Failed to load remote analysis: {e}")
-            raise FileNotFoundError(f"Could not load analysis for {source_job_id} (checked remote only)")
+            logger.error(f"Failed to load analysis: {e}")
+            raise FileNotFoundError(f"Could not load analysis for {source_job_id} (checked local storage)")
 
         # 3. Create Job Record
         new_job_id = str(uuid.uuid4())

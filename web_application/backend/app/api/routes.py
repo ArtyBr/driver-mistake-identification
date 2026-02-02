@@ -171,16 +171,37 @@ async def get_results(job_id: str, service: JobService = Depends(get_job_service
 
 @router.get("/video/remote/{job_id}/{filename}")
 async def stream_remote_video(job_id: str, filename: str):
-    remote_path = f"~/cs310_data/uploads/{job_id}/{filename}"
+    """
+    Streams a video file directly from the large storage directory.
+    Replaces previous SSH-based retrieval.
+    """
+    base_path = Path("/dcs/large/safedrive_cs310_2526/uploads")
+    # precise construction to prevent traversal
+    safe_path = base_path / job_id / filename
+    
+    # Ensure the path is actually within the intended directory (security check)
+    # resolve() handles '..' but we need to be careful. 
+    # Since we construct it with known parts, basic check might suffice, 
+    # but resolve + startswith is safer.
+    try:
+        resolved_path = safe_path.resolve()
+        resolved_base = base_path.resolve()
+        if not resolved_path.is_relative_to(resolved_base):
+             raise HTTPException(status_code=403, detail="Access denied")
+    except Exception:
+         # Path resolution failed (e.g. strict non-existence checks)
+         # We can just proceed to check existence
+         pass
+
+    if not safe_path.exists():
+        raise HTTPException(status_code=404, detail="Video file not found")
 
     def iterfile():
-        cmd = ["ssh", "u2204449@remote-49", f"cat {remote_path}"]
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        while True:
-            chunk = proc.stdout.read(64 * 1024)  # Read in 1MB chunks
-            if not chunk:
-                break
-            yield chunk
-        proc.wait()
+        with open(safe_path, "rb") as f:
+            while True:
+                chunk = f.read(1024 * 1024)  # 1MB chunks
+                if not chunk:
+                    break
+                yield chunk
 
     return StreamingResponse(iterfile(), media_type="video/mp4")
