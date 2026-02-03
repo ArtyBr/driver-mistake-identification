@@ -12,10 +12,10 @@
 
 ## Phase 2: SLURM Script Generation & Submission
 
-- [ ] Task: Implement SLURM Script Generation
-    - [ ] Update `BatchService` to generate a valid `.sbatch` string based on job parameters.
-    - [ ] Template should include resource requests (GPU if available/needed, time limits) and environment activation.
-    - [ ] Test generation against expected string output.
+- [x] Task: Implement SLURM Script Generation a48e275
+    - [x] Update `BatchService` to generate a valid `.sbatch` string based on job parameters.
+    - [x] Template should include resource requests (GPU if available/needed, time limits) and environment activation.
+    - [x] Test generation against expected string output.
 - [ ] Task: Implement SSH Submission Logic
     - [ ] Implement `paramiko` logic to connect via Jump Host.
     - [ ] Implement `sbatch` command execution.
