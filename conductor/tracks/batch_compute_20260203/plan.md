@@ -24,7 +24,7 @@
 
 ## Phase 3: Integration with Job Workflow
 
-- [ ] Task: Update `AnalysisService` to use `BatchService`
-    - [ ] Modify `start_analysis` in `web_application/backend/app/services/analysis_service.py`.
-    - [ ] Instead of `subprocess.Popen` locally, call `batch_service.submit_job`.
+- [x] Task: Update `AnalysisService` to use `BatchService` 2c91261
+    - [x] Modify `start_analysis` in `web_application/backend/app/services/analysis_service.py`.
+    - [x] Instead of `subprocess.Popen` locally, call `batch_service.submit_job`.
 - [ ] Task: Conductor - User Manual Verification 'Batch Computation Offloading' (Protocol in workflow.md)
