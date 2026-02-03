@@ -16,11 +16,11 @@
     - [x] Update `BatchService` to generate a valid `.sbatch` string based on job parameters.
     - [x] Template should include resource requests (GPU if available/needed, time limits) and environment activation.
     - [x] Test generation against expected string output.
-- [ ] Task: Implement SSH Submission Logic
-    - [ ] Implement `paramiko` logic to connect via Jump Host.
-    - [ ] Implement `sbatch` command execution.
-    - [ ] Parse Job ID from `sbatch` output.
-    - [ ] Write integration tests (mocked) for the submission flow.
+- [x] Task: Implement SSH Submission Logic 00fd3d9
+    - [x] Implement `paramiko` logic to connect via Jump Host.
+    - [x] Implement `sbatch` command execution.
+    - [x] Parse Job ID from `sbatch` output.
+    - [x] Write integration tests (mocked) for the submission flow.
 
 ## Phase 3: Integration with Job Workflow
 
