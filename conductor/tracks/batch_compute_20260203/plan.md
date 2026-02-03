@@ -1,6 +1,6 @@
 # Implementation Plan - Batch Computation Offloading
 
-## Phase 1: Infrastructure & Dependencies
+## Phase 1: Infrastructure & Dependencies [checkpoint: 17a9309]
 
 - [x] Task: Add `paramiko` to `web_application/backend/requirements.txt` 27ff65e
     - [x] Create `tests/test_deps.py` to verify `paramiko` installation (if needed, or just relying on pip install).
