@@ -10,7 +10,7 @@
     - [x] Define `submit_job`, `check_status` methods.
     - [x] Write unit tests in `web_application/backend/tests/test_batch_service.py` mocking SSH connections.
 
-## Phase 2: SLURM Script Generation & Submission
+## Phase 2: SLURM Script Generation & Submission [checkpoint: 564fc9f]
 
 - [x] Task: Implement SLURM Script Generation a48e275
     - [x] Update `BatchService` to generate a valid `.sbatch` string based on job parameters.
