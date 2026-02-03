@@ -4,3 +4,6 @@ python-multipart
 numpy
 tqdm
 sqlmodel
+paramiko
+pytest
+pytest-cov
