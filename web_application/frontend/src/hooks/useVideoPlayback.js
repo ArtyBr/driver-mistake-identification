@@ -331,10 +331,20 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
           const ranges = [];
           const buffered = roadVid.buffered;
           for (let i = 0; i < buffered.length; i++) {
-              ranges.push({
-                  start: buffered.start(i) + offset,
-                  end: buffered.end(i) + offset
-              });
+              const start = buffered.start(i) + offset;
+              const end = buffered.end(i) + offset;
+
+              // Merge overlapping or adjacent ranges (tolerance 0.5s)
+              if (ranges.length > 0) {
+                  const last = ranges[ranges.length - 1];
+                  if (start - last.end < 0.5) {
+                      last.end = Math.max(last.end, end);
+                  } else {
+                      ranges.push({ start, end });
+                  }
+              } else {
+                  ranges.push({ start, end });
+              }
           }
           setBufferedRanges(ranges);
 

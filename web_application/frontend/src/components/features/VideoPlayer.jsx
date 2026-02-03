@@ -76,8 +76,7 @@ function VideoPlayer({ results, roadUrls, faceUrls }) {
   const getColorForState = (state) => {
     if (state === 'Looking Ahead') return '#20c997'
     if (state === 'Left Mirror') return '#6f42c1'
-    if (state === 'Right Mirror') return '#00d2df'
-    if (state === 'N/A' || state === 'Unknown') return '#6c757d'
+    if (state === 'Right Mirror') return '#0ffc10'
     return '#ffc107'
   }
 
