@@ -5,10 +5,10 @@
 - [x] Task: Add `paramiko` to `web_application/backend/requirements.txt` 27ff65e
     - [x] Create `tests/test_deps.py` to verify `paramiko` installation (if needed, or just relying on pip install).
     - [x] Update `requirements.txt`.
-- [ ] Task: Create `BatchService` Skeleton
-    - [ ] Create `web_application/backend/app/services/batch_service.py`.
-    - [ ] Define `submit_job`, `check_status` methods.
-    - [ ] Write unit tests in `web_application/backend/tests/test_batch_service.py` mocking SSH connections.
+- [x] Task: Create `BatchService` Skeleton d9ec120
+    - [x] Create `web_application/backend/app/services/batch_service.py`.
+    - [x] Define `submit_job`, `check_status` methods.
+    - [x] Write unit tests in `web_application/backend/tests/test_batch_service.py` mocking SSH connections.
 
 ## Phase 2: SLURM Script Generation & Submission
 
