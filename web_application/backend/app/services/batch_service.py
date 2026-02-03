@@ -33,7 +33,17 @@ class BatchService:
         
         return client
 
-    def _generate_sbatch_script(self, job_name: str, road_path: str, face_path: str, output_path: str) -> str:
+    def _generate_sbatch_script(self, job_name: str, road_path: str, face_path: str, output_path: str, road_meta: str = None, face_meta: str = None) -> str:
+        cmd = f"python combined_analysis/run_headless.py \\\n    --road {road_path} \\\n    --face {face_path} \\\n    --output {output_path}"
+        
+        if road_meta:
+            # Escape double quotes for shell
+            escaped_road_meta = road_meta.replace('"', '\\"')
+            cmd += f" \\\n    --road_meta \"{escaped_road_meta}\""
+        if face_meta:
+            escaped_face_meta = face_meta.replace('"', '\\"')
+            cmd += f" \\\n    --face_meta \"{escaped_face_meta}\""
+
         script = f"""#!/bin/bash
 #SBATCH --job-name={job_name}
 #SBATCH --partition=gpus
@@ -48,10 +58,7 @@ source ~/.bashrc
 conda activate {self.conda_env} || source {self.project_root}/lane_detection/lanedet/environment.yaml
 
 cd {self.project_root}
-python combined_analysis/run_headless.py \\
-    --road {road_path} \\
-    --face {face_path} \\
-    --output {output_path}
+{cmd}
 """
         return script
 

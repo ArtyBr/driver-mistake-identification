@@ -14,7 +14,8 @@ logger = logging.getLogger("core.config")
 BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 WEB_APP_DIR = BACKEND_DIR.parent
 PROJECT_ROOT = WEB_APP_DIR.parent
-UPLOAD_DIR = WEB_APP_DIR / "uploads"
+# Large storage for cluster accessibility
+UPLOAD_DIR = Path("/dcs/large/safedrive_cs310_2526/uploads")
 DB_PATH = BACKEND_DIR / "jobs.db"
 
 # Create necessary directories
