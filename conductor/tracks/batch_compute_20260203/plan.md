@@ -2,9 +2,9 @@
 
 ## Phase 1: Infrastructure & Dependencies
 
-- [ ] Task: Add `paramiko` to `web_application/backend/requirements.txt`
-    - [ ] Create `tests/test_deps.py` to verify `paramiko` installation (if needed, or just relying on pip install).
-    - [ ] Update `requirements.txt`.
+- [x] Task: Add `paramiko` to `web_application/backend/requirements.txt` 27ff65e
+    - [x] Create `tests/test_deps.py` to verify `paramiko` installation (if needed, or just relying on pip install).
+    - [x] Update `requirements.txt`.
 - [ ] Task: Create `BatchService` Skeleton
     - [ ] Create `web_application/backend/app/services/batch_service.py`.
     - [ ] Define `submit_job`, `check_status` methods.
