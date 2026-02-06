@@ -1,6 +1,8 @@
 import logging
 import paramiko
+import re
 from pathlib import Path
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,97 @@ class BatchService:
         client.connect(self.target_host, username=self.username, sock=channel, allow_agent=True, look_for_keys=True)
         
         return client
+
+    def _get_latest_slurm_log(self, client: paramiko.SSHClient, job_dir: str) -> Optional[str]:
+        """Finds the most recent slurm log file in the job directory."""
+        try:
+            # List slurm_*.log files
+            cmd = f"ls {job_dir}/slurm_*.log"
+            stdin, stdout, stderr = client.exec_command(cmd)
+            
+            output = stdout.read().decode().strip()
+            if stdout.channel.recv_exit_status() != 0:
+                return None
+            
+            files = output.splitlines()
+            if not files:
+                return None
+                
+            # Assume the last one is the latest (ls usually sorts alphabetically, and IDs increase)
+            # A more robust way would be ls -t, but IDs should be sufficient
+            return files[-1]
+        except Exception as e:
+            logger.error(f"Error finding slurm log: {e}")
+            return None
+
+    def get_job_progress(self, job_id: str, job_dir: str) -> Optional[int]:
+        """Parses the latest SLURM log for tqdm progress."""
+        client = self._get_ssh_client()
+        try:
+            log_file = self._get_latest_slurm_log(client, job_dir)
+            if not log_file:
+                return None
+                
+            # Read the log file
+            # We don't need the whole file, but tqdm updates the same line often.
+            # However, in log files, it usually dumps new lines.
+            # Let's read the last 50 lines to catch the latest update.
+            # Using cat for simplicity as tail might miss if the file is small, 
+            # but actually tail is better for performance on large logs.
+            # Let's just cat the whole thing if it's not huge, or tail -n 100
+            
+            # Using tail to get recent output
+            cmd = f"tail -n 50 {log_file}"
+            stdin, stdout, stderr = client.exec_command(cmd)
+            
+            output = stdout.read().decode().strip()
+            if stdout.channel.recv_exit_status() != 0:
+                return None
+                
+            # Regex for tqdm: " 45%|" or "45%|####"
+            # Look for the last occurrence of a percentage followed by %|
+            matches = re.findall(r'(\d+)%\|', output)
+            if matches:
+                return int(matches[-1])
+            
+            return None
+        finally:
+            client.close()
+
+    def get_job_error(self, job_id: str, job_dir: str) -> Optional[str]:
+        """Reads the tail of the SLURM log to capture errors."""
+        client = self._get_ssh_client()
+        try:
+            log_file = self._get_latest_slurm_log(client, job_dir)
+            if not log_file:
+                return "Log file not found."
+                
+            # Read last 20 lines
+            cmd = f"tail -n 20 {log_file}"
+            stdin, stdout, stderr = client.exec_command(cmd)
+            
+            output = stdout.read().decode().strip()
+            if stdout.channel.recv_exit_status() != 0:
+                return "Failed to read log file."
+            
+            return output
+        finally:
+            client.close()
+
+    def read_remote_results(self, output_path: str) -> Optional[str]:
+        """Reads the results.json file from the remote server."""
+        client = self._get_ssh_client()
+        try:
+            cmd = f"cat {output_path}"
+            stdin, stdout, stderr = client.exec_command(cmd)
+            
+            output = stdout.read().decode().strip()
+            if stdout.channel.recv_exit_status() != 0:
+                return None
+                
+            return output
+        finally:
+            client.close()
 
     def _generate_sbatch_script(self, job_name: str, road_path: str, face_path: str, output_path: str, road_meta: str = None, face_meta: str = None) -> str:
         cmd = f"python combined_analysis/run_headless.py \\\n    --road {road_path} \\\n    --face {face_path} \\\n    --output {output_path}"
