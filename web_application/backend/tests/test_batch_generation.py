@@ -13,7 +13,7 @@ def test_generate_sbatch_script():
     
     assert "#!/bin/bash" in script
     assert f"#SBATCH --job-name={job_name}" in script
-    assert "#SBATCH --partition=gpus" in script  # Assuming GPU partition
+    assert "#SBATCH --partition=eagle" in script
     assert "#SBATCH --gres=gpu:1" in script      # Request 1 GPU
     assert "source /dcs/project/safedrive/driver-mistake-identification/lane_detection/lanedet/environment.yaml" in script or "conda activate" in script or "source" in script
     # We expect the command to run the headless script
