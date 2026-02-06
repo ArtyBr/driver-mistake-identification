@@ -1,5 +1,6 @@
 import logging
 import paramiko
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +10,9 @@ class BatchService:
         self.conda_env = "safedrive_env"
         self.jump_host = "remote-49.dcs.warwick.ac.uk"
         self.target_host = "kudu-taught.dcs.warwick.ac.uk"
-        self.username = "safedrive"
+        self.username = "u2204449"
+        self.remote_project_root = "~/cs310/driver-mistake-identification"
+        self.venv_path = "/dcs/large/safedrive_cs310_2526/safedrive_venv"
 
     def _get_ssh_client(self):
         """Creates an SSH client jumping through a proxy."""
@@ -18,7 +21,7 @@ class BatchService:
         
         # Connect to jump host
         # Note: In production, this might need key_filename or ssh-agent
-        gateway_client.connect(self.jump_host, username=self.username)
+        gateway_client.connect(self.jump_host, username=self.username, allow_agent=True, look_for_keys=True)
         
         # Open tunnel to target host
         transport = gateway_client.get_transport()
@@ -29,7 +32,7 @@ class BatchService:
         # Connect to target host through tunnel
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(self.target_host, username=self.username, sock=channel)
+        client.connect(self.target_host, username=self.username, sock=channel, allow_agent=True, look_for_keys=True)
         
         return client
 
@@ -44,20 +47,22 @@ class BatchService:
             escaped_face_meta = face_meta.replace('"', '\\"')
             cmd += f" \\\n    --face_meta \"{escaped_face_meta}\""
 
+        # Extract job directory from output_path (which is .../results.json)
+        job_dir = Path(output_path).parent
+
         script = f"""#!/bin/bash
 #SBATCH --job-name={job_name}
-#SBATCH --partition=gpus
+#SBATCH --partition=eagle
 #SBATCH --gres=gpu:1
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --time=01:00:00
-#SBATCH --output={self.project_root}/logs/batch_%j.log
+#SBATCH --output={job_dir}/slurm_%j.log
 
 # Load environment
-source ~/.bashrc
-conda activate {self.conda_env} || source {self.project_root}/lane_detection/lanedet/environment.yaml
+source {self.venv_path}/bin/activate
 
-cd {self.project_root}
+cd {self.remote_project_root}
 {cmd}
 """
         return script
