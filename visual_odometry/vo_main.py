@@ -160,30 +160,21 @@ class VisualOdometry:
             flow_vectors = good_new - good_old
             avg_flow = np.mean(np.linalg.norm(flow_vectors, axis=1))
             
-            # Stationary Threshold (pixels)
-            # If average movement is tiny, assume car is stopped to prevent drift
-            if avg_flow < 3.0:
-                print(f"Frame {self.frame_count} | Stationary (Flow: {avg_flow:.2f}px) | Pos: ({self.cur_t[0][0]:.2f}, {self.cur_t[1][0]:.2f}, {self.cur_t[2][0]:.2f})", flush=True)
-                # Append SAME position to keep trajectory consistent in time
+            E, mask = cv2.findEssentialMat(good_new, good_old, self.K, method=cv2.RANSAC, prob=0.999, threshold=1.0)
+            if E is not None:
+                _, R, t, mask = cv2.recoverPose(E, good_new, good_old, self.K)
+                t_mag = np.linalg.norm(t)
+                scale = 1.0
+                
+                # Update trajectory
+                self.cur_t = self.cur_t + scale * self.cur_R.dot(t)
+                self.cur_R = self.cur_R.dot(R)
+                
                 self.traj_x.append(self.cur_t[0][0])
                 self.traj_y.append(self.cur_t[1][0])
                 self.traj_z.append(self.cur_t[2][0])
-            else:
-                E, mask = cv2.findEssentialMat(good_new, good_old, self.K, method=cv2.RANSAC, prob=0.999, threshold=1.0)
-                if E is not None:
-                    _, R, t, mask = cv2.recoverPose(E, good_new, good_old, self.K)
-                    t_mag = np.linalg.norm(t)
-                    scale = 1.0
-                    
-                    # Update trajectory
-                    self.cur_t = self.cur_t + scale * self.cur_R.dot(t)
-                    self.cur_R = self.cur_R.dot(R)
-                    
-                    self.traj_x.append(self.cur_t[0][0])
-                    self.traj_y.append(self.cur_t[1][0])
-                    self.traj_z.append(self.cur_t[2][0])
-                    
-                    print(f"Frame {self.frame_count} | Feats: {len(good_new)} | Flow: {avg_flow:.2f}px | Step: {t_mag:.4f} | Pos: ({self.cur_t[0][0]:.2f}, {self.cur_t[1][0]:.2f}, {self.cur_t[2][0]:.2f})", flush=True)
+                
+                print(f"Frame {self.frame_count} | Feats: {len(good_new)} | Flow: {avg_flow:.2f}px | Step: {t_mag:.4f} | Pos: ({self.cur_t[0][0]:.2f}, {self.cur_t[1][0]:.2f}, {self.cur_t[2][0]:.2f})", flush=True)
         else:
              print(f"Frame {self.frame_count}: Not enough features ({len(good_new)})", flush=True)
 
