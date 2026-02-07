@@ -198,76 +198,79 @@ class VisualOdometry:
             self.k_adjusted = True
 
         # Generate Mask using Mask R-CNN
-        # dynamic_mask: 255 where objects are, 0 where static
         dynamic_mask = self.get_segmentation_mask(frame_cropped)
         
-        # Dilate mask slightly to cover edges (safety buffer)
+        # Dilate mask slightly to cover edges
         kernel = np.ones((31, 31), np.uint8) 
         dynamic_mask = cv2.dilate(dynamic_mask, kernel, iterations=2)
         
         # Static mask: 255 where static, 0 where dynamic
         static_mask = cv2.bitwise_not(dynamic_mask)
+        
+        # Safety: If mask covers too much of the screen, we are effectively blind
+        static_area_ratio = np.sum(static_mask == 255) / (h_crop * w_crop)
+        is_blind = static_area_ratio < 0.05 # Less than 5% static area
 
         # Convert to grayscale
         curr_gray = cv2.cvtColor(frame_cropped, cv2.COLOR_BGR2GRAY)
 
-        if self.prev_image is None:
-            # First frame initialization
-            self.prev_keypoints = cv2.goodFeaturesToTrack(curr_gray, mask=static_mask, **self.feature_params)
+        if self.prev_image is None or self.prev_keypoints is None:
+            # Initialization
+            if not is_blind:
+                self.prev_keypoints = cv2.goodFeaturesToTrack(curr_gray, mask=static_mask, **self.feature_params)
             self.prev_image = curr_gray
-            print("Initialized features (Cropped & Masked).", flush=True)
+            print(f"Initialized features. Static area: {static_area_ratio*100:.1f}%", flush=True)
             return True, frame_raw, frame_cropped, None, dynamic_mask
 
-        # Track features (Forward)
-        p1, st, err = cv2.calcOpticalFlowPyrLK(self.prev_image, curr_gray, self.prev_keypoints, None, **self.lk_params)
-
-        # Track features (Backward) for consistency check
-        p0_back, st_back, err_back = cv2.calcOpticalFlowPyrLK(curr_gray, self.prev_image, p1, None, **self.lk_params)
-
-        # Select good points that are tracked AND in static regions AND consistent
+        # --- Feature Tracking ---
         good_new = []
         good_old = []
-        if p1 is not None and p0_back is not None:
-            # Forward-Backward error
-            fb_err = np.linalg.norm((self.prev_keypoints - p0_back).reshape(-1, 2), axis=1)
-            
-            for i, (new, old) in enumerate(zip(p1, self.prev_keypoints)):
-                if st[i] == 1 and st_back[i] == 1 and fb_err[i] < 0.5: # Tight 0.5px consistency
-                    x, y = new.ravel()
-                    # Check bounds and mask
-                    if 0 <= int(y) < h_crop and 0 <= int(x) < w_crop:
-                        if static_mask[int(y), int(x)] > 0:
-                            good_new.append(new)
-                            good_old.append(old)
+        tracking_success = False
+        
+        if not is_blind and self.prev_keypoints is not None and len(self.prev_keypoints) > 0:
+            # Track features (Forward)
+            p1, st, err = cv2.calcOpticalFlowPyrLK(self.prev_image, curr_gray, self.prev_keypoints, None, **self.lk_params)
+
+            # Track features (Backward) for consistency check
+            if p1 is not None:
+                p0_back, st_back, err_back = cv2.calcOpticalFlowPyrLK(curr_gray, self.prev_image, p1, None, **self.lk_params)
+
+                if p0_back is not None:
+                    # Forward-Backward error
+                    fb_err = np.linalg.norm((self.prev_keypoints - p0_back).reshape(-1, 2), axis=1)
+                    
+                    for i, (new, old) in enumerate(zip(p1, self.prev_keypoints)):
+                        if st[i] == 1 and st_back[i] == 1 and fb_err[i] < 0.5:
+                            x, y = new.ravel()
+                            if 0 <= int(y) < h_crop and 0 <= int(x) < w_crop:
+                                if static_mask[int(y), int(x)] > 0:
+                                    good_new.append(new)
+                                    good_old.append(old)
             
             good_new = np.array(good_new)
             good_old = np.array(good_old)
+            if len(good_new) > 10:
+                tracking_success = True
 
-        # 1. Pose Estimation
-        if len(good_new) > 10:
-            # Calculate average feature displacement (optical flow magnitude)
+        # --- Pose Estimation & KF ---
+        R_rel = np.eye(3)
+        t_rel = np.zeros((3, 1))
+        is_moving = False
+        inlier_ratio = 0.0
+        avg_flow = 0.0
+        
+        if tracking_success:
+            # Calculate average feature displacement
             flow_vectors = good_new - good_old
             avg_flow = np.mean(np.linalg.norm(flow_vectors, axis=1))
             
-            # --- Stationary Check & VO ---
-            R_rel = np.eye(3)
-            t_rel = np.zeros((3, 1))
-            is_moving = False
-            inlier_ratio = 0.0
-            
-            # Threshold for stationary detection (pixels)
             if avg_flow > 1.0:
                 E, mask = cv2.findEssentialMat(good_new, good_old, self.K, method=cv2.RANSAC, prob=0.999, threshold=0.5)
                 if E is not None:
-                    # Inlier ratio check
                     inliers = np.sum(mask)
                     inlier_ratio = inliers / len(good_new)
-                    
                     if inliers > 5 and inlier_ratio > 0.4:
                         _, R_cand, t_cand, mask = cv2.recoverPose(E, good_new, good_old, self.K, mask=mask)
-                        
-                        # Sanity check: Rotation magnitude
-                        # Small rotation check (approx angle in radians)
                         rot_trace = np.trace(R_cand)
                         rot_angle = math.acos(np.clip((rot_trace - 1) / 2, -1, 1))
                         
@@ -276,53 +279,62 @@ class VisualOdometry:
                             t_rel = t_cand
                             is_moving = True
                         else:
-                             print(f"Skipping frame: Unrealistic rotation ({math.degrees(rot_angle):.1f} deg)")
-            
-            # Update Raw Accumulator (for KF input)
-            scale = 1.0 # Monocular scale unknown
-            if is_moving:
-                self.raw_t = self.raw_t + scale * self.raw_R.dot(t_rel)
-                self.raw_R = self.raw_R.dot(R_rel)
-            
-            # --- Kalman Filter Update ---
-            # 1. Predict
-            self.kf.predict()
-            
-            # 2. Measurement (from raw accumulator)
-            meas_pos = self.raw_t.flatten() # x, y, z
-            meas_euler = rotationMatrixToEulerAngles(self.raw_R) # roll, pitch, yaw
-            measurement = np.concatenate((meas_pos, meas_euler)).reshape(6, 1).astype(np.float32)
-            
-            # 3. Correct
-            # We trust the measurement more if it passed the 'moving' checks
-            conf_scale = 1.0 if is_moving else 0.1 # Very high trust when stationary to lock position
-            est_state = self.kf.correct(measurement, confidence_scale=conf_scale)
-            
-            # --- Extract Filtered Pose ---
-            # State: [x, y, z, roll, pitch, yaw, ...]
-            filt_pos = est_state[:3]
-            filt_euler = est_state[3:6].flatten()
-            
-            self.cur_t = filt_pos.reshape(3, 1)
-            self.cur_R = eulerAnglesToRotationMatrix(filt_euler)
-            
-            # Update trajectory for visualization
-            self.traj_x.append(self.cur_t[0][0])
-            self.traj_y.append(self.cur_t[1][0])
-            self.traj_z.append(self.cur_t[2][0])
-            
-            status = "MOVING" if is_moving else "STATIONARY"
-            print(f"Frame {self.frame_count} | {status} | Flow: {avg_flow:.2f}px | Inlier: {inlier_ratio:.2f} | Pos: ({self.cur_t[0][0]:.2f}, {self.cur_t[1][0]:.2f}, {self.cur_t[2][0]:.2f})", flush=True)
-            
-        else:
-             print(f"Frame {self.frame_count}: Not enough features ({len(good_new)})", flush=True)
+                             print(f"Skipping frame {self.frame_count}: High rotation ({math.degrees(rot_angle):.1f} deg)")
 
-        # 2. Preparation for Next Frame
-        if len(good_new) < 1000: 
-             new_kps = cv2.goodFeaturesToTrack(curr_gray, mask=static_mask, **self.feature_params)
-             self.prev_keypoints = new_kps if new_kps is not None else good_new.reshape(-1, 1, 2)
+        # Update Raw Accumulator (only if valid motion)
+        if is_moving:
+            self.raw_t = self.raw_t + self.raw_R.dot(t_rel)
+            self.raw_R = self.raw_R.dot(R_rel)
+
+        # Kalman Filter Step
+        self.kf.predict()
+        
+        # Prepare measurement (Current Raw Pose)
+        meas_pos = self.raw_t.flatten()
+        meas_euler = rotationMatrixToEulerAngles(self.raw_R)
+        measurement = np.concatenate((meas_pos, meas_euler)).reshape(6, 1).astype(np.float32)
+        
+        # Confidence logic: Lock position if stationary/blind, trust VO if moving
+        if is_moving:
+            conf_scale = 1.0
+        elif is_blind:
+            conf_scale = 0.01 # Extremely high trust in stationary state when masked
         else:
-             self.prev_keypoints = good_new.reshape(-1, 1, 2)
+            conf_scale = 0.1 # High trust in stationary state
+            
+        est_state = self.kf.correct(measurement, confidence_scale=conf_scale)
+        
+        # Extract Filtered Pose
+        self.cur_t = est_state[:3].reshape(3, 1)
+        self.cur_R = eulerAnglesToRotationMatrix(est_state[3:6].flatten())
+        
+        self.traj_x.append(self.cur_t[0][0])
+        self.traj_y.append(self.cur_t[1][0])
+        self.traj_z.append(self.cur_t[2][0])
+        
+        # Status Logging
+        if is_blind: status = "BLIND/MASKED"
+        elif is_moving: status = "MOVING"
+        else: status = "STATIONARY"
+        
+        print(f"Frame {self.frame_count} | {status} | Flow: {avg_flow:.2f}px | Inlier: {inlier_ratio:.2f} | Pos: ({self.cur_t[0][0]:.2f}, {self.cur_t[1][0]:.2f}, {self.cur_t[2][0]:.2f})", flush=True)
+
+        # --- Feature Maintenance ---
+        if tracking_success and len(good_new) > 0:
+            if len(good_new) < 1000 and not is_blind:
+                new_kps = cv2.goodFeaturesToTrack(curr_gray, mask=static_mask, **self.feature_params)
+                if new_kps is not None:
+                    self.prev_keypoints = np.vstack((good_new.reshape(-1, 1, 2), new_kps))
+                else:
+                    self.prev_keypoints = good_new.reshape(-1, 1, 2)
+            else:
+                self.prev_keypoints = good_new.reshape(-1, 1, 2)
+        else:
+            # Lost tracking or blind: Try to rediscover if possible
+            if not is_blind:
+                self.prev_keypoints = cv2.goodFeaturesToTrack(curr_gray, mask=static_mask, **self.feature_params)
+            else:
+                self.prev_keypoints = None
 
         self.prev_image = curr_gray
         return True, frame_raw, frame_cropped, None, dynamic_mask
