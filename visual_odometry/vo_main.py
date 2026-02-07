@@ -7,6 +7,74 @@ import os
 import torch
 import torchvision
 from torchvision import transforms
+import math
+
+def rotationMatrixToEulerAngles(R):
+    sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
+    singular = sy < 1e-6
+    if not singular:
+        x = math.atan2(R[2, 1], R[2, 2])
+        y = math.atan2(-R[2, 0], sy)
+        z = math.atan2(R[1, 0], R[0, 0])
+    else:
+        x = math.atan2(-R[1, 2], R[1, 1])
+        y = math.atan2(-R[2, 0], sy)
+        z = 0
+    return np.array([x, y, z])
+
+def eulerAnglesToRotationMatrix(theta):
+    R_x = np.array([[1, 0, 0],
+                    [0, math.cos(theta[0]), -math.sin(theta[0])],
+                    [0, math.sin(theta[0]), math.cos(theta[0])]])
+    R_y = np.array([[math.cos(theta[1]), 0, math.sin(theta[1])],
+                    [0, 1, 0],
+                    [-math.sin(theta[1]), 0, math.cos(theta[1])]])
+    R_z = np.array([[math.cos(theta[2]), -math.sin(theta[2]), 0],
+                    [math.sin(theta[2]), math.cos(theta[2]), 0],
+                    [0, 0, 1]])
+    R = np.dot(R_z, np.dot(R_y, R_x))
+    return R
+
+class PoseKalmanFilter:
+    def __init__(self, fps=30.0):
+        self.dt = 1.0 / fps
+        
+        # State: [x, y, z, roll, pitch, yaw, vx, vy, vz, v_roll, v_pitch, v_yaw] (12x1)
+        self.kalman = cv2.KalmanFilter(12, 6, 0)
+        
+        # Transition Matrix (F)
+        # x_k = x_{k-1} + v_{k-1} * dt
+        self.kalman.transitionMatrix = np.eye(12, dtype=np.float32)
+        for i in range(6):
+            self.kalman.transitionMatrix[i, i+6] = self.dt
+            
+        # Measurement Matrix (H)
+        # We measure [x, y, z, roll, pitch, yaw]
+        self.kalman.measurementMatrix = np.eye(6, 12, dtype=np.float32)
+        
+        # Process Noise Covariance (Q)
+        # Model uncertainty (assume constant velocity is mostly true)
+        self.kalman.processNoiseCov = np.eye(12, dtype=np.float32) * 1e-4
+        
+        # Measurement Noise Covariance (R)
+        # Sensor noise (VO uncertainty)
+        # We can tune this dynamically
+        self.kalman.measurementNoiseCov = np.eye(6, dtype=np.float32) * 1e-2
+        
+        # Error Covariance (P)
+        self.kalman.errorCovPost = np.eye(12, dtype=np.float32)
+
+    def predict(self):
+        return self.kalman.predict()
+
+    def correct(self, measurement, confidence_scale=1.0):
+        # confidence_scale: Higher means LESS confident in measurement (higher R)
+        
+        # Update R based on confidence
+        base_R = 1e-2
+        self.kalman.measurementNoiseCov = np.eye(6, dtype=np.float32) * base_R * confidence_scale
+        
+        return self.kalman.correct(measurement)
 
 class VisualOdometry:
     def __init__(self, video_path, start_seconds=0):
@@ -33,13 +101,17 @@ class VisualOdometry:
         self.D = np.array([0.09120135029599218, 0.03431960504192815, -0.027375346575880814, -0.017942890066237845, -0.6799011067187613])
 
         # Feature Detection Parameters
-        self.feature_params = dict(maxCorners=2000, qualityLevel=0.01, minDistance=30, blockSize=7)
+        self.feature_params = dict(maxCorners=2000, qualityLevel=0.05, minDistance=30, blockSize=7)
         self.lk_params = dict(winSize=(21, 21), maxLevel=3,
                               criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01))
 
         # Initialization
         self.cur_R = np.eye(3)
         self.cur_t = np.zeros((3, 1))
+        # Raw pose accumulator for KF input
+        self.raw_R = np.eye(3)
+        self.raw_t = np.zeros((3, 1))
+        
         self.prev_image = None
         self.prev_keypoints = None
         
@@ -47,6 +119,17 @@ class VisualOdometry:
         self.traj_y = [0.0]
         self.traj_z = [0.0]
         self.frame_count = 0
+        
+        # Kalman Filter Init
+        fps = self.cap.get(cv2.CAP_PROP_FPS)
+        if fps <= 0 or np.isnan(fps): fps = 30.0
+        print(f"Initializing Kalman Filter (FPS: {fps})")
+        self.kf = PoseKalmanFilter(fps=fps)
+        
+        # Initial State for KF
+        init_meas = np.zeros((6, 1), dtype=np.float32)
+        # We start at 0,0,0 and 0,0,0 rotation
+        self.kf.kalman.statePost[:6] = init_meas
 
         # --- Mask R-CNN Setup ---
         print("Initializing Mask R-CNN (ResNet50 FPN V2)...")
@@ -85,7 +168,7 @@ class VisualOdometry:
             label = predictions['labels'][i].item()
             
             # Confidence threshold and class check
-            if score > 0.5 and label in self.ignore_classes:
+            if score > 0.3 and label in self.ignore_classes:
                 # Extract mask (soft mask > 0.5 becomes binary)
                 mask = predictions['masks'][i, 0].cpu().numpy()
                 mask_binary = (mask > 0.5).astype(np.uint8) * 255
@@ -119,8 +202,8 @@ class VisualOdometry:
         dynamic_mask = self.get_segmentation_mask(frame_cropped)
         
         # Dilate mask slightly to cover edges (safety buffer)
-        kernel = np.ones((15, 15), np.uint8) 
-        dynamic_mask = cv2.dilate(dynamic_mask, kernel, iterations=1)
+        kernel = np.ones((31, 31), np.uint8) 
+        dynamic_mask = cv2.dilate(dynamic_mask, kernel, iterations=2)
         
         # Static mask: 255 where static, 0 where dynamic
         static_mask = cv2.bitwise_not(dynamic_mask)
@@ -135,15 +218,21 @@ class VisualOdometry:
             print("Initialized features (Cropped & Masked).", flush=True)
             return True, frame_raw, frame_cropped, None, dynamic_mask
 
-        # Track features
+        # Track features (Forward)
         p1, st, err = cv2.calcOpticalFlowPyrLK(self.prev_image, curr_gray, self.prev_keypoints, None, **self.lk_params)
 
-        # Select good points that are tracked AND in static regions
+        # Track features (Backward) for consistency check
+        p0_back, st_back, err_back = cv2.calcOpticalFlowPyrLK(curr_gray, self.prev_image, p1, None, **self.lk_params)
+
+        # Select good points that are tracked AND in static regions AND consistent
         good_new = []
         good_old = []
-        if p1 is not None:
+        if p1 is not None and p0_back is not None:
+            # Forward-Backward error
+            fb_err = np.linalg.norm((self.prev_keypoints - p0_back).reshape(-1, 2), axis=1)
+            
             for i, (new, old) in enumerate(zip(p1, self.prev_keypoints)):
-                if st[i] == 1:
+                if st[i] == 1 and st_back[i] == 1 and fb_err[i] < 0.5: # Tight 0.5px consistency
                     x, y = new.ravel()
                     # Check bounds and mask
                     if 0 <= int(y) < h_crop and 0 <= int(x) < w_crop:
@@ -155,26 +244,76 @@ class VisualOdometry:
             good_old = np.array(good_old)
 
         # 1. Pose Estimation
-        if len(good_new) > 5:
+        if len(good_new) > 10:
             # Calculate average feature displacement (optical flow magnitude)
             flow_vectors = good_new - good_old
             avg_flow = np.mean(np.linalg.norm(flow_vectors, axis=1))
             
-            E, mask = cv2.findEssentialMat(good_new, good_old, self.K, method=cv2.RANSAC, prob=0.999, threshold=1.0)
-            if E is not None:
-                _, R, t, mask = cv2.recoverPose(E, good_new, good_old, self.K)
-                t_mag = np.linalg.norm(t)
-                scale = 1.0
-                
-                # Update trajectory
-                self.cur_t = self.cur_t + scale * self.cur_R.dot(t)
-                self.cur_R = self.cur_R.dot(R)
-                
-                self.traj_x.append(self.cur_t[0][0])
-                self.traj_y.append(self.cur_t[1][0])
-                self.traj_z.append(self.cur_t[2][0])
-                
-                print(f"Frame {self.frame_count} | Feats: {len(good_new)} | Flow: {avg_flow:.2f}px | Step: {t_mag:.4f} | Pos: ({self.cur_t[0][0]:.2f}, {self.cur_t[1][0]:.2f}, {self.cur_t[2][0]:.2f})", flush=True)
+            # --- Stationary Check & VO ---
+            R_rel = np.eye(3)
+            t_rel = np.zeros((3, 1))
+            is_moving = False
+            inlier_ratio = 0.0
+            
+            # Threshold for stationary detection (pixels)
+            if avg_flow > 1.0:
+                E, mask = cv2.findEssentialMat(good_new, good_old, self.K, method=cv2.RANSAC, prob=0.999, threshold=0.5)
+                if E is not None:
+                    # Inlier ratio check
+                    inliers = np.sum(mask)
+                    inlier_ratio = inliers / len(good_new)
+                    
+                    if inliers > 5 and inlier_ratio > 0.4:
+                        _, R_cand, t_cand, mask = cv2.recoverPose(E, good_new, good_old, self.K, mask=mask)
+                        
+                        # Sanity check: Rotation magnitude
+                        # Small rotation check (approx angle in radians)
+                        rot_trace = np.trace(R_cand)
+                        rot_angle = math.acos(np.clip((rot_trace - 1) / 2, -1, 1))
+                        
+                        if rot_angle < 0.1: # Limit to ~5.7 degrees per frame
+                            R_rel = R_cand
+                            t_rel = t_cand
+                            is_moving = True
+                        else:
+                             print(f"Skipping frame: Unrealistic rotation ({math.degrees(rot_angle):.1f} deg)")
+            
+            # Update Raw Accumulator (for KF input)
+            scale = 1.0 # Monocular scale unknown
+            if is_moving:
+                self.raw_t = self.raw_t + scale * self.raw_R.dot(t_rel)
+                self.raw_R = self.raw_R.dot(R_rel)
+            
+            # --- Kalman Filter Update ---
+            # 1. Predict
+            self.kf.predict()
+            
+            # 2. Measurement (from raw accumulator)
+            meas_pos = self.raw_t.flatten() # x, y, z
+            meas_euler = rotationMatrixToEulerAngles(self.raw_R) # roll, pitch, yaw
+            measurement = np.concatenate((meas_pos, meas_euler)).reshape(6, 1).astype(np.float32)
+            
+            # 3. Correct
+            # We trust the measurement more if it passed the 'moving' checks
+            conf_scale = 1.0 if is_moving else 0.1 # Very high trust when stationary to lock position
+            est_state = self.kf.correct(measurement, confidence_scale=conf_scale)
+            
+            # --- Extract Filtered Pose ---
+            # State: [x, y, z, roll, pitch, yaw, ...]
+            filt_pos = est_state[:3]
+            filt_euler = est_state[3:6].flatten()
+            
+            self.cur_t = filt_pos.reshape(3, 1)
+            self.cur_R = eulerAnglesToRotationMatrix(filt_euler)
+            
+            # Update trajectory for visualization
+            self.traj_x.append(self.cur_t[0][0])
+            self.traj_y.append(self.cur_t[1][0])
+            self.traj_z.append(self.cur_t[2][0])
+            
+            status = "MOVING" if is_moving else "STATIONARY"
+            print(f"Frame {self.frame_count} | {status} | Flow: {avg_flow:.2f}px | Inlier: {inlier_ratio:.2f} | Pos: ({self.cur_t[0][0]:.2f}, {self.cur_t[1][0]:.2f}, {self.cur_t[2][0]:.2f})", flush=True)
+            
         else:
              print(f"Frame {self.frame_count}: Not enough features ({len(good_new)})", flush=True)
 
