@@ -46,24 +46,24 @@ const ResultPage = () => {
       let fUrls = [];
 
       // Priority:
-      // 1. Manually provided local files in this page
-      // 2. Local files passed via navigation state (from Uploader)
-      // 3. Server URLs (spliced video)
+      // 1. Server URLs (spliced video) - Preferred to avoid CSP blob: issues
+      // 2. Manually provided local files in this page
+      // 3. Local files passed via navigation state (from Uploader)
 
-      if (localRoadFiles.length > 0) {
+      if (jobData?.road_url) {
+          rUrls = [getFileUrl(jobData.road_url)];
+      } else if (localRoadFiles.length > 0) {
           rUrls = localRoadFiles.map(f => URL.createObjectURL(f));
       } else if (location.state?.roadFiles && location.state.roadFiles.length > 0) {
           rUrls = location.state.roadFiles.map(f => URL.createObjectURL(f));
-      } else if (jobData?.road_url) {
-          rUrls = [getFileUrl(jobData.road_url)];
       }
 
-      if (localFaceFiles.length > 0) {
+      if (jobData?.face_url) {
+          fUrls = [getFileUrl(jobData.face_url)];
+      } else if (localFaceFiles.length > 0) {
           fUrls = localFaceFiles.map(f => URL.createObjectURL(f));
       } else if (location.state?.faceFiles && location.state.faceFiles.length > 0) {
           fUrls = location.state.faceFiles.map(f => URL.createObjectURL(f));
-      } else if (jobData?.face_url) {
-          fUrls = [getFileUrl(jobData.face_url)];
       }
 
       return { road: rUrls, face: fUrls };

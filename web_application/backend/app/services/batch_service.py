@@ -22,112 +22,99 @@ class BatchService:
         gateway_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         
         # Connect to jump host
-        # Note: In production, this might need key_filename or ssh-agent
-        gateway_client.connect(self.jump_host, username=self.username, allow_agent=True, look_for_keys=True)
+        gateway_client.connect(
+            self.jump_host, 
+            username=self.username, 
+            allow_agent=True, 
+            look_for_keys=True,
+            timeout=10
+        )
         
         # Open tunnel to target host
         transport = gateway_client.get_transport()
         dest_addr = (self.target_host, 22)
-        local_addr = ('localhost', 0) # Use any local port for the proxy
-        channel = transport.open_channel("direct-tcpip", dest_addr, local_addr)
+        local_addr = ('localhost', 0)
+        channel = transport.open_channel("direct-tcpip", dest_addr, local_addr, timeout=10)
         
         # Connect to target host through tunnel
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(self.target_host, username=self.username, sock=channel, allow_agent=True, look_for_keys=True)
+        client.connect(
+            self.target_host, 
+            username=self.username, 
+            sock=channel, 
+            allow_agent=True, 
+            look_for_keys=True,
+            timeout=10
+        )
         
         return client
 
-    def _get_latest_slurm_log(self, client: paramiko.SSHClient, job_dir: str) -> Optional[str]:
-        """Finds the most recent slurm log file in the job directory."""
+    def _get_latest_slurm_log_local(self, job_dir: str) -> Optional[str]:
+        """Finds the most recent slurm log file in the job directory locally."""
         try:
-            # List slurm_*.log files
-            cmd = f"ls {job_dir}/slurm_*.log"
-            stdin, stdout, stderr = client.exec_command(cmd)
-            
-            output = stdout.read().decode().strip()
-            if stdout.channel.recv_exit_status() != 0:
+            path = Path(job_dir)
+            logs = sorted(path.glob("slurm_*.log"))
+            if not logs:
                 return None
-            
-            files = output.splitlines()
-            if not files:
-                return None
-                
-            # Assume the last one is the latest (ls usually sorts alphabetically, and IDs increase)
-            # A more robust way would be ls -t, but IDs should be sufficient
-            return files[-1]
+            return str(logs[-1])
         except Exception as e:
-            logger.error(f"Error finding slurm log: {e}")
+            logger.error(f"Error finding slurm log locally: {e}")
             return None
 
     def get_job_progress(self, job_id: str, job_dir: str) -> Optional[int]:
-        """Parses the latest SLURM log for tqdm progress."""
-        client = self._get_ssh_client()
+        """Parses the latest SLURM log for tqdm progress using local file access."""
         try:
-            log_file = self._get_latest_slurm_log(client, job_dir)
+            log_file = self._get_latest_slurm_log_local(job_dir)
             if not log_file:
                 return None
                 
-            # Read the log file
-            # We don't need the whole file, but tqdm updates the same line often.
-            # However, in log files, it usually dumps new lines.
-            # Let's read the last 50 lines to catch the latest update.
-            # Using cat for simplicity as tail might miss if the file is small, 
-            # but actually tail is better for performance on large logs.
-            # Let's just cat the whole thing if it's not huge, or tail -n 100
-            
-            # Using tail to get recent output
-            cmd = f"tail -n 50 {log_file}"
-            stdin, stdout, stderr = client.exec_command(cmd)
-            
-            output = stdout.read().decode().strip()
-            if stdout.channel.recv_exit_status() != 0:
-                return None
-                
+            # Read the last few kilobytes of the file to find the latest progress
+            with open(log_file, 'rb') as f:
+                # Seek to end and read last 4096 bytes
+                try:
+                    f.seek(-4096, 2)
+                except OSError:
+                    # File smaller than 4096 bytes
+                    pass
+                output = f.read().decode(errors='ignore')
+
             # Regex for tqdm: " 45%|" or "45%|####"
-            # Look for the last occurrence of a percentage followed by %|
-            matches = re.findall(r'(\d+)%\|', output)
+            # Look for the last occurrence of a percentage followed by % and |
+            matches = re.findall(r'(\d+)%\s*\|', output)
             if matches:
                 return int(matches[-1])
             
             return None
-        finally:
-            client.close()
+        except Exception as e:
+            logger.error(f"Error reading progress locally for {job_id}: {e}")
+            return None
 
     def get_job_error(self, job_id: str, job_dir: str) -> Optional[str]:
-        """Reads the tail of the SLURM log to capture errors."""
-        client = self._get_ssh_client()
+        """Reads the tail of the SLURM log locally to capture errors."""
         try:
-            log_file = self._get_latest_slurm_log(client, job_dir)
+            log_file = self._get_latest_slurm_log_local(job_dir)
             if not log_file:
                 return "Log file not found."
                 
-            # Read last 20 lines
-            cmd = f"tail -n 20 {log_file}"
-            stdin, stdout, stderr = client.exec_command(cmd)
-            
-            output = stdout.read().decode().strip()
-            if stdout.channel.recv_exit_status() != 0:
-                return "Failed to read log file."
-            
-            return output
-        finally:
-            client.close()
+            with open(log_file, 'r') as f:
+                lines = f.readlines()
+                return "".join(lines[-20:])
+        except Exception as e:
+            logger.error(f"Error reading error log locally for {job_id}: {e}")
+            return f"Failed to read log file: {e}"
 
-    def read_remote_results(self, output_path: str) -> Optional[str]:
-        """Reads the results.json file from the remote server."""
-        client = self._get_ssh_client()
+    def read_results_local(self, output_path: str) -> Optional[str]:
+        """Reads the results.json file locally."""
         try:
-            cmd = f"cat {output_path}"
-            stdin, stdout, stderr = client.exec_command(cmd)
-            
-            output = stdout.read().decode().strip()
-            if stdout.channel.recv_exit_status() != 0:
+            path = Path(output_path)
+            if not path.exists():
                 return None
-                
-            return output
-        finally:
-            client.close()
+            with open(path, 'r') as f:
+                return f.read()
+        except Exception as e:
+            logger.error(f"Error reading results locally: {e}")
+            return None
 
     def _generate_sbatch_script(self, job_name: str, road_path: str, face_path: str, output_path: str, road_meta: str = None, face_meta: str = None) -> str:
         cmd = f"python combined_analysis/run_headless.py \\\n    --road {road_path} \\\n    --face {face_path} \\\n    --output {output_path}"
@@ -186,23 +173,23 @@ cd {self.remote_project_root}
     def check_status(self, job_id: str) -> str:
         client = self._get_ssh_client()
         try:
-            # -h: no header, -o %T: show only state
+            # First check squeue (running/pending jobs)
             stdin, stdout, stderr = client.exec_command(f"squeue -j {job_id} -h -o %T")
-            
             output = stdout.read().decode().strip()
             
-            if stdout.channel.recv_exit_status() != 0:
-                # If squeue fails, it might be because the job is no longer in the queue (completed)
-                # We should check if the job exists in sacct or just assume it's COMPLETED if not found
-                # For now, let's return UNKNOWN if it fails
-                return "UNKNOWN"
+            if output:
+                return output
+
+            # If not in squeue, check sacct (finished jobs)
+            # -j: job id, -n: no header, -o state: show only state, -X: no job steps
+            stdin, stdout, stderr = client.exec_command(f"sacct -j {job_id} -n -o state -X")
+            output = stdout.read().decode().strip()
             
-            if not output:
-                # Often means the job is finished and gone from the queue
-                return "COMPLETED"
-                
-            return output
+            if output:
+                # sacct returns states like "COMPLETED", "FAILED", "RUNNING"
+                return output.split()[0]
+            
+            # If still nothing, it might be very new or very old
+            return "UNKNOWN"
         finally:
             client.close()
-        # Skeleton implementation
-        return "PENDING"

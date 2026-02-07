@@ -11,9 +11,11 @@ from sqlmodel import Session, select
 
 from ..models.job import Job
 from ..models.schemas import AnalysisItem
+from ..core.config import UPLOAD_DIR
 from .file_service import FileService
 from .video_utils import get_video_duration
 from .analysis_service import run_analysis_process
+from .batch_service import BatchService
 
 logger = logging.getLogger(__name__)
 
@@ -67,8 +69,8 @@ class JobService:
                 id=job_id,
                 name=job_id, # Default name is the ID
                 status="PENDING",
-                road_path=str(road_path),
-                face_path=str(face_path),
+                road_path=f"REMOTE:{job_id}/road.mp4",
+                face_path=f"REMOTE:{job_id}/face.mp4",
                 road_metadata=road_meta,
                 face_metadata=face_meta
             )
@@ -97,7 +99,123 @@ class JobService:
 
     def get_job(self, job_id: str) -> Optional[Job]:
         return self.session.get(Job, job_id)
+
+    def check_job_status(self, job_id: str, force_refresh: bool = False) -> Optional[Job]:
+        """
+        Checks and updates the status of a job using passive filesystem monitoring.
+        Avoids SSH calls (squeue/sacct) to prevent timeouts and respect cluster constraints.
+        """
+        job = self.get_job(job_id)
+        if not job:
+            return None
+
+        # Allow re-checking if forced OR if not COMPLETED
+        if not force_refresh and job.status == "COMPLETED":
+            return job
+
+        # Rate limit filesystem checks to once every 2 seconds
+        now = datetime.utcnow()
+        if not force_refresh and job.last_status_check:
+            elapsed = (now - job.last_status_check).total_seconds()
+            if elapsed < 2:
+                return job
+
+        job.last_status_check = now
         
+        try:
+            local_job_dir = str(UPLOAD_DIR / job_id)
+            batch_service = BatchService()
+
+            # 1. ALWAYS Check for Results (Completion) - This is the definitive success marker
+            result_path = UPLOAD_DIR / job_id / "results.json"
+            if result_path.exists():
+                return self.finalize_job(job_id)
+
+            # Only proceed with log checks if NOT already COMPLETED or if we are actively tracking
+            if job.status in ["SUBMITTED", "RUNNING", "PENDING", "FAILED"]:
+                # 2. Check for Log File (Running or Failed)
+                log_file = batch_service._get_latest_slurm_log_local(local_job_dir)
+                if log_file:
+                    # If log exists, it's at least RUNNING
+                    if job.status != "RUNNING" and job.status != "FAILED":
+                        job.status = "RUNNING"
+                    
+                    # Update progress from log
+                    progress = batch_service.get_job_progress(job_id, local_job_dir)
+                    if progress is not None and progress > job.progress:
+                        job.progress = progress
+                    
+                    # Detect Failure from log content (passive check)
+                    error_msg = batch_service.get_job_error(job_id, local_job_dir)
+                    if "Traceback" in error_msg or "Error:" in error_msg or "failed" in error_msg.lower():
+                        # Preliminary failure detection
+                        if "it/s]" not in error_msg.splitlines()[-1]:
+                             job.status = "FAILED"
+                             job.error = error_msg
+                    
+                    self.session.add(job)
+                    self.session.commit()
+                    self.session.refresh(job)
+            
+            # If no log file and status is SUBMITTED, we just wait (Pending in queue)
+            # We explicitly AVOID SSH check_status here to prevent timeouts.
+
+        except Exception as e:
+            logger.error(f"Error in passive status check for {job_id}: {e}")
+        
+        return job
+
+    def finalize_job(self, job_id: str) -> Optional[Job]:
+        """
+        Attempts to load results and finalize the job using local file access.
+        """
+        job = self.get_job(job_id)
+        if not job:
+            return None
+
+        result_path = UPLOAD_DIR / job_id / "results.json"
+        result_data = None
+        
+        batch_service = BatchService()
+        remote_data_str = batch_service.read_results_local(str(result_path))
+        
+        if remote_data_str:
+            try:
+                result_data = json.loads(remote_data_str)
+            except Exception as e:
+                logger.error(f"Error parsing results for {job_id}: {e}")
+
+        if result_data:
+            job.result = json.dumps(result_data)
+            job.status = "COMPLETED"
+            job.progress = 100
+            job.error = None
+            self.session.add(job)
+            self.session.commit()
+            self.session.refresh(job)
+            logger.info(f"Job {job_id} finalized successfully.")
+        else:
+            # Result file not found but job finished? Check logs for error.
+            if job.batch_job_id:
+                try:
+                    local_job_dir = str(UPLOAD_DIR / job_id)
+                    error_msg = batch_service.get_job_error(job_id, local_job_dir)
+                    job.status = "FAILED"
+                    job.error = str(error_msg) if error_msg else "Results file not found after job completion."
+                    self.session.add(job)
+                    self.session.commit()
+                    self.session.refresh(job)
+                except Exception as e:
+                    logger.error(f"Error fetching error logs for {job_id}: {e}")
+            else:
+                job.status = "FAILED"
+                job.error = "Results file not found."
+                self.session.add(job)
+                self.session.commit()
+                self.session.refresh(job)
+        
+        return job
+
     def update_job_name(self, job_id: str, name: str) -> Optional[Job]:
         job = self.session.get(Job, job_id)
         if job:

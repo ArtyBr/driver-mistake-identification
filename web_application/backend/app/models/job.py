@@ -16,4 +16,5 @@ class Job(SQLModel, table=True):
     error: Optional[str] = None
     batch_job_id: Optional[str] = None
     progress: int = Field(default=0)
+    last_status_check: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)

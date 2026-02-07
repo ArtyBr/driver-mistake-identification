@@ -65,12 +65,17 @@ export const useJobStatus = (jobId) => {
       try {
         const res = await getJobStatus(jobId);
         setStatus(res.status);
-        if (res.progress) setProgress(res.progress);
+        if (res.progress !== undefined) setProgress(res.progress);
         setData(res);
 
-        if (res.status === 'COMPLETED' || res.status === 'FAILED') {
-           if (res.status === 'FAILED') setError(res.error);
+        if (res.status === 'COMPLETED') {
+           setError(null); // Clear any transient errors if it finally completes
            clearInterval(intervalRef.current);
+        } else if (res.status === 'FAILED') {
+           setError(res.error);
+           // We DON'T clear interval here anymore, to allow recovery if results appear
+        } else {
+           setError(null);
         }
       } catch (err) {
         console.error("Polling error:", err);

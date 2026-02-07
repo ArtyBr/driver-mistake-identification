@@ -22,6 +22,13 @@ database.init_db()
 
 # Logging Middleware
 @app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    # Allow blob: for media-src to support URL.createObjectURL videos
+    response.headers["Content-Security-Policy"] = "default-src 'self' 'unsafe-inline' 'unsafe-eval'; media-src 'self' blob:; img-src 'self' data:; connect-src 'self' https:;"
+    return response
+
+@app.middleware("http")
 async def log_requests(request: Request, call_next):
     start_time = time.time()
     

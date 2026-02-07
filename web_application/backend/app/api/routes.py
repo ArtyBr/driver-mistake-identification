@@ -86,11 +86,11 @@ async def run_test(analysis_id: Optional[str] = None, service: JobService = Depe
          raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/status/{job_id}", response_model=JobStatusResponse)
-async def get_status(job_id: str, service: JobService = Depends(get_job_service)):
+async def get_status(job_id: str, force_refresh: bool = False, service: JobService = Depends(get_job_service)):
     """
     Retrieves the status of a job.
     """
-    job = service.get_job(job_id)
+    job = service.check_job_status(job_id, force_refresh=force_refresh)
     if not job:
         return {"status": "NOT_FOUND"}
     
@@ -162,7 +162,7 @@ async def get_results(job_id: str, service: JobService = Depends(get_job_service
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
-    if job.status == "COMPLETED" and job.result:
+    if (job.status == "COMPLETED" or job.status == "FAILED") and job.result:
         return json.loads(job.result)
     elif job.status == "FAILED":
         return {"error": job.error}
