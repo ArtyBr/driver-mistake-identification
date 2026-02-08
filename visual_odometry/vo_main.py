@@ -9,6 +9,8 @@ import torchvision
 from torchvision import transforms
 import math
 
+# python3 vo_main.py /media/arty/3A30-14F9/Videos/02_09_25_me_to_gym_day/2025_0902_152436_004637F.MP4
+
 def rotationMatrixToEulerAngles(R):
     sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
     singular = sy < 1e-6
@@ -178,6 +180,43 @@ class VisualOdometry:
                 
         return combined_mask
 
+    def detect_features(self, image, mask=None):
+        """Detect features using a grid-based approach (bucketing) to ensure even distribution."""
+        grid_rows, grid_cols = 4, 6
+        h, w = image.shape[:2]
+        cell_h, cell_w = h // grid_rows, w // grid_cols
+        
+        all_kps = []
+        # Target features per cell
+        target_per_cell = self.feature_params['maxCorners'] // (grid_rows * grid_cols)
+        
+        # Local copy of params to modify maxCorners for each cell
+        local_params = self.feature_params.copy()
+        local_params['maxCorners'] = target_per_cell
+
+        for r in range(grid_rows):
+            for c in range(grid_cols):
+                y0, y1 = r * cell_h, (r + 1) * cell_h
+                x0, x1 = c * cell_w, (c + 1) * cell_w
+                
+                cell_img = image[y0:y1, x0:x1]
+                cell_mask = None
+                if mask is not None:
+                    cell_mask = mask[y0:y1, x0:x1]
+                    if cv2.countNonZero(cell_mask) < 10: # Skip if cell is mostly masked
+                        continue
+
+                kps = cv2.goodFeaturesToTrack(cell_img, mask=cell_mask, **local_params)
+                if kps is not None:
+                    # Adjust coordinates to global image
+                    kps[:, 0, 0] += x0
+                    kps[:, 0, 1] += y0
+                    all_kps.append(kps)
+        
+        if len(all_kps) > 0:
+            return np.vstack(all_kps)
+        return None
+
     def process_frame(self):
         ret, frame_raw = self.cap.read()
         if not ret:
@@ -217,7 +256,7 @@ class VisualOdometry:
         if self.prev_image is None or self.prev_keypoints is None:
             # Initialization
             if not is_blind:
-                self.prev_keypoints = cv2.goodFeaturesToTrack(curr_gray, mask=static_mask, **self.feature_params)
+                self.prev_keypoints = self.detect_features(curr_gray, mask=static_mask)
             self.prev_image = curr_gray
             print(f"Initialized features. Static area: {static_area_ratio*100:.1f}%", flush=True)
             return True, frame_raw, frame_cropped, None, dynamic_mask
@@ -322,7 +361,8 @@ class VisualOdometry:
         # --- Feature Maintenance ---
         if tracking_success and len(good_new) > 0:
             if len(good_new) < 1000 and not is_blind:
-                new_kps = cv2.goodFeaturesToTrack(curr_gray, mask=static_mask, **self.feature_params)
+                # Detect new features in grid to fill gaps
+                new_kps = self.detect_features(curr_gray, mask=static_mask)
                 if new_kps is not None:
                     self.prev_keypoints = np.vstack((good_new.reshape(-1, 1, 2), new_kps))
                 else:
@@ -332,7 +372,7 @@ class VisualOdometry:
         else:
             # Lost tracking or blind: Try to rediscover if possible
             if not is_blind:
-                self.prev_keypoints = cv2.goodFeaturesToTrack(curr_gray, mask=static_mask, **self.feature_params)
+                self.prev_keypoints = self.detect_features(curr_gray, mask=static_mask)
             else:
                 self.prev_keypoints = None
 
