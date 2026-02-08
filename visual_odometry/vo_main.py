@@ -78,6 +78,78 @@ class PoseKalmanFilter:
         
         return self.kalman.correct(measurement)
 
+class TurnDetector:
+    def __init__(self, angle_threshold_degrees=30.0, cooldown_frames=45):
+        self.angle_threshold = math.radians(angle_threshold_degrees)
+        self.cooldown_frames = cooldown_frames
+        self.cooldown_counter = 0
+        
+        self.accumulated_yaw = 0.0
+        self.prev_yaw = None
+        self.max_delta_seen = 0.0
+        self.straight_frames = 0
+        
+    def update(self, current_yaw, frame_count):
+        if self.cooldown_counter > 0:
+            self.cooldown_counter -= 1
+            self.prev_yaw = current_yaw
+            self.accumulated_yaw = 0.0
+            self.max_delta_seen = 0.0
+            return None
+
+        if self.prev_yaw is None:
+            self.prev_yaw = current_yaw
+            return None
+
+        # Calculate delta with wrap-around handling
+        delta = current_yaw - self.prev_yaw
+        while delta > math.pi: delta -= 2 * math.pi
+        while delta < -math.pi: delta += 2 * math.pi
+        
+        # --- Robustness Logic ---
+        
+        # 1. Accumulate raw movement
+        self.accumulated_yaw += delta
+        self.max_delta_seen = max(self.max_delta_seen, abs(delta))
+        
+        # 2. Straightness check (to reset accumulator)
+        # If rotation is very low for ~1 second, we assume the turn attempt is over
+        if abs(delta) < math.radians(0.1):
+            self.straight_frames += 1
+        else:
+            self.straight_frames = 0
+            
+        if self.straight_frames > 30: 
+            self.accumulated_yaw = 0.0
+            self.max_delta_seen = 0.0
+
+        # 3. Trigger Logic
+        detected = None
+        
+        # Check if the turn has any "sharp" component (intersection turns vs smooth curves)
+        # Lowered to 0.6 degrees per frame (~18 deg/sec) to catch tighter/slower turns
+        is_sharp = self.max_delta_seen > math.radians(0.6)
+        # Check for extremely sudden maneuvers
+        is_sudden = abs(delta) > math.radians(8.0)
+        
+        # Trigger if:
+        # A) Normal threshold reached (30 deg) AND it was somewhat sharp
+        # B) Extreme rotation reached (80 deg) even if smooth (very long curve/roundabout)
+        # C) Sudden high-rotation frame AND we already turned at least 15 degrees
+        if (abs(self.accumulated_yaw) >= self.angle_threshold and is_sharp) or \
+           (abs(self.accumulated_yaw) >= math.radians(80.0)) or \
+           (abs(self.accumulated_yaw) >= math.radians(15.0) and is_sudden):
+            
+            direction_str = "RIGHT" if self.accumulated_yaw > 0 else "LEFT"
+            detected = f"TURN_{direction_str}"
+            self.cooldown_counter = self.cooldown_frames
+            self.accumulated_yaw = 0.0
+            self.max_delta_seen = 0.0
+            self.straight_frames = 0
+
+        self.prev_yaw = current_yaw
+        return detected
+
 class VisualOdometry:
     def __init__(self, video_path, start_seconds=0):
         self.video_path = video_path
@@ -152,6 +224,13 @@ class VisualOdometry:
         # COCO classes to ignore (dynamic objects)
         # 1: person, 2: bicycle, 3: car, 4: motorcycle, 6: bus, 8: truck
         self.ignore_classes = [1, 2, 3, 4, 6, 8]
+
+        # Turn Detector
+        # threshold 30 deg, moderate sharpness (0.6 deg/frame)
+        self.turn_detector = TurnDetector(angle_threshold_degrees=30.0, cooldown_frames=60)
+        self.turn_pts_x = []
+        self.turn_pts_y = []
+        self.turn_pts_z = []
 
     def get_segmentation_mask(self, frame):
         # Prepare input
@@ -313,7 +392,7 @@ class VisualOdometry:
                         rot_trace = np.trace(R_cand)
                         rot_angle = math.acos(np.clip((rot_trace - 1) / 2, -1, 1))
                         
-                        if rot_angle < 0.1: # Limit to ~5.7 degrees per frame
+                        if rot_angle < 0.5: # Increased limit to ~28 degrees per frame to catch sharp turns
                             R_rel = R_cand
                             t_rel = t_cand
                             is_moving = True
@@ -356,7 +435,19 @@ class VisualOdometry:
         elif is_moving: status = "MOVING"
         else: status = "STATIONARY"
         
-        print(f"Frame {self.frame_count} | {status} | Flow: {avg_flow:.2f}px | Inlier: {inlier_ratio:.2f} | Pos: ({self.cur_t[0][0]:.2f}, {self.cur_t[1][0]:.2f}, {self.cur_t[2][0]:.2f})", flush=True)
+        # Turn Detection
+        current_yaw = est_state[4].item() # Pitch(0), Yaw(1), Roll(2) -> Index 4 corresponds to Y-rot (Yaw)
+        turn_event = self.turn_detector.update(current_yaw, self.frame_count)
+        
+        log_msg = f"Frame {self.frame_count} | {status} | Flow: {avg_flow:.2f}px | Inlier: {inlier_ratio:.2f} | Pos: ({self.cur_t[0][0]:.2f}, {self.cur_t[1][0]:.2f}, {self.cur_t[2][0]:.2f})"
+        
+        if turn_event:
+            log_msg += f" | >>> {turn_event} DETECTED <<<"
+            self.turn_pts_x.append(self.cur_t[0][0])
+            self.turn_pts_y.append(self.cur_t[1][0])
+            self.turn_pts_z.append(self.cur_t[2][0])
+            
+        print(log_msg, flush=True)
 
         # --- Feature Maintenance ---
         if tracking_success and len(good_new) > 0:
@@ -377,7 +468,7 @@ class VisualOdometry:
                 self.prev_keypoints = None
 
         self.prev_image = curr_gray
-        return True, frame_raw, frame_cropped, None, dynamic_mask
+        return True, frame_raw, frame_cropped, turn_event, dynamic_mask
 
     def on_key(self, event):
         if event.key == 'q':
@@ -401,15 +492,17 @@ class VisualOdometry:
         ax_traj.set_zlabel('Y')
         ax_traj.view_init(elev=-20, azim=-90)
 
-        line_traj, = ax_traj.plot(self.traj_x, self.traj_z, [-y for y in self.traj_y], color='blue')
-        point_curr, = ax_traj.plot([0], [0], [0], 'ro')
+        line_traj, = ax_traj.plot(self.traj_x, self.traj_z, [-y for y in self.traj_y], color='blue', label='Trajectory')
+        point_curr, = ax_traj.plot([0], [0], [0], 'ro', label='Current')
+        turns_plot, = ax_traj.plot([], [], [], 'y*', markersize=12, label='Detected Turns')
+        ax_traj.legend()
         
         img_plot_masked = None
 
         print("Starting Visual Odometry (Mask R-CNN)...")
         self.frame_count = 0
         while not self.stop_requested:
-            ret, frame_raw, frame_crop, _, mask_dyn = self.process_frame()
+            ret, frame_raw, frame_crop, turn_event, mask_dyn = self.process_frame()
             if not ret: break
             self.frame_count += 1
             
@@ -449,6 +542,11 @@ class VisualOdometry:
             line_traj.set_3d_properties(p_z)
             point_curr.set_data([p_x[-1]], [p_y[-1]])
             point_curr.set_3d_properties([p_z[-1]])
+
+            # Update Turns
+            if len(self.turn_pts_x) > 0:
+                turns_plot.set_data(self.turn_pts_x, self.turn_pts_z)
+                turns_plot.set_3d_properties([-y for y in self.turn_pts_y])
             
             # Auto-scale
             if len(p_x) > 1:
