@@ -1,7 +1,5 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import sys
 import os
 import torch
@@ -151,16 +149,25 @@ class TurnDetector:
         return detected
 
 class VisualOdometry:
-    def __init__(self, video_path, start_seconds=0):
+    def __init__(self, video_path=None, start_seconds=0, fps=30.0):
         self.video_path = video_path
-        self.cap = cv2.VideoCapture(video_path)
-        if not self.cap.isOpened():
-            raise IOError(f"Cannot open video file: {video_path}")
+        self.fps = fps
+        self.cap = None
+        
+        if video_path:
+            self.cap = cv2.VideoCapture(video_path)
+            if not self.cap.isOpened():
+                raise IOError(f"Cannot open video file: {video_path}")
 
-        # Seek to start time if specified
-        if start_seconds > 0:
-            print(f"Seeking to {start_seconds} seconds...")
-            self.cap.set(cv2.CAP_PROP_POS_MSEC, start_seconds * 1000)
+            # Seek to start time if specified
+            if start_seconds > 0:
+                print(f"Seeking to {start_seconds} seconds...")
+                self.cap.set(cv2.CAP_PROP_POS_MSEC, start_seconds * 1000)
+            
+            # Update FPS from video
+            vid_fps = self.cap.get(cv2.CAP_PROP_FPS)
+            if vid_fps > 0 and not np.isnan(vid_fps):
+                self.fps = vid_fps
 
         # Intrinsic Matrix (K) from calibration_3.txt
         self.K_orig = np.array([
@@ -195,10 +202,8 @@ class VisualOdometry:
         self.frame_count = 0
         
         # Kalman Filter Init
-        fps = self.cap.get(cv2.CAP_PROP_FPS)
-        if fps <= 0 or np.isnan(fps): fps = 30.0
-        print(f"Initializing Kalman Filter (FPS: {fps})")
-        self.kf = PoseKalmanFilter(fps=fps)
+        print(f"Initializing Kalman Filter (FPS: {self.fps})")
+        self.kf = PoseKalmanFilter(fps=self.fps)
         
         # Initial State for KF
         init_meas = np.zeros((6, 1), dtype=np.float32)
@@ -209,11 +214,17 @@ class VisualOdometry:
         print("Initializing Mask R-CNN (ResNet50 FPN V2)...")
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
-        # Load the model
-        weights = torchvision.models.detection.MaskRCNN_ResNet50_FPN_V2_Weights.DEFAULT
-        self.seg_model = torchvision.models.detection.maskrcnn_resnet50_fpn_v2(weights=weights)
-        self.seg_model.to(self.device)
-        self.seg_model.eval()
+        self.seg_model = None
+        try:
+            # Load the model
+            weights = torchvision.models.detection.MaskRCNN_ResNet50_FPN_V2_Weights.DEFAULT
+            self.seg_model = torchvision.models.detection.maskrcnn_resnet50_fpn_v2(weights=weights)
+            self.seg_model.to(self.device)
+            self.seg_model.eval()
+            print("Mask R-CNN initialized successfully.")
+        except Exception as e:
+            print(f"Warning: Failed to initialize Mask R-CNN. Running without dynamic masking. Error: {e}")
+            self.seg_model = None
         
         # Transform for Mask R-CNN (It expects 0-1 float tensors)
         self.seg_transform = transforms.Compose([
@@ -233,6 +244,11 @@ class VisualOdometry:
         self.turn_pts_z = []
 
     def get_segmentation_mask(self, frame):
+        h, w = frame.shape[:2]
+        
+        if self.seg_model is None:
+            return np.zeros((h, w), dtype=np.uint8)
+
         # Prepare input
         input_tensor = self.seg_transform(frame).to(self.device)
         
@@ -240,7 +256,6 @@ class VisualOdometry:
             predictions = self.seg_model([input_tensor])[0]
             
         # Initialize empty mask (0=static)
-        h, w = frame.shape[:2]
         combined_mask = np.zeros((h, w), dtype=np.uint8)
         
         # Iterate through detections
@@ -296,10 +311,19 @@ class VisualOdometry:
             return np.vstack(all_kps)
         return None
 
-    def process_frame(self):
-        ret, frame_raw = self.cap.read()
+    def process_frame(self, external_frame=None):
+        if external_frame is not None:
+            ret = True
+            frame_raw = external_frame
+        elif self.cap is not None:
+            ret, frame_raw = self.cap.read()
+        else:
+            return False, None, None, None, None
+
         if not ret:
             return False, None, None, None, None
+            
+        self.frame_count += 1
 
         # Crop to center 3/4ths
         h, w = frame_raw.shape[:2]
@@ -469,115 +493,3 @@ class VisualOdometry:
 
         self.prev_image = curr_gray
         return True, frame_raw, frame_cropped, turn_event, dynamic_mask
-
-    def on_key(self, event):
-        if event.key == 'q':
-            self.stop_requested = True
-
-    def run(self):
-        plt.ion()
-        fig = plt.figure(figsize=(14, 7))
-        self.stop_requested = False
-        fig.canvas.mpl_connect('key_press_event', self.on_key)
-        
-        ax_masked = fig.add_subplot(121)
-        ax_traj = fig.add_subplot(122, projection='3d')
-
-        ax_masked.set_title("Mask R-CNN Overlay (Red=Dynamic)")
-        ax_masked.axis('off')
-        
-        ax_traj.set_title("3D Trajectory")
-        ax_traj.set_xlabel('X')
-        ax_traj.set_ylabel('Z')
-        ax_traj.set_zlabel('Y')
-        ax_traj.view_init(elev=-20, azim=-90)
-
-        line_traj, = ax_traj.plot(self.traj_x, self.traj_z, [-y for y in self.traj_y], color='blue', label='Trajectory')
-        point_curr, = ax_traj.plot([0], [0], [0], 'ro', label='Current')
-        turns_plot, = ax_traj.plot([], [], [], 'y*', markersize=12, label='Detected Turns')
-        ax_traj.legend()
-        
-        img_plot_masked = None
-
-        print("Starting Visual Odometry (Mask R-CNN)...")
-        self.frame_count = 0
-        while not self.stop_requested:
-            ret, frame_raw, frame_crop, turn_event, mask_dyn = self.process_frame()
-            if not ret: break
-            self.frame_count += 1
-            
-            # --- Visualization ---
-            
-            # Blend red overlay on dynamic objects
-            vis_masked = frame_crop.copy()
-            
-            # Prepare red image
-            red_img = np.zeros_like(vis_masked)
-            red_img[:, :, 2] = 255
-            
-            # Blend everything
-            blended = cv2.addWeighted(vis_masked, 0.6, red_img, 0.4, 0)
-            
-            # Apply only where mask_dyn is 255
-            vis_masked[mask_dyn == 255] = blended[mask_dyn == 255]
-            
-            # Draw features
-            if self.prev_keypoints is not None:
-                for new in self.prev_keypoints:
-                    a, b = new.ravel()
-                    cv2.circle(vis_masked, (int(a), int(b)), 3, (0, 255, 0), -1)
-            
-            masked_rgb = cv2.cvtColor(vis_masked, cv2.COLOR_BGR2RGB)
-            if img_plot_masked is None:
-                img_plot_masked = ax_masked.imshow(masked_rgb)
-            else:
-                img_plot_masked.set_data(masked_rgb)
-
-            # Update Trajectory
-            p_x = self.traj_x
-            p_y = self.traj_z # Swap axes for plotting
-            p_z = [-y for y in self.traj_y]
-            
-            line_traj.set_data(p_x, p_y)
-            line_traj.set_3d_properties(p_z)
-            point_curr.set_data([p_x[-1]], [p_y[-1]])
-            point_curr.set_3d_properties([p_z[-1]])
-
-            # Update Turns
-            if len(self.turn_pts_x) > 0:
-                turns_plot.set_data(self.turn_pts_x, self.turn_pts_z)
-                turns_plot.set_3d_properties([-y for y in self.turn_pts_y])
-            
-            # Auto-scale
-            if len(p_x) > 1:
-                mx, my, mz = (max(p_x)+min(p_x))/2, (max(p_y)+min(p_y))/2, (max(p_z)+min(p_z))/2
-                r = np.array([max(p_x)-min(p_x), max(p_y)-min(p_y), max(p_z)-min(p_z)]).max() / 2.0 or 1.0
-                ax_traj.set_xlim(mx-r, mx+r)
-                ax_traj.set_ylim(my-r, my+r)
-                ax_traj.set_zlim(mz-r, mz+r)
-
-            plt.draw()
-            plt.pause(0.001)
-            
-        print("Finished.")
-        plt.ioff()
-        if not self.stop_requested:
-             plt.show(block=True)
-        else:
-             plt.close()
-        self.cap.release()
-        cv2.destroyAllWindows()
-
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description="Monocular Visual Odometry")
-    parser.add_argument("video", help="Path to video file")
-    parser.add_argument("--start", "-s", type=float, default=0.0, help="Start time in seconds")
-    args = parser.parse_args()
-    
-    if not os.path.exists(args.video):
-        print(f"Error: File {args.video} not found.")
-        sys.exit(1)
-        
-    vo = VisualOdometry(args.video, start_seconds=args.start)
-    vo.run()

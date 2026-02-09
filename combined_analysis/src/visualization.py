@@ -83,7 +83,7 @@ class VideoVisualizer:
         
         # Determine Status Color
         label = face_info['label']
-        if "Left" in label or "Right" in label:
+        if any(m in label for m in ["Left", "Right", "Rear"]):
             status_color = (0, 165, 255) # Orange for mirrors
         elif "Looking Ahead" in label:
             status_color = (0, 255, 0) # Green

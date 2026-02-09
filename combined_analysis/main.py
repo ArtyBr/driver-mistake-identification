@@ -34,7 +34,7 @@ def main():
     parser = argparse.ArgumentParser(description="Combined Lane and Face Analysis (Modular)")
     parser.add_argument('config', help='Path to Lane Detection config')
     parser.add_argument('--video_base', required=True, help='Base video path (no I.mp4/F.mp4 suffix)')
-    parser.add_argument('--savedir', default='./results', help='Output directory')
+    parser.add_argument('--savedir', default=str(CURRENT_DIR / 'data' / 'output'), help='Output directory')
     parser.add_argument('--show', action='store_true', help='Show visualization')
     parser.add_argument('--load_from', default='best.pth', help='Model weights')
     
