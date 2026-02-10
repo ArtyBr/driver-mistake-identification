@@ -124,6 +124,54 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
     return false;
   }, []);
 
+  const updateBufferedRanges = useCallback(() => {
+    const roadVid = roadVideoRef.current;
+    if (!roadVid) return;
+
+    // Update buffered ranges state (only for road video for now)
+    let offset = 0;
+    for (let i = 0; i < currentPartIndex; i++) {
+      offset += partDurations[i] || 0;
+    }
+
+    const ranges = [];
+    const buffered = roadVid.buffered;
+    if (buffered) {
+      for (let i = 0; i < buffered.length; i++) {
+        const start = buffered.start(i) + offset;
+        const end = buffered.end(i) + offset;
+
+        // Merge overlapping or adjacent ranges (tolerance 0.5s)
+        if (ranges.length > 0) {
+          const last = ranges[ranges.length - 1];
+          if (start - last.end < 0.5) {
+            last.end = Math.max(last.end, end);
+          } else {
+            ranges.push({ start, end });
+          }
+        } else {
+          ranges.push({ start, end });
+        }
+      }
+    }
+    setBufferedRanges(ranges);
+
+    // Seek retry logic
+    if (isSeekingRef.current && targetSeekTimeRef.current !== null) {
+      const localTarget = Math.max(0, targetSeekTimeRef.current - offset);
+      for (let i = 0; i < buffered.length; i++) {
+        if (buffered.start(i) <= localTarget && buffered.end(i) >= localTarget) {
+          if (Math.abs(roadVid.currentTime - localTarget) > 0.5) {
+            roadVid.currentTime = localTarget;
+            const faceVid = faceVideoRef.current;
+            if (faceVid && faceVid.readyState >= 1) faceVid.currentTime = localTarget;
+          }
+          break;
+        }
+      }
+    }
+  }, [roadVideoRef, faceVideoRef, currentPartIndex, partDurations]);
+
   const updateBuffering = useCallback(() => {
     const roadVid = roadVideoRef.current;
     const faceVid = faceVideoRef.current;
@@ -136,6 +184,9 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
     const roadReady = roadVid.readyState >= 3; // HAVE_FUTURE_DATA
     const faceReady = faceVid.readyState >= 3;
     
+    // Update buffered ranges whenever we check buffering status
+    updateBufferedRanges();
+
     // ENTER buffering if forced to wait/seek or not ready
     if (roadWaiting || faceWaiting || isSeeking || !roadReady || !faceReady) {
         setIsBuffering(true);
@@ -150,7 +201,7 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
             return false; // Not buffering
         });
     }
-  }, [roadVideoRef, faceVideoRef, checkBuffer]);
+  }, [roadVideoRef, faceVideoRef, checkBuffer, updateBufferedRanges]);
 
   // Handle Seeking
   const handleSeek = (globalTime) => {
@@ -268,6 +319,7 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
                   if (faceVid.readyState >= 1) faceVid.currentTime = targetTime;
               }
           }
+          updateBufferedRanges();
           updateBuffering();
       };
 
@@ -280,6 +332,7 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
       const onCanPlay = (e) => {
           if (e.target === roadVid) roadWaitingRef.current = false;
           if (e.target === faceVid) faceWaitingRef.current = false;
+          updateBufferedRanges();
           updateBuffering();
       };
 
@@ -316,52 +369,13 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
                 clearTimeout(seekTimeoutRef.current);
                 seekTimeoutRef.current = null;
             }
+            updateBufferedRanges();
             updateBuffering();
           }
       };
       
       const onProgress = () => {
-          const roadVid = roadVideoRef.current;
-          if (!roadVid) return;
-
-          // Update buffered ranges state (only for road video for now)
-          let offset = 0;
-          for(let i=0; i<currentPartIndex; i++) offset += partDurations[i] || 0;
-
-          const ranges = [];
-          const buffered = roadVid.buffered;
-          for (let i = 0; i < buffered.length; i++) {
-              const start = buffered.start(i) + offset;
-              const end = buffered.end(i) + offset;
-
-              // Merge overlapping or adjacent ranges (tolerance 0.5s)
-              if (ranges.length > 0) {
-                  const last = ranges[ranges.length - 1];
-                  if (start - last.end < 0.5) {
-                      last.end = Math.max(last.end, end);
-                  } else {
-                      ranges.push({ start, end });
-                  }
-              } else {
-                  ranges.push({ start, end });
-              }
-          }
-          setBufferedRanges(ranges);
-
-          // Seek retry logic
-          if (isSeekingRef.current && targetSeekTimeRef.current !== null) {
-              const localTarget = Math.max(0, targetSeekTimeRef.current - offset);
-              for(let i=0; i<buffered.length; i++) {
-                  if (buffered.start(i) <= localTarget && buffered.end(i) >= localTarget) {
-                      if (Math.abs(roadVid.currentTime - localTarget) > 0.5) {
-                          roadVid.currentTime = localTarget;
-                          if(faceVid.readyState >= 1) faceVid.currentTime = localTarget;
-                      }
-                      break;
-                  }
-              }
-          }
-          
+          updateBufferedRanges();
           updateBuffering(); // Check if we have enough buffer now
       };
       
@@ -392,6 +406,8 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
               roadVid.currentTime = targetTime;
               faceVid.currentTime = targetTime;
           }
+          updateBufferedRanges();
+          updateBuffering();
       }
 
       return () => {
@@ -410,7 +426,7 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
           faceVid.removeEventListener('seeked', onSeeked);
           faceVid.removeEventListener('progress', onFaceProgress);
       }
-  }, [currentPartIndex, activePartIndex, pendingSeek, roadVideoRef, faceVideoRef, updateBuffering, partDurations]); // Removed isPlaying from dep as it is handled in separate effect
+  }, [currentPartIndex, activePartIndex, pendingSeek, roadVideoRef, faceVideoRef, updateBuffering, updateBufferedRanges, partDurations]); // Removed isPlaying from dep as it is handled in separate effect
 
   const onTimeUpdate = () => {
     const roadVid = roadVideoRef.current;

@@ -23,6 +23,7 @@ const Legend = () => {
           { label: 'Looking Ahead', color: '#20c997' },
           { label: 'Left Mirror', color: '#6f42c1' },
           { label: 'Right Mirror', color: '#0ffc10' },
+          { label: 'Rear Mirror', color: '#ffc107' },
         ].map((item, i) => (
           <div key={i} className="legend-item">
             <span className="legend-swatch" style={{ backgroundColor: item.color }}></span>

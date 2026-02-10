@@ -70,13 +70,14 @@ function VideoPlayer({ results, roadUrls, faceUrls }) {
   }
 
   const iconMap = {
-    'Left Mirror': '[ < ]', 'Right Mirror': '[ > ]', 'Looking Ahead': '[ ^ ]', 'N/A': '[ ? ]', 'Unknown': '[ ? ]'
+    'Left Mirror': '[ < ]', 'Right Mirror': '[ > ]', 'Rear Mirror': '[ | ]', 'Looking Ahead': '[ ^ ]', 'N/A': '[ ? ]', 'Unknown': '[ ? ]'
   }
 
   const getColorForState = (state) => {
     if (state === 'Looking Ahead') return '#20c997'
     if (state === 'Left Mirror') return '#6f42c1'
     if (state === 'Right Mirror') return '#0ffc10'
+    if (state === 'Rear Mirror') return '#ffc107'
     return '#ffc107'
   }
 
