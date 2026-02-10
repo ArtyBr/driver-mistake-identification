@@ -23,6 +23,16 @@ except ImportError:
     print("Warning: Could not import VisualOdometry. Ensure 'visual_odometry' module is in path.")
     VisualOdometry = None
 
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, (np.float32, np.float64)):
+            return float(obj)
+        if isinstance(obj, (np.int32, np.int64)):
+            return int(obj)
+        return super().default(obj)
+
 class VideoProcessor:
     def __init__(self, lane_wrapper, face_analyzer, args):
         self.lane_wrapper = lane_wrapper
@@ -130,7 +140,7 @@ class VideoProcessor:
                 
                 if output_json_path:
                     with open(output_json_path, 'w') as f:
-                        json.dump(result, f)
+                        json.dump(result, f, cls=NumpyEncoder)
                 return result
 
         except KeyboardInterrupt:
@@ -138,8 +148,9 @@ class VideoProcessor:
             if not export_json and self.vo:
                 self._show_summary_plot()
         except Exception as e:
-            print(f"\nError: {e}")
+            print(f"\nError in VideoProcessor.run: {e}")
             import traceback; traceback.print_exc()
+            raise e
         finally:
             cap_road.release()
             cap_face.release()
@@ -223,8 +234,8 @@ class VideoProcessor:
             # Though our VO implementation creates a copy for crop, being safe is good
             _, _, _, turn_event, _ = self.vo.process_frame(external_frame=frame_road)
             # Store current VO position
-            vo_pos['x'] = self.vo.cur_t[0][0]
-            vo_pos['z'] = self.vo.cur_t[2][0]
+            vo_pos['x'] = float(self.vo.cur_t[0][0])
+            vo_pos['z'] = float(self.vo.cur_t[2][0])
             
             if turn_event:
                 # Validate turn safety
@@ -339,8 +350,8 @@ class VideoProcessor:
         vo_pos = {'x': None, 'z': None}
         if self.vo:
             _, _, _, turn_event, _ = self.vo.process_frame(external_frame=frame_road)
-            vo_pos['x'] = self.vo.cur_t[0][0]
-            vo_pos['z'] = self.vo.cur_t[2][0]
+            vo_pos['x'] = float(self.vo.cur_t[0][0])
+            vo_pos['z'] = float(self.vo.cur_t[2][0])
             
             if turn_event:
                 # Validate turn safety
