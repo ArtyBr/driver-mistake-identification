@@ -9,6 +9,29 @@ from visualization import VideoVisualizer
 from safety_monitor import ManeuverValidator
 import gc
 import torch
+import sys
+
+# Ensure Visual Odometry is importable
+# Assuming project structure: combined_analysis/src/video_processor.py -> root -> visual_odometry
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
+
+try:
+    from visual_odometry.vo_main import VisualOdometry
+except ImportError:
+    print("Warning: Could not import VisualOdometry. Ensure 'visual_odometry' module is in path.")
+    VisualOdometry = None
+
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, (np.float32, np.float64)):
+            return float(obj)
+        if isinstance(obj, (np.int32, np.int64)):
+            return int(obj)
+        return super().default(obj)
 
 class VideoProcessor:
     def __init__(self, lane_wrapper, face_analyzer, args):
@@ -21,6 +44,13 @@ class VideoProcessor:
         self.state_history = []
         self.last_state = None
         self.all_events = []
+        
+        # Initialize VO
+        self.vo = None
+        if VisualOdometry:
+            # We don't provide a video path because we will feed frames manually
+            # Assuming 30 FPS default, will be updated in run() if possible
+            self.vo = VisualOdometry(video_path=None, fps=30.0)
 
     def run(self, export_json=False, output_json_path=None, custom_video_paths=None, metadata=None):
         # 1. Setup Video Capture
@@ -30,6 +60,11 @@ class VideoProcessor:
              cap_road, cap_face, start_frame, end_frame, fps = self._setup_video_capture()
 
         if not cap_road: return
+        
+        # Update VO FPS
+        if self.vo:
+            self.vo.fps = fps
+            self.vo.kf.dt = 1.0 / fps # Update KF delta time
 
         # 2. Setup Video Writer (only if not exporting JSON or if we want both)
         out_writer = None
@@ -45,7 +80,7 @@ class VideoProcessor:
         frame_data = []
 
         try:
-            for _ in tqdm(range(num_frames), mininterval=2.0):
+            for i in tqdm(range(num_frames), mininterval=2.0):
                 # 3. Read Frames
                 ret_r, frame_road = cap_road.read()
                 ret_f, frame_face = cap_face.read()
@@ -61,7 +96,8 @@ class VideoProcessor:
                     frame_data.append(frame_info)
                 else:
                     # 4. Process Frame (Visual)
-                    vis_road = self._process_single_frame(frame_road, frame_face, current_time)
+                    # Pass frame index for debugging
+                    vis_road = self._process_single_frame(frame_road, frame_face, current_time, frame_idx=i)
 
                     # 5. Display & Write
                     if self.args.show:
@@ -71,15 +107,21 @@ class VideoProcessor:
                     if out_writer and out_writer.isOpened():
                         out_writer.write(cv2.resize(vis_road, (w, h)))
             
+            # --- End of Run Visualization ---
+            if not export_json and self.vo:
+                self._show_summary_plot()
+
             if export_json:
                 # Compile final JSON
                 final_events = []
-                for alert in self.all_events:
+                for event in self.all_events:
                     final_events.append({
-                        "timestamp": alert.timestamp,
-                        "type": "safety_alert",
-                        "severity": alert.severity,
-                        "message": alert.message,
+                        "timestamp": event['timestamp'],
+                        "type": event['type'],
+                        "severity": event['severity'],
+                        "message": event['message'],
+                        "vo_x": event.get('vo_x'),
+                        "vo_z": event.get('vo_z'),
                         "duration": 2.0
                     })
                 
@@ -98,14 +140,17 @@ class VideoProcessor:
                 
                 if output_json_path:
                     with open(output_json_path, 'w') as f:
-                        json.dump(result, f)
+                        json.dump(result, f, cls=NumpyEncoder)
                 return result
 
         except KeyboardInterrupt:
             print("\nInterrupted by user")
+            if not export_json and self.vo:
+                self._show_summary_plot()
         except Exception as e:
-            print(f"\nError: {e}")
+            print(f"\nError in VideoProcessor.run: {e}")
             import traceback; traceback.print_exc()
+            raise e
         finally:
             cap_road.release()
             cap_face.release()
@@ -172,10 +217,43 @@ class VideoProcessor:
         
         return out_writer, w, h
 
-    def _process_single_frame(self, frame_road, frame_face, current_time):
+    def _process_single_frame(self, frame_road, frame_face, current_time, frame_idx=0):
+        # Debug logging for first frame
+        debug = frame_idx == 0
+        
+        if debug: print("[Debug] Processing Lane Detection...", flush=True)
         # Lane Processing
         vis_road, lane_data, cross_events = self.lane_wrapper.process_frame(frame_road)
 
+        # VO Processing
+        turn_event = None
+        vo_pos = {'x': None, 'z': None}
+        if self.vo:
+            if debug: print("[Debug] Processing Visual Odometry...", flush=True)
+            # We pass a copy because VO might modify/crop it internally or for display
+            # Though our VO implementation creates a copy for crop, being safe is good
+            _, _, _, turn_event, _ = self.vo.process_frame(external_frame=frame_road)
+            # Store current VO position
+            vo_pos['x'] = float(self.vo.cur_t[0][0])
+            vo_pos['z'] = float(self.vo.cur_t[2][0])
+            
+            if turn_event:
+                # Validate turn safety
+                result = self.safety_monitor.validate_turn(turn_event, current_time, self.state_history)
+                if result:
+                    self.safety_monitor.active_alerts.append(result)
+                    # Add Turn Event to All Events for summary
+                    self.all_events.append({
+                        'timestamp': current_time,
+                        'type': 'turn_event',
+                        'message': result.message,
+                        'severity': result.severity,
+                        'vo_x': vo_pos['x'],
+                        'vo_z': vo_pos['z']
+                    })
+                    print(f"[{current_time:.2f}s] {result.message}")
+
+        if debug: print("[Debug] Processing Face Analysis...", flush=True)
         # Face Processing
         frame_face, face_info = self.face_analyzer.process_frame(frame_face)
         
@@ -198,9 +276,18 @@ class VideoProcessor:
                     result = self.safety_monitor.validate_lane_change(direction, current_time, self.state_history)
                     if result:
                         self.safety_monitor.active_alerts.append(result)
-                        self.all_events.append(result)
+                        # Store as dictionary for consistency
+                        self.all_events.append({
+                            'timestamp': current_time,
+                            'type': 'safety_alert',
+                            'message': result.message,
+                            'severity': result.severity,
+                            'vo_x': vo_pos['x'],
+                            'vo_z': vo_pos['z']
+                        })
                         print(f"[{current_time:.2f}s] {result.message}")
 
+        if debug: print("[Debug] Visualizing...", flush=True)
         # Visualization Composition
         # 1. Overlay Face Video
         self.visualizer.draw_face_overlay(vis_road, vis_face)
@@ -213,7 +300,7 @@ class VideoProcessor:
         
         # 4. Draw Safety Alerts
         self.visualizer.draw_safety_alerts(vis_road, self.safety_monitor.active_alerts)
-
+        
         return vis_road
 
     def _update_history(self, face_info, current_time):
@@ -258,6 +345,28 @@ class VideoProcessor:
         # Lane Processing
         vis_road, lane_data, cross_events = self.lane_wrapper.process_frame(frame_road)
 
+        # VO Processing Headless
+        turn_event = None
+        vo_pos = {'x': None, 'z': None}
+        if self.vo:
+            _, _, _, turn_event, _ = self.vo.process_frame(external_frame=frame_road)
+            vo_pos['x'] = float(self.vo.cur_t[0][0])
+            vo_pos['z'] = float(self.vo.cur_t[2][0])
+            
+            if turn_event:
+                # Validate turn safety
+                result = self.safety_monitor.validate_turn(turn_event, current_time, self.state_history)
+                if result:
+                    self.safety_monitor.active_alerts.append(result)
+                    self.all_events.append({
+                        'timestamp': current_time,
+                        'type': 'turn_event',
+                        'message': result.message,
+                        'severity': result.severity,
+                        'vo_x': vo_pos['x'],
+                        'vo_z': vo_pos['z']
+                    })
+
         # Face Processing
         frame_face, face_info = self.face_analyzer.process_frame(frame_face)
         
@@ -274,7 +383,14 @@ class VideoProcessor:
                     result = self.safety_monitor.validate_lane_change(direction, current_time, self.state_history)
                     if result:
                         self.safety_monitor.active_alerts.append(result)
-                        self.all_events.append(result)
+                        self.all_events.append({
+                            'timestamp': current_time,
+                            'type': 'safety_alert',
+                            'message': result.message,
+                            'severity': result.severity,
+                            'vo_x': vo_pos['x'],
+                            'vo_z': vo_pos['z']
+                        })
         
         # Serialize Lane Data (Coefficients only)
         serialized_lanes = []
@@ -308,3 +424,59 @@ class VideoProcessor:
             "face_info": serialized_face,
             "current_state": self.last_state
         }
+
+    def _show_summary_plot(self):
+        """Generates and shows the 3D trajectory plot with event markers."""
+        if not self.vo:
+            return
+
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            print("Warning: matplotlib not installed. Skipping summary plot.")
+            return
+
+        traj_x = self.vo.traj_x
+        traj_z = self.vo.traj_z
+        
+        fig = plt.figure(figsize=(10, 8))
+        ax = fig.add_subplot(111)
+        
+        # Plot Path
+        ax.plot(traj_x, traj_z, label='Vehicle Trajectory', color='blue', linewidth=2)
+        ax.scatter(traj_x[-1], traj_z[-1], color='red', marker='o', label='End Point')
+        ax.scatter(traj_x[0], traj_z[0], color='green', marker='o', label='Start Point')
+        
+        # Plot Events
+        turn_x, turn_z = [], []
+        alert_x, alert_z = [], []
+        
+        for evt in self.all_events:
+            if evt.get('vo_x') is not None and evt.get('vo_z') is not None:
+                if evt['type'] == 'turn_event':
+                    turn_x.append(evt['vo_x'])
+                    turn_z.append(evt['vo_z'])
+                elif evt['type'] == 'safety_alert':
+                    alert_x.append(evt['vo_x'])
+                    alert_z.append(evt['vo_z'])
+        
+        if turn_x:
+            ax.scatter(turn_x, turn_z, color='orange', marker='*', s=150, label='Turns', zorder=5)
+        if alert_x:
+            ax.scatter(alert_x, alert_z, color='red', marker='X', s=100, label='Safety Alerts', zorder=5)
+        
+        ax.set_title("Trip Summary: Trajectory & Events")
+        ax.set_xlabel("X Position (meters relative)")
+        ax.set_ylabel("Z Position (meters relative)")
+        ax.legend()
+        ax.grid(True)
+        ax.axis('equal')
+        
+        print("\n" + "="*50)
+        print("                TRIP EVENT LOG")
+        print("="*50)
+        for evt in self.all_events:
+            print(f"Time: {evt['timestamp']:6.2f}s | {evt['type'].upper():12} | {evt['message']}")
+        print("="*50 + "\n")
+        
+        plt.show()

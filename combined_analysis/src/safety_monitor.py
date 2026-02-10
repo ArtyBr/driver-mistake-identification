@@ -20,50 +20,44 @@ class ManeuverValidator:
         """
         Validates a lane change against the driver's gaze history.
         """
-        # 1. Determine required check based on direction
-        # direction comes from LaneTracker: "left-to-right" or "right-to-left"
-        required_check = None
-        if direction == "left-to-right":
-            required_check = "Right Mirror"
-        elif direction == "right-to-left":
-            required_check = "Left Mirror"
-        
-        if not required_check:
-            return SafetyEvent(current_time, f"Unknown Lane Change: {direction}", False, "lane_change", "INFO")
+        required_check = "Right Mirror" if direction == "left-to-right" else "Left Mirror"
+        return self._validate_maneuver(required_check, f"lane change ({direction})", "lane_change", current_time, state_history)
 
-        # 2. Check history
-        # We look for the specific mirror check within the last HISTORY_DURATION (or specifically 5s as requested)
-        # config.HISTORY_DURATION is 5.0
-        
-        found_check = False
-        last_check_time = 0.0
-        
+    def validate_turn(self, direction: str, current_time: float, state_history: List[Dict]) -> SafetyEvent:
+        """
+        Validates a turn (from VO) against the driver's gaze history.
+        """
+        required_check = "Left Mirror" if "LEFT" in direction else "Right Mirror"
+        return self._validate_maneuver(required_check, direction, "turn", current_time, state_history)
+
+    def _validate_maneuver(self, required_check: str, maneuver_label: str, maneuver_type: str, current_time: float, state_history: List[Dict]) -> SafetyEvent:
+        found_side = False
+        found_rear = False
         for state in reversed(state_history):
-            # state is {'state': str, 'timestamp': float}
-            # The history is already pruned to 5s in VideoProcessor, but let's be safe
             if (current_time - state['timestamp']) > 5.0:
                 continue
-            
             if state['state'] == required_check:
-                found_check = True
-                last_check_time = state['timestamp']
-                break
+                found_side = True
+            if state['state'] == "Rear Mirror":
+                found_rear = True
         
-        # 3. Formulate Result
-        if found_check:
+        if found_side:
+            mirror_msg = f"{required_check}"
+            if found_rear: mirror_msg = f"Rear and {required_check}"
             return SafetyEvent(
                 timestamp=current_time,
-                message=f"SAFE: {required_check} checked before merging.",
+                message=f"SAFE: {mirror_msg} checked before {maneuver_label}.",
                 is_safe=True,
-                maneuver_type="lane_change",
+                maneuver_type=maneuver_type,
                 severity="INFO"
             )
         else:
+            rear_note = " (Rear mirror look was detected)" if found_rear else ""
             return SafetyEvent(
                 timestamp=current_time,
-                message=f"UNSAFE: No {required_check} check detected!",
+                message=f"UNSAFE: No {required_check} check before {maneuver_label}!{rear_note}",
                 is_safe=False,
-                maneuver_type="lane_change",
+                maneuver_type=maneuver_type,
                 severity="CRITICAL"
             )
 
