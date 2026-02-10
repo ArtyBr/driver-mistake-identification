@@ -81,8 +81,22 @@ function VideoPlayer({ results, roadUrls, faceUrls }) {
     return '#ffc107'
   }
 
+  // Find active safety event for visual feedback
+  // Following timeline logic: event occurs 5s prior to the timestamp
+  const currentEvent = results.timeline_events ? [...results.timeline_events].reverse().find(e => 
+    currentTime >= Math.max(0, e.timestamp - 5) && currentTime <= e.timestamp
+  ) : null;
+
   return (
     <div className="video-dashboard">
+      <div className="event-banner-container">
+        {currentEvent && (
+          <div className={`event-banner ${currentEvent.severity.toLowerCase()}`}>
+            <strong>{currentEvent.severity}:</strong> {currentEvent.message}
+          </div>
+        )}
+      </div>
+
       <VideoDisplay 
         roadUrl={roadUrls ? roadUrls[currentPartIndex] : ""}
         faceUrl={faceUrls ? faceUrls[currentPartIndex] : ""}
@@ -96,6 +110,7 @@ function VideoPlayer({ results, roadUrls, faceUrls }) {
         roadAspectRatio={roadAspectRatio}
         faceAspectRatio={faceAspectRatio}
         isBuffering={isBuffering}
+        currentEvent={currentEvent}
       />
 
       <div className="controls">

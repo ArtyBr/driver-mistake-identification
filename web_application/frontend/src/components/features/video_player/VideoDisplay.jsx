@@ -13,7 +13,8 @@ const VideoDisplay = ({
   onLoadedMetadata,
   roadAspectRatio,
   faceAspectRatio,
-  isBuffering
+  isBuffering,
+  currentEvent
 }) => {  // Force video reload when src changes (important for local blobs)
   useEffect(() => {
     if (roadVideoRef.current) roadVideoRef.current.load();
@@ -23,8 +24,10 @@ const VideoDisplay = ({
     if (faceVideoRef.current) faceVideoRef.current.load();
   }, [faceUrl, faceVideoRef]);
 
+  const containerClass = `video-container ${currentEvent ? `event-active ${currentEvent.severity.toLowerCase()}` : ''}`;
+
   return (
-    <div className="video-container">
+    <div className={containerClass}>
       {isBuffering && (
         <div className="video-buffering-overlay">
           <div className="spinner"></div>

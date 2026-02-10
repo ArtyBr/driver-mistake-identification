@@ -3,7 +3,43 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 15px;
+}
+
+.event-banner-container {
+  height: 32px; /* Fixed height to prevent layout shift */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.event-banner {
+  padding: 4px 16px;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  animation: bannerFadeIn 0.3s ease-out;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.event-banner.critical {
+  background: rgba(220, 53, 69, 0.15);
+  color: #ff4d5e;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.event-banner.info {
+  background: rgba(32, 201, 151, 0.15);
+  color: var(--cyber-green);
+  border: 1px solid rgba(32, 201, 151, 0.3);
+}
+
+@keyframes bannerFadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .video-container {
@@ -17,6 +53,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   flex-wrap: wrap;
   position: relative;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
 }
 
 @media (max-width: 992px) {
@@ -36,8 +73,11 @@
   height: 15px;
   border-top: 2px solid var(--cyber-cyan);
   border-left: 2px solid var(--cyber-cyan);
-  opacity: 0.7;
+  opacity: 0.8;
   z-index: 10;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1), 
+              height 0.6s cubic-bezier(0.16, 1, 0.3, 1), 
+              border-color 0.4s ease;
 }
 .video-container::after {
   content: '';
@@ -48,8 +88,38 @@
   height: 15px;
   border-bottom: 2px solid var(--cyber-cyan);
   border-right: 2px solid var(--cyber-cyan);
-  opacity: 0.7;
+  opacity: 0.8;
   z-index: 10;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1), 
+              height 0.6s cubic-bezier(0.16, 1, 0.3, 1), 
+              border-color 0.4s ease;
+}
+
+/* Active Event Corner Expansion */
+.video-container.event-active::before,
+.video-container.event-active::after {
+  width: 50%;
+  height: 50%;
+}
+
+.video-container.event-active.critical {
+  border-color: rgba(220, 53, 69, 0.3);
+  box-shadow: 0 0 20px rgba(220, 53, 69, 0.2);
+}
+
+.video-container.event-active.critical::before,
+.video-container.event-active.critical::after {
+  border-color: var(--accent-danger);
+}
+
+.video-container.event-active.info {
+  border-color: rgba(25, 135, 84, 0.3);
+  box-shadow: 0 0 20px rgba(25, 135, 84, 0.2);
+}
+
+.video-container.event-active.info::before,
+.video-container.event-active.info::after {
+  border-color: var(--accent-success);
 }
 
 .video-buffering-overlay {
