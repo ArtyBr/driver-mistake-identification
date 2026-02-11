@@ -157,15 +157,27 @@ async def get_status(job_id: str, force_refresh: bool = False, service: JobServi
 async def get_results(job_id: str, service: JobService = Depends(get_job_service)):
     """
     Retrieves the detailed analysis results for a completed job.
+    Prioritizes loading from filesystem to keep DB small.
     """
     job = service.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
+    # 1. Try loading from filesystem (New preferred way)
+    results = service.load_results(job_id)
+    if results:
+        return results
+
+    # 2. Fallback to DB (Migration support for older records)
     if (job.status == "COMPLETED" or job.status == "FAILED") and job.result:
-        return json.loads(job.result)
-    elif job.status == "FAILED":
-        return {"error": job.error}
+        try:
+            return json.loads(job.result)
+        except Exception:
+            pass
+
+    # 3. Handle status-based responses
+    if job.status == "FAILED":
+        return {"error": job.error or "Analysis failed without detailed error message."}
     else:
         return {"status": job.status}
 

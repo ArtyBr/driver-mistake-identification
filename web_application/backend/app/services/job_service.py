@@ -167,35 +167,33 @@ class JobService:
 
     def finalize_job(self, job_id: str) -> Optional[Job]:
         """
-        Attempts to load results and finalize the job using local file access.
+        Finalizes the job using local file access. 
+        Note: We no longer store the full JSON result in the database to save space.
         """
         job = self.get_job(job_id)
         if not job:
             return None
 
         result_path = UPLOAD_DIR / job_id / "results.json"
-        result_data = None
         
-        batch_service = BatchService()
-        remote_data_str = batch_service.read_results_local(str(result_path))
-        
-        if remote_data_str:
-            try:
-                result_data = json.loads(remote_data_str)
-            except Exception as e:
-                logger.error(f"Error parsing results for {job_id}: {e}")
+        # Check if result file exists (either locally or in large storage)
+        if not result_path.exists():
+            # Check fallback large storage path if local doesn't have it
+            local_base = Path("/dcs/large/safedrive_cs310_2526/uploads/")
+            result_path = local_base / job_id / "results.json"
 
-        if result_data:
-            job.result = json.dumps(result_data)
+        if result_path.exists():
             job.status = "COMPLETED"
             job.progress = 100
             job.error = None
+            # job.result = None  # We keep it as is in case it was already set, but don't update it from file
             self.session.add(job)
             self.session.commit()
             self.session.refresh(job)
             logger.info(f"Job {job_id} finalized successfully.")
         else:
             # Result file not found but job finished? Check logs for error.
+            batch_service = BatchService()
             if job.batch_job_id:
                 try:
                     local_job_dir = str(UPLOAD_DIR / job_id)
@@ -281,6 +279,36 @@ class JobService:
 
         return sorted(analyses, key=lambda x: x.created_at, reverse=True)
         
+    def load_results(self, job_id: str) -> Optional[dict]:
+        """
+        Loads results from the filesystem for a given job.
+        Tries local upload directory first, then fallback large storage.
+        """
+        job = self.get_job(job_id)
+        
+        # Possible folder names: the job ID itself, or the original source name
+        possible_folders = [job_id]
+        if job and job.name and job.name != job_id:
+            possible_folders.append(job.name)
+            
+        for folder in possible_folders:
+            result_path = UPLOAD_DIR / folder / "results.json"
+            
+            # Check fallback if not in local UPLOAD_DIR
+            if not result_path.exists():
+                local_base = Path("/dcs/large/safedrive_cs310_2526/uploads/")
+                result_path = local_base / folder / "results.json"
+
+            if result_path.exists():
+                try:
+                    with open(result_path, "r") as f:
+                        return json.load(f)
+                except Exception as e:
+                    logger.error(f"Error reading results file for {job_id} in {folder}: {e}")
+                    continue
+
+        return None
+
     def create_test_job(self, analysis_id: Optional[str] = None) -> Job:
         source_job_id = analysis_id if analysis_id else "test_video"
         
@@ -292,28 +320,23 @@ class JobService:
             road_filename = "road.mp4"
             face_filename = "face.mp4"
 
-        # Fetch Results from Local Large Storage
+        # Check if source analysis exists (verify filesystem)
         local_base = Path("/dcs/large/safedrive_cs310_2526/uploads/")
         result_path = local_base / source_job_id / "results.json"
 
-        try:
-            logger.info(f"Fetching results for {source_job_id} from {result_path}...")
-            
-            if not result_path.exists():
-                raise FileNotFoundError(f"Results not found for {source_job_id}")
-                
-            with open(result_path, "r") as f:
-                result_data = json.load(f)
-            
-            # Use REMOTE: prefix so that routes.py handles the path via stream_remote_video
-            road_path_val = f"REMOTE:{source_job_id}/{road_filename}"
-            face_path_val = f"REMOTE:{source_job_id}/{face_filename}"
-            
-        except Exception as e:
-            logger.error(f"Failed to load analysis: {e}")
-            raise FileNotFoundError(f"Could not load analysis for {source_job_id} (checked local storage)")
+        if not result_path.exists():
+             # Try local UPLOAD_DIR too just in case
+             result_path = UPLOAD_DIR / source_job_id / "results.json"
 
-        # 3. Create Job Record
+        if not result_path.exists():
+            logger.error(f"Failed to load analysis: Results not found for {source_job_id}")
+            raise FileNotFoundError(f"Could not load analysis for {source_job_id} (checked local and large storage)")
+
+        # Use REMOTE: prefix so that routes.py handles the path via stream_remote_video
+        road_path_val = f"REMOTE:{source_job_id}/{road_filename}"
+        face_path_val = f"REMOTE:{source_job_id}/{face_filename}"
+
+        # 3. Create Job Record (NO 'result' column update)
         new_job_id = str(uuid.uuid4())
         
         job = Job(
@@ -322,8 +345,7 @@ class JobService:
             status="COMPLETED",
             progress=100,
             road_path=road_path_val,
-            face_path=face_path_val,
-            result=json.dumps(result_data)
+            face_path=face_path_val
         )
         
         self.session.add(job)
