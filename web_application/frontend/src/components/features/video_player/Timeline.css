@@ -71,11 +71,11 @@
   left: 64px;
   margin: 0;
   cursor: pointer; /* Ensure pointer cursor on the slider area */
-  z-index: 10;
+  z-index: 0;
   position: absolute;
   top: 0; /* Cover the area from top */
   background: transparent;
-  height: 35px; /* Increase height to cover handle area up to the events track */
+  height: 100%; /* Cover the full height of the wrapper */
 }
 
 @media (max-width: 576px) {
@@ -139,7 +139,7 @@
   position: absolute;
   left: 70px;
   width: calc(100% - 90px);
-  height: 10px;
+  height: 16px;
   pointer-events: none;
   z-index: 1;
   background: rgba(255, 255, 255, 0.05);
@@ -154,12 +154,12 @@
   }
 }
 
-.timeline-events-track { top: 35px; }
-.timeline-face-track { top: 55px; }
+.timeline-events-track { top: 32px; }
+.timeline-face-track { top: 58px; }
 
 @media (max-width: 576px) {
   .timeline-events-track { top: 40px; }
-  .timeline-face-track { top: 70px; }
+  .timeline-face-track { top: 75px; }
 }
 
 .track-label {
@@ -181,11 +181,11 @@
 }
 
 .events-label { top: 34px; }
-.gaze-label { top: 54px; }
+.gaze-label { top: 60px; }
 
 @media (max-width: 576px) {
-  .events-label { top: 39px; }
-  .gaze-label { top: 69px; }
+  .events-label { top: 43px; }
+  .gaze-label { top: 78px; }
 }
 
 /* Event Bars on Timeline */
@@ -197,7 +197,7 @@
   cursor: pointer;
   transition: all 0.1s ease;
   pointer-events: auto;
-  border-radius: 1px;
+  border-radius: 2px;
 }
 .timeline-event-bar:hover, .timeline-event-bar.hover-active {
   opacity: 1;
@@ -215,7 +215,7 @@
   position: absolute;
   top: -5px;
   bottom: -5px;
-  width: 1px;
+  width: 2px;
   background-color: #fff;
   z-index: 10;
   transform: translateX(-50%);

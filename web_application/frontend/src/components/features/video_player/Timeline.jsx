@@ -70,7 +70,7 @@ const Timeline = ({
                 left: `${leftPct}%`,
                 width: `${widthPct}%`,
                 backgroundColor: color,
-                zIndex: isHovered ? 6 : (isTimeActive ? 5 : 1)
+                zIndex: isHovered ? 20 : (isTimeActive ? 5 : 1)
               }}
               onMouseEnter={() => setHoveredEventIndex(i)}
               onMouseLeave={() => setHoveredEventIndex(null)}
@@ -121,7 +121,7 @@ const Timeline = ({
                 left: `${leftPct}%`,
                 width: `${widthPct}%`,
                 backgroundColor: color,
-                zIndex: (isHovered || isLogHovered) ? 6 : (isTimeActive ? 5 : 1)
+                zIndex: (isHovered || isLogHovered) ? 20 : (isTimeActive ? 5 : 1)
               }}
               onMouseEnter={() => setHoveredFaceSegmentIndex(i)}
               onMouseLeave={() => setHoveredFaceSegmentIndex(null)}
