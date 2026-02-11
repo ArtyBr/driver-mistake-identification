@@ -54,7 +54,6 @@ class FPN(nn.Module):
             assert add_extra_convs in ('on_input', 'on_lateral', 'on_output')
         elif add_extra_convs:  # True
             if extra_convs_on_inputs:
-                # TODO: deprecate `extra_convs_on_inputs`
                 warnings.simplefilter('once')
                 warnings.warn(
                     '"extra_convs_on_inputs" will be deprecated in v2.9.0,'
