@@ -17,6 +17,15 @@ export function useVideoCanvas(
     let lastRenderedState = null;
     let lastIndex = 0;
 
+    const stateColors = {
+      'Looking Ahead': '#20c997',
+      'Left Mirror': '#6f42c1',
+      'Right Mirror': '#0ffc10',
+      'Rear Mirror': '#ffc107',
+      'N/A': '#00d2df',
+      'Unknown': '#ffc107'
+    };
+
     const draw = (now, metadata) => {
       const ctx = canvasRef.current?.getContext('2d');
       const faceCtx = faceCanvasRef.current?.getContext('2d');
@@ -93,6 +102,8 @@ export function useVideoCanvas(
         }
 
         if (frame) {
+          const noseLineColor = stateColors[frame.current_state] || stateColors['N/A'];
+
           if (frame.current_state && frame.current_state !== lastRenderedState) {
             setCurrentFaceState(frame.current_state);
             lastRenderedState = frame.current_state;
@@ -139,7 +150,7 @@ export function useVideoCanvas(
               const endX = (nose_2d[0] + yaw * 10) * scaleX;
               const endY = (nose_2d[1] - pitch * 10) * scaleY;
 
-              faceCtx.strokeStyle = '#00d2df';
+              faceCtx.strokeStyle = noseLineColor;
               faceCtx.lineWidth = 3;
               faceCtx.beginPath();
               faceCtx.moveTo(startX, startY);

@@ -46,6 +46,7 @@
   background-color: #444;
   border-color: var(--cyber-cyan);
   color: var(--cyber-cyan);
+  transform: scale(1.05);
 }
 
 .timeline-wrapper {

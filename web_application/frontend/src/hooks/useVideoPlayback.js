@@ -406,8 +406,10 @@ export function useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
               roadVid.currentTime = targetTime;
               faceVid.currentTime = targetTime;
           }
-          updateBufferedRanges();
-          updateBuffering();
+          setTimeout(() => {
+              updateBufferedRanges();
+              updateBuffering();
+          }, 0);
       }
 
       return () => {

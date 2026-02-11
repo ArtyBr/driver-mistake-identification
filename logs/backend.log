@@ -1,50 +1,32 @@
-INFO:     Started server process [8531]
+INFO:     Started server process [13750]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on https://0.0.0.0:7728 (Press CTRL+C to quit)
-2026-02-10 18:57:09,892 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/list_analyses
-2026-02-10 18:57:10,692 - api_logger - INFO - Response: 200 - Took 0.8003s
+2026-02-11 18:30:26,655 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/list_analyses
+2026-02-11 18:30:27,970 - api_logger - INFO - Response: 200 - Took 1.3146s
 INFO:     51.179.197.157:0 - "GET /list_analyses HTTP/1.1" 200 OK
-2026-02-10 18:57:14,695 - api_logger - INFO - Incoming Request: POST https://127.0.0.1:7728/run_test?analysis_id=2025_0916_134624_007979F_cut_1
-2026-02-10 18:57:14,699 - app.services.job_service - INFO - Fetching results for 2025_0916_134624_007979F_cut_1 from /dcs/large/safedrive_cs310_2526/uploads/2025_0916_134624_007979F_cut_1/results.json...
-2026-02-10 18:57:14,781 - api_logger - INFO - Response: 200 - Took 0.0853s
-INFO:     51.179.197.157:0 - "POST /run_test?analysis_id=2025_0916_134624_007979F_cut_1 HTTP/1.1" 200 OK
-2026-02-10 18:57:15,019 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/3b954e5d-38c0-4bb9-870a-98b0e60a0408
-2026-02-10 18:57:15,027 - api_logger - INFO - Response: 200 - Took 0.0080s
-INFO:     51.179.197.157:0 - "GET /status/3b954e5d-38c0-4bb9-870a-98b0e60a0408 HTTP/1.1" 200 OK
-2026-02-10 18:57:15,188 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/3b954e5d-38c0-4bb9-870a-98b0e60a0408
-2026-02-10 18:57:15,193 - api_logger - INFO - Response: 200 - Took 0.0051s
-INFO:     51.179.197.157:0 - "GET /status/3b954e5d-38c0-4bb9-870a-98b0e60a0408 HTTP/1.1" 200 OK
-2026-02-10 18:57:15,226 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/3b954e5d-38c0-4bb9-870a-98b0e60a0408
-2026-02-10 18:57:15,230 - api_logger - INFO - Response: 200 - Took 0.0040s
-INFO:     51.179.197.157:0 - "GET /status/3b954e5d-38c0-4bb9-870a-98b0e60a0408 HTTP/1.1" 200 OK
-2026-02-10 18:57:15,283 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/results/3b954e5d-38c0-4bb9-870a-98b0e60a0408
-2026-02-10 18:57:15,385 - api_logger - INFO - Response: 200 - Took 0.1020s
-INFO:     51.179.197.157:0 - "GET /results/3b954e5d-38c0-4bb9-870a-98b0e60a0408 HTTP/1.1" 200 OK
-2026-02-10 18:57:15,654 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/2025_0916_134624_007979F_cut_1/road.mp4
-2026-02-10 18:57:15,655 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/2025_0916_134624_007979F_cut_1/road.mp4
-2026-02-10 18:57:15,661 - api_logger - INFO - Response: 206 - Took 0.0069s
-INFO:     51.179.197.157:0 - "GET /video/remote/2025_0916_134624_007979F_cut_1/road.mp4 HTTP/1.1" 206 Partial Content
-2026-02-10 18:57:15,663 - api_logger - INFO - Response: 206 - Took 0.0079s
-INFO:     51.179.197.157:0 - "GET /video/remote/2025_0916_134624_007979F_cut_1/road.mp4 HTTP/1.1" 206 Partial Content
-2026-02-10 18:57:15,806 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/2025_0916_134624_007979F_cut_1/face.mp4
-2026-02-10 18:57:15,808 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/2025_0916_134624_007979F_cut_1/road.mp4
-2026-02-10 18:57:15,810 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/2025_0916_134624_007979F_cut_1/road.mp4
-2026-02-10 18:57:15,814 - api_logger - INFO - Response: 206 - Took 0.0079s
-INFO:     51.179.197.157:0 - "GET /video/remote/2025_0916_134624_007979F_cut_1/face.mp4 HTTP/1.1" 206 Partial Content
-2026-02-10 18:57:15,818 - api_logger - INFO - Response: 206 - Took 0.0102s
-INFO:     51.179.197.157:0 - "GET /video/remote/2025_0916_134624_007979F_cut_1/road.mp4 HTTP/1.1" 206 Partial Content
-2026-02-10 18:57:15,820 - api_logger - INFO - Response: 206 - Took 0.0093s
-INFO:     51.179.197.157:0 - "GET /video/remote/2025_0916_134624_007979F_cut_1/road.mp4 HTTP/1.1" 206 Partial Content
-2026-02-10 18:57:15,903 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/2025_0916_134624_007979F_cut_1/face.mp4
-2026-02-10 18:57:15,913 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/2025_0916_134624_007979F_cut_1/road.mp4
-2026-02-10 18:57:15,919 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/2025_0916_134624_007979F_cut_1/road.mp4
-2026-02-10 18:57:15,922 - api_logger - INFO - Response: 206 - Took 0.0185s
-INFO:     51.179.197.157:0 - "GET /video/remote/2025_0916_134624_007979F_cut_1/face.mp4 HTTP/1.1" 206 Partial Content
-2026-02-10 18:57:15,923 - api_logger - INFO - Response: 206 - Took 0.0093s
-INFO:     51.179.197.157:0 - "GET /video/remote/2025_0916_134624_007979F_cut_1/road.mp4 HTTP/1.1" 206 Partial Content
-2026-02-10 18:57:15,925 - api_logger - INFO - Response: 206 - Took 0.0054s
-INFO:     51.179.197.157:0 - "GET /video/remote/2025_0916_134624_007979F_cut_1/road.mp4 HTTP/1.1" 206 Partial Content
-2026-02-10 18:57:16,094 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/2025_0916_134624_007979F_cut_1/face.mp4
-2026-02-10 18:57:16,096 - api_logger - INFO - Response: 206 - Took 0.0018s
-INFO:     51.179.197.157:0 - "GET /video/remote/2025_0916_134624_007979F_cut_1/face.mp4 HTTP/1.1" 206 Partial Content
+2026-02-11 18:30:29,973 - api_logger - INFO - Incoming Request: POST https://127.0.0.1:7728/run_test
+2026-02-11 18:30:29,977 - app.services.job_service - INFO - Fetching results for test_video from /dcs/large/safedrive_cs310_2526/uploads/test_video/results.json...
+2026-02-11 18:30:30,208 - api_logger - INFO - Response: 200 - Took 0.2346s
+INFO:     51.179.197.157:0 - "POST /run_test HTTP/1.1" 200 OK
+2026-02-11 18:30:30,361 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/0a7a5532-46ff-4880-bfb9-6664a2828c27
+2026-02-11 18:30:30,370 - api_logger - INFO - Response: 200 - Took 0.0090s
+INFO:     51.179.197.157:0 - "GET /status/0a7a5532-46ff-4880-bfb9-6664a2828c27 HTTP/1.1" 200 OK
+2026-02-11 18:30:30,445 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/0a7a5532-46ff-4880-bfb9-6664a2828c27
+2026-02-11 18:30:30,451 - api_logger - INFO - Response: 200 - Took 0.0055s
+INFO:     51.179.197.157:0 - "GET /status/0a7a5532-46ff-4880-bfb9-6664a2828c27 HTTP/1.1" 200 OK
+2026-02-11 18:30:30,527 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/0a7a5532-46ff-4880-bfb9-6664a2828c27
+2026-02-11 18:30:30,533 - api_logger - INFO - Response: 200 - Took 0.0056s
+INFO:     51.179.197.157:0 - "GET /status/0a7a5532-46ff-4880-bfb9-6664a2828c27 HTTP/1.1" 200 OK
+2026-02-11 18:30:30,578 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/results/0a7a5532-46ff-4880-bfb9-6664a2828c27
+2026-02-11 18:30:30,959 - api_logger - INFO - Response: 200 - Took 0.3806s
+INFO:     51.179.197.157:0 - "GET /results/0a7a5532-46ff-4880-bfb9-6664a2828c27 HTTP/1.1" 200 OK
+2026-02-11 18:30:31,180 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/test_video/road_test.mp4
+2026-02-11 18:30:31,185 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/test_video/road_test.mp4
+2026-02-11 18:30:31,187 - api_logger - INFO - Response: 206 - Took 0.0065s
+INFO:     51.179.197.157:0 - "GET /video/remote/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+2026-02-11 18:30:31,188 - api_logger - INFO - Response: 206 - Took 0.0034s
+INFO:     51.179.197.157:0 - "GET /video/remote/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
+2026-02-11 18:30:31,206 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/test_video/face_test.mp4
+2026-02-11 18:30:31,209 - api_logger - INFO - Response: 206 - Took 0.0022s
+INFO:     51.179.197.157:0 - "GET /video/remote/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
