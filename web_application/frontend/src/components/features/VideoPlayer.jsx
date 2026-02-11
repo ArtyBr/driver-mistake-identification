@@ -6,6 +6,7 @@ import Legend from './video_player/Legend'
 import { useVideoPlayback } from '../../hooks/useVideoPlayback'
 import { useVideoAnalysisData } from '../../hooks/useVideoAnalysisData'
 import { useVideoCanvas } from '../../hooks/useVideoCanvas'
+import { getColorForState } from '../../constants/videoConstants'
 
 // Icon Components
 const PlayIcon = () => (
@@ -18,6 +19,20 @@ const PauseIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="6" y="4" width="4" height="16"></rect>
     <rect x="14" y="4" width="4" height="16"></rect>
+  </svg>
+);
+
+const PrevIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="19 20 9 12 19 4 19 20"></polygon>
+    <line x1="5" y1="19" x2="5" y2="5"></line>
+  </svg>
+);
+
+const NextIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="5 4 15 12 5 20 5 4"></polygon>
+    <line x1="19" y1="5" x2="19" y2="19"></line>
   </svg>
 );
 
@@ -83,23 +98,28 @@ function VideoPlayer({ results, roadUrls, faceUrls }) {
     return bestIndex
   }
 
-  const iconMap = {
-    'Left Mirror': '[ < ]', 'Right Mirror': '[ > ]', 'Rear Mirror': '[ | ]', 'Looking Ahead': '[ ^ ]', 'N/A': '[ ? ]', 'Unknown': '[ ? ]'
-  }
-
-  const getColorForState = (state) => {
-    if (state === 'Looking Ahead') return '#20c997'
-    if (state === 'Left Mirror') return '#6f42c1'
-    if (state === 'Right Mirror') return '#0ffc10'
-    if (state === 'Rear Mirror') return '#ffc107'
-    return '#ffc107'
-  }
-
   // Find active safety event for visual feedback
   // Following timeline logic: event occurs 5s prior to the timestamp
   const currentEvent = results.timeline_events ? [...results.timeline_events].reverse().find(e => 
     currentTime >= Math.max(0, e.timestamp - 5) && currentTime <= e.timestamp
   ) : null;
+
+  const jumpToEvent = (direction) => {
+    if (!results.timeline_events || results.timeline_events.length === 0) return;
+    
+    const sortedEvents = [...results.timeline_events].sort((a, b) => a.timestamp - b.timestamp);
+    
+    if (direction === 'next') {
+      // Find the first event whose WINDOW START is ahead of current time
+      const next = sortedEvents.find(e => (e.timestamp - 5) > currentTime + 0.5);
+      if (next) handleSeek(Math.max(0, next.timestamp - 5));
+    } else {
+      // Find the first event whose WINDOW START is behind current time
+      // If we are currently in an event, this will jump to the start of the current event first
+      const prev = [...sortedEvents].reverse().find(e => (e.timestamp - 5) < currentTime - 0.5);
+      if (prev) handleSeek(Math.max(0, prev.timestamp - 5));
+    }
+  };
 
   return (
     <div className="video-dashboard">
@@ -131,6 +151,25 @@ function VideoPlayer({ results, roadUrls, faceUrls }) {
         <button onClick={togglePlay} className="play-button" aria-label={isPlaying ? "Pause" : "Play"}>
           {isPlaying ? <PauseIcon /> : <PlayIcon />}
         </button>
+
+        <div className="jump-controls d-flex gap-1">
+          <button 
+            onClick={() => jumpToEvent('prev')} 
+            className="btn btn-cyber btn-sm" 
+            title="Previous Event"
+            disabled={!results.timeline_events?.length}
+          >
+            <PrevIcon />
+          </button>
+          <button 
+            onClick={() => jumpToEvent('next')} 
+            className="btn btn-cyber btn-sm" 
+            title="Next Event"
+            disabled={!results.timeline_events?.length}
+          >
+            <NextIcon />
+          </button>
+        </div>
         
         <Timeline 
           currentTime={currentTime}
@@ -166,10 +205,8 @@ function VideoPlayer({ results, roadUrls, faceUrls }) {
         currentFaceState={currentFaceState}
         currentTime={currentTime}
         onSeek={handleSeek}
-        getColorForState={getColorForState}
         getLogIndexForSegment={getLogIndexForSegment}
         faceSegments={faceSegments}
-        iconMap={iconMap}
       />
     </div>
   )

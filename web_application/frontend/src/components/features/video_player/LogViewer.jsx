@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import './LogViewer.css';
+import { getColorForState, getIconForState } from '../../../constants/videoConstants';
 
 const LogViewer = ({
   history,
@@ -12,10 +13,8 @@ const LogViewer = ({
   hoveredFaceSegmentIndex,
   currentTime,
   onSeek,
-  getColorForState,
   getLogIndexForSegment,
   faceSegments,
-  iconMap
 }) => {
   const itemRefs = useRef([]);
   const eventItemRefs = useRef([]);
@@ -107,6 +106,10 @@ const LogViewer = ({
             // Check if this log corresponds to the hovered face segment
             const isSegmentHovered = hoveredFaceSegmentIndex !== null && 
                                    getLogIndexForSegment(faceSegments[hoveredFaceSegmentIndex]) === i
+
+            // Calculate duration until next transition or current segment end
+            const nextItem = history[i + 1]
+            const duration = nextItem ? (nextItem.time - item.time).toFixed(1) : null
             
             return (
               <div
@@ -117,14 +120,17 @@ const LogViewer = ({
                 onMouseEnter={() => setHoveredLogIndex(i)}
                 onMouseLeave={() => setHoveredLogIndex(null)}
               >
-                <span className="log-time">{item.time.toFixed(1)}s</span>
+                <div className="log-time-column">
+                  <span className="log-time">{item.time.toFixed(1)}s</span>
+                  {duration && <span className="log-duration">({duration}s)</span>}
+                </div>
                 <span className="log-state-container">
                   <span className="log-state-from">
-                    {iconMap[item.from] || iconMap['N/A']} <strong style={{ color: getColorForState(item.from) }}>{item.from}</strong>
+                    {getIconForState(item.from)} <strong style={{ color: getColorForState(item.from) }}>{item.from}</strong>
                   </span>
                   <span className="log-arrow">→</span>
                   <span className="log-state-to">
-                    {iconMap[item.to] || iconMap['N/A']} <strong style={{ color: getColorForState(item.to) }}>{item.to}</strong>
+                    {getIconForState(item.to)} <strong style={{ color: getColorForState(item.to) }}>{item.to}</strong>
                   </span>
                 </span>
               </div>

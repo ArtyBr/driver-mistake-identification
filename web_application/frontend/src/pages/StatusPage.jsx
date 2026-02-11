@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useJobStatus } from '../hooks/useJob';
 
@@ -6,8 +6,16 @@ const StatusPage = () => {
   const { jobId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const [copied, setCopied] = useState(false);
   
   const { status, progress, error } = useJobStatus(jobId);
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(jobId).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   useEffect(() => {
     if (status === 'COMPLETED') {
@@ -68,8 +76,19 @@ const StatusPage = () => {
                 </div>
             )}
             
-            <div className="mt-3">
+            <div className="mt-3 d-flex align-items-center justify-content-center gap-2">
                 <small className="text-muted">Job ID: {jobId}</small>
+                <button 
+                  className={`btn btn-sm ${copied ? 'btn-success' : 'btn-outline-cyber'}`}
+                  onClick={copyToClipboard}
+                  title="Copy Job ID"
+                >
+                  {copied ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  )}
+                </button>
             </div>
           </div>
         </div>

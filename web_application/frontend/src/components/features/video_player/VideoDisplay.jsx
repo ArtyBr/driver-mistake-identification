@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import './VideoDisplay.css';
+import { VIDEO_DIMENSIONS } from '../../../constants/videoConstants';
 
 const VideoDisplay = ({
   roadUrl,
@@ -45,8 +46,8 @@ const VideoDisplay = ({
         />
         <canvas
           ref={canvasRef}
-          width={1280}
-          height={720}
+          width={VIDEO_DIMENSIONS.ROAD.width}
+          height={VIDEO_DIMENSIONS.ROAD.height}
           className="overlay-canvas"
         />
       </div>
@@ -58,8 +59,8 @@ const VideoDisplay = ({
         />
         <canvas
           ref={faceCanvasRef}
-          width={640}
-          height={480}
+          width={VIDEO_DIMENSIONS.FACE.width}
+          height={VIDEO_DIMENSIONS.FACE.height}
           className="overlay-canvas"
         />
       </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import './Timeline.css';
+import { getColorForSeverity } from '../../../constants/videoConstants';
 
 const Timeline = ({
   currentTime,
@@ -26,6 +27,7 @@ const Timeline = ({
         value={currentTime}
         onChange={(e) => onSeek(parseFloat(e.target.value))}
         className="timeline-slider"
+        aria-label="Video timeline"
       />
 
       <div className="timeline-events-track">
@@ -57,10 +59,7 @@ const Timeline = ({
           const leftPct = (startTime / duration) * 100
           const widthPct = ((endTime - startTime) / duration) * 100
           
-          let color = '#ccc'
-          if (event.severity === 'CRITICAL') color = '#dc3545' // Danger Red
-          else if (event.severity === 'WARNING') color = '#ffc107' // Warning Amber
-          else if (event.severity === 'INFO') color = '#20c997' // Subtle Green
+          const color = getColorForSeverity(event.severity)
 
           return (
             <div

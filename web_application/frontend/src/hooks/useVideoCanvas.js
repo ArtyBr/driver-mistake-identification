@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { GAZE_STATES, getColorForState } from '../constants/videoConstants';
 
 export function useVideoCanvas(
   results, 
@@ -16,15 +17,6 @@ export function useVideoCanvas(
     let videoCallbackId;
     let lastRenderedState = null;
     let lastIndex = 0;
-
-    const stateColors = {
-      'Looking Ahead': '#20c997',
-      'Left Mirror': '#6f42c1',
-      'Right Mirror': '#0ffc10',
-      'Rear Mirror': '#ffc107',
-      'N/A': '#00d2df',
-      'Unknown': '#ffc107'
-    };
 
     const draw = (now, metadata) => {
       const ctx = canvasRef.current?.getContext('2d');
@@ -102,7 +94,7 @@ export function useVideoCanvas(
         }
 
         if (frame) {
-          const noseLineColor = stateColors[frame.current_state] || stateColors['N/A'];
+          const noseLineColor = getColorForState(frame.current_state);
 
           if (frame.current_state && frame.current_state !== lastRenderedState) {
             setCurrentFaceState(frame.current_state);

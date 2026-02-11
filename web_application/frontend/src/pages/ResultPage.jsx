@@ -12,10 +12,18 @@ const ResultPage = () => {
   const [jobData, setJobData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   // Locally provided files if server files are missing
   const [localRoadFiles, setLocalRoadFiles] = useState([]);
   const [localFaceFiles, setLocalFaceFiles] = useState([]);
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(jobId).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -116,8 +124,25 @@ const ResultPage = () => {
 
   return (
     <div className="container-fluid">
-       <div className="d-flex justify-content-between align-items-center mb-4">
-          <h2 className="mb-0 page-title">Analysis Results</h2>
+       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+          <div className="d-flex align-items-center gap-3">
+            <h2 className="mb-0 page-title">Analysis Results</h2>
+            <div className="d-flex align-items-center gap-2 bg-panel-lighter px-3 py-1 border border-secondary rounded">
+               <small className="text-muted text-uppercase fw-bold" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>Job ID: {jobId}</small>
+               <button 
+                  className={`btn btn-sm p-0 border-0 ${copied ? 'text-success' : 'text-muted'}`}
+                  onClick={copyToClipboard}
+                  title="Copy Job ID"
+                  style={{ background: 'transparent' }}
+                >
+                  {copied ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  )}
+                </button>
+            </div>
+          </div>
           <Link to="/analyze" className="btn btn-cyber">New Analysis</Link>
        </div>
 

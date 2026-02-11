@@ -1,5 +1,6 @@
 import React from 'react';
 import './Legend.css';
+import { GAZE_STATES, EVENT_SEVERITIES } from '../../../constants/videoConstants';
 
 const Legend = () => {
   return (
@@ -8,8 +9,8 @@ const Legend = () => {
 	
         <span className="legend-title">Events:</span>
         {[
-          { label: 'Unsafe', color: '#dc3545' },
-          { label: 'Safe', color: '#20c997' },
+          { label: 'Unsafe', color: EVENT_SEVERITIES.UNSAFE.color },
+          { label: 'Safe', color: EVENT_SEVERITIES.SAFE.color },
         ].map((item, i) => (
           <div key={i} className="legend-item">
             <span className="legend-swatch" style={{ backgroundColor: item.color }}></span>
@@ -19,15 +20,10 @@ const Legend = () => {
       </div>
       <div className="legend-row">
         <span className="legend-title">Gaze:</span>
-        {[
-          { label: 'Looking Ahead', color: '#20c997' },
-          { label: 'Left Mirror', color: '#6f42c1' },
-          { label: 'Right Mirror', color: '#0ffc10' },
-          { label: 'Rear Mirror', color: '#ffc107' },
-        ].map((item, i) => (
-          <div key={i} className="legend-item">
-            <span className="legend-swatch" style={{ backgroundColor: item.color }}></span>
-            <span className="legend-label">{item.label}</span>
+        {Object.entries(GAZE_STATES).filter(([key]) => key !== 'N/A' && key !== 'Unknown' && key !== 'Start').map(([key, value]) => (
+          <div key={key} className="legend-item">
+            <span className="legend-swatch" style={{ backgroundColor: value.color }}></span>
+            <span className="legend-label">{key}</span>
           </div>
         ))}
       </div>

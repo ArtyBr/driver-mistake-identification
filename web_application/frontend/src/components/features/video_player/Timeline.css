@@ -49,6 +49,30 @@
   transform: scale(1.05);
 }
 
+.jump-controls {
+  display: flex;
+  gap: 5px;
+}
+
+.jump-controls .btn-cyber {
+  padding: 0.4rem 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 45px;
+  min-width: 45px;
+}
+
+@media (max-width: 768px) {
+  .jump-controls {
+    justify-content: space-between;
+  }
+  .jump-controls .btn-cyber {
+    flex: 1;
+    height: 40px;
+  }
+}
+
 .timeline-wrapper {
   flex-grow: 1;
   position: relative;
