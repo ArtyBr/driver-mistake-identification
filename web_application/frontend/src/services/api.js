@@ -31,6 +31,20 @@ export const uploadVideos = async (formData, onProgress) => {
 };
 
 /**
+ * Uploads external road camera video for an existing session.
+ * @param {string} jobId 
+ * @param {FormData} formData 
+ */
+export const uploadRoadVideo = async (jobId, formData) => {
+  const response = await api.post(`/session/${jobId}/upload_road`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+/**
  * Lists available completed analyses.
  * @returns {Promise<Array<{id: string, name: string, video_count: number, duration_seconds: number, created_at: string}>>} List of analyses with metadata.
  */

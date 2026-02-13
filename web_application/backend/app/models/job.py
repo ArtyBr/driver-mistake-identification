@@ -13,6 +13,8 @@ class Job(SQLModel, table=True):
     road_metadata: Optional[str] = None 
     face_metadata: Optional[str] = None
     result: Optional[str] = None
+    calibration_data: Optional[str] = None
+    sync_offset: Optional[float] = None
     error: Optional[str] = None
     progress: int = Field(default=0)
     created_at: datetime = Field(default_factory=datetime.utcnow)

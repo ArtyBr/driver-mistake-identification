@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import UploadPage from './pages/UploadPage';
 import StatusPage from './pages/StatusPage';
 import ResultPage from './pages/ResultPage';
+import RecordPage from './pages/RecordPage';
 import './App.css'; // Global styles (VideoPlayer styles etc)
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
     <Routes>
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Home />} />
+        <Route path="record" element={<RecordPage />} />
         <Route path="analyze" element={<UploadPage />} />
         <Route path="status/:jobId" element={<StatusPage />} />
         <Route path="results/:jobId" element={<ResultPage />} />

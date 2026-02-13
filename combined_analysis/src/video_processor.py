@@ -52,10 +52,10 @@ class VideoProcessor:
             # Assuming 30 FPS default, will be updated in run() if possible
             self.vo = VisualOdometry(video_path=None, fps=30.0)
 
-    def run(self, export_json=False, output_json_path=None, custom_video_paths=None, metadata=None):
+    def run(self, export_json=False, output_json_path=None, custom_video_paths=None, metadata=None, sync_offset=0.0):
         # 1. Setup Video Capture
         if custom_video_paths:
-             cap_road, cap_face, start_frame, end_frame, fps = self._setup_custom_video_capture(custom_video_paths)
+             cap_road, cap_face, start_frame, end_frame, fps = self._setup_custom_video_capture(custom_video_paths, sync_offset)
         else:
              cap_road, cap_face, start_frame, end_frame, fps = self._setup_video_capture()
 
@@ -316,7 +316,7 @@ class VideoProcessor:
         self.state_history = [s for s in self.state_history if (current_time - s['timestamp']) <= config.HISTORY_DURATION]
         if not self.state_history: self.last_state = None
 
-    def _setup_custom_video_capture(self, custom_video_paths):
+    def _setup_custom_video_capture(self, custom_video_paths, sync_offset=0.0):
         path_road = custom_video_paths.get('road')
         path_face = custom_video_paths.get('face')
         
@@ -330,14 +330,28 @@ class VideoProcessor:
         fps = 30.0 if not (1 < fps <= 120) else fps
         total_frames = int(cap_road.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        start_frame = max(0, int(self.args.start_seconds * fps))
+        # offset = T_road - T_face
+        # If offset > 0, Road started earlier. Skip 'offset' seconds in road to match face start.
+        # If offset < 0, Face started earlier. Skip '-offset' seconds in face to match road start.
+        
+        road_start_s = self.args.start_seconds
+        face_start_s = self.args.start_seconds
+        
+        if sync_offset > 0:
+            road_start_s += sync_offset
+        elif sync_offset < 0:
+            face_start_s -= sync_offset
+
+        start_frame = max(0, int(road_start_s * fps))
+        face_start_frame = max(0, int(face_start_s * fps))
+
         if self.args.end_seconds is not None:
-            end_frame = min(total_frames, int(self.args.end_seconds * fps))
+            end_frame = min(total_frames, int((self.args.end_seconds + max(0, sync_offset)) * fps))
         else:
             end_frame = total_frames
 
         cap_road.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
-        cap_face.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+        cap_face.set(cv2.CAP_PROP_POS_FRAMES, face_start_frame)
         
         return cap_road, cap_face, start_frame, end_frame, fps
 

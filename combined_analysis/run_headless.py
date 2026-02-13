@@ -59,6 +59,8 @@ def main():
     parser.add_argument("--road", required=True)
     parser.add_argument("--face", required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument("--offset", type=float, default=0.0, help="Audio sync offset in seconds")
+    parser.add_argument("--svm", type=str, help="Path to custom SVM model")
     parser.add_argument("--road_meta", type=str, help="JSON string of road video metadata")
     parser.add_argument("--face_meta", type=str, help="JSON string of face video metadata")
     args_cli = parser.parse_args()
@@ -67,7 +69,7 @@ def main():
         road_meta = json.loads(args_cli.road_meta) if args_cli.road_meta else None
         face_meta = json.loads(args_cli.face_meta) if args_cli.face_meta else None
 
-        logger.info(f"Starting analysis for:\nRoad: {args_cli.road}\nFace: {args_cli.face}")
+        logger.info(f"Starting analysis for:\nRoad: {args_cli.road}\nFace: {args_cli.face}\nOffset: {args_cli.offset}\nCustom SVM: {args_cli.svm}")
 
         # Config Setup
         config_path = lanedet_pkg_dir / "configs/laneatt/resnet18_culane.py"
@@ -91,6 +93,17 @@ def main():
         logger.info("Initializing FaceAnalyzer...")
         face_model_path = project_root / 'face_analysis' / 'models'
         face_analyzer = FaceAnalyzer(str(face_model_path))
+
+        # Override SVM if provided
+        if args_cli.svm:
+            logger.info(f"Overriding SVM with custom model: {args_cli.svm}")
+            with open(args_cli.svm, 'rb') as f:
+                import pickle
+                face_analyzer.svm = pickle.load(f)
+                # Since we don't use PCA for the user-specific SVM 
+                # (we trained on raw yaw/pitch/roll), we should skip PCA transform.
+                # I'll need to update face_analyzer.py to handle this.
+                face_analyzer.use_pca = False 
         
         logger.info("Initializing LaneDetectorWrapper...")
         lane_wrapper = LaneDetectorWrapper(cfg)
@@ -108,7 +121,8 @@ def main():
             export_json=True, 
             output_json_path=args_cli.output, 
             custom_video_paths=custom_paths,
-            metadata={"road": road_meta, "face": face_meta}
+            metadata={"road": road_meta, "face": face_meta},
+            sync_offset=args_cli.offset
         )
         
         logger.info("Analysis completed successfully.")

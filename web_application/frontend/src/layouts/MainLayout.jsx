@@ -17,7 +17,10 @@ const MainLayout = () => {
                   <Link className="nav-link" to="/">HOME</Link>
                 </li>
                 <li className="nav-item">
-                  <Link className="nav-link" to="/analyze">ANALYZE VIDEO</Link>
+                  <Link className="nav-link" to="/record">RECORD DRIVE</Link>
+                </li>
+                <li className="nav-item">
+                  <Link className="nav-link" to="/analyze">ANALYZE PREVIOUS</Link>
                 </li>
               </ul>
             </div>

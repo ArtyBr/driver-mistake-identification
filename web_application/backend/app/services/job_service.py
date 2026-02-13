@@ -2,6 +2,7 @@ import uuid
 import re
 import json
 import logging
+import shutil
 from typing import List, Optional
 from pathlib import Path
 from datetime import datetime
@@ -94,6 +95,74 @@ class JobService:
             logger.error(f"Error creating job: {e}")
             FileService.delete_job_directory(job_id)
             raise e
+
+    def init_session(self) -> Job:
+        job_id = str(uuid.uuid4())
+        FileService.create_job_directory(job_id)
+        job = Job(id=job_id, name=f"Session {job_id[:8]}", status="RECORDING")
+        self.session.add(job)
+        self.session.commit()
+        self.session.refresh(job)
+        return job
+
+    def save_calibration(self, job_id: str, data: dict):
+        job = self.session.get(Job, job_id)
+        if not job:
+            raise ValueError("Job not found")
+        job.calibration_data = json.dumps(data)
+        self.session.add(job)
+        self.session.commit()
+
+    def save_face_video(self, job_id: str, video: UploadFile):
+        job = self.session.get(Job, job_id)
+        if not job:
+            raise ValueError("Job not found")
+        job_dir = UPLOAD_DIR / job_id
+        # We use .webm as it is common for MediaRecorder
+        face_path = job_dir / "face.webm"
+        with open(face_path, "wb") as buffer:
+            shutil.copyfileobj(video.file, buffer)
+        
+        job.face_path = str(face_path)
+        job.face_metadata = json.dumps({
+            "filename": video.filename,
+            "size": face_path.stat().st_size,
+            "duration": get_video_duration(face_path)
+        })
+        self.session.add(job)
+        self.session.commit()
+
+    def save_road_video(self, job_id: str, video: UploadFile, background_tasks: BackgroundTasks):
+        job = self.session.get(Job, job_id)
+        if not job:
+            raise ValueError("Job not found")
+        job_dir = UPLOAD_DIR / job_id
+        road_path = job_dir / "road.mp4"
+        with open(road_path, "wb") as buffer:
+            shutil.copyfileobj(video.file, buffer)
+        
+        duration = get_video_duration(road_path)
+        job.road_path = str(road_path)
+        job.road_metadata = json.dumps({
+            "filename": video.filename,
+            "size": road_path.stat().st_size,
+            "duration": duration
+        })
+        job.status = "PENDING"
+        self.session.add(job)
+        self.session.commit()
+        self.session.refresh(job)
+
+        # Trigger analysis
+        background_tasks.add_task(
+            run_analysis_process,
+            job_id,
+            str(road_path),
+            job.face_path,
+            keep_videos=True,
+            road_metadata=json.loads(job.road_metadata),
+            face_metadata=json.loads(job.face_metadata)
+        )
 
     def get_job(self, job_id: str) -> Optional[Job]:
         return self.session.get(Job, job_id)

@@ -17,6 +17,51 @@ logger = logging.getLogger(__name__)
 def get_job_service(session: Session = Depends(get_session)) -> JobService:
     return JobService(session)
 
+@router.post("/session/init", response_model=JobCreateResponse)
+async def init_session(service: JobService = Depends(get_job_service)):
+    """
+    Initiates a new recording session.
+    """
+    job = service.init_session()
+    return {"job_id": job.id}
+
+@router.post("/session/{job_id}/calibration")
+async def upload_calibration(
+    job_id: str,
+    calibration_data: dict,
+    service: JobService = Depends(get_job_service)
+):
+    """
+    Uploads calibration data for a session.
+    """
+    service.save_calibration(job_id, calibration_data)
+    return {"status": "success"}
+
+@router.post("/session/{job_id}/upload_face")
+async def upload_face_video(
+    job_id: str,
+    video: UploadFile = File(...),
+    service: JobService = Depends(get_job_service)
+):
+    """
+    Uploads the face video recorded on the phone.
+    """
+    service.save_face_video(job_id, video)
+    return {"status": "success"}
+
+@router.post("/session/{job_id}/upload_road")
+async def upload_road_video(
+    job_id: str,
+    background_tasks: BackgroundTasks,
+    video: UploadFile = File(...),
+    service: JobService = Depends(get_job_service)
+):
+    """
+    Uploads the external road cam video and triggers analysis.
+    """
+    service.save_road_video(job_id, video, background_tasks)
+    return {"status": "analysis_started"}
+
 @router.post("/upload", response_model=JobCreateResponse)
 async def upload_videos(
     background_tasks: BackgroundTasks,

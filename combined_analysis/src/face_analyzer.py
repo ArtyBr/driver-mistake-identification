@@ -15,6 +15,7 @@ class FaceAnalyzer:
         print("Loading Face Analysis Models...")
         self.svm = self._load_model(models_dir / 'svm_head_pose_model.pkl')
         self.pca = self._load_model(models_dir / 'pca_head_pose_model.pkl')
+        self.use_pca = True # Default to True for global model
 
     @staticmethod
     def _load_model(path: Path):
@@ -48,11 +49,16 @@ class FaceAnalyzer:
 
         # Classification
         svm_label, svm_conf = "N/A", 0.0
-        if self.svm and self.pca:
+        if self.svm:
             input_data = pd.DataFrame([[yaw, pitch, roll]], columns=['yaw', 'pitch', 'roll'])
-            pca_input = self.pca.transform(input_data)
-            svm_pred_idx = self.svm.predict(pca_input)[0]
-            svm_probs = self.svm.predict_proba(pca_input)[0]
+            
+            if self.use_pca and self.pca:
+                svm_input = self.pca.transform(input_data)
+            else:
+                svm_input = input_data.values # Use raw values for custom SVM
+
+            svm_pred_idx = self.svm.predict(svm_input)[0]
+            svm_probs = self.svm.predict_proba(svm_input)[0]
             svm_conf = svm_probs[svm_pred_idx]
             svm_label = config.CLASS_NAMES.get(svm_pred_idx, "Unknown")
 

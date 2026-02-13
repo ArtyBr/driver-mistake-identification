@@ -533,10 +533,13 @@ footer {
   background: transparent;
   border: 1px solid var(--border-color);
   color: var(--text-main);
-  font-weight: 500;
-  padding: 10px 20px;
+  font-weight: 600;
+  padding: 10px 24px;
   transition: all 0.2s;
   border-radius: 4px;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
 }
 
 .btn-cyber:hover {
@@ -548,7 +551,7 @@ footer {
 .btn-cyber-primary {
   background: var(--accent-primary);
   color: #fff;
-  border: none;
+  border: 1px solid var(--accent-primary);
   font-weight: 600;
   padding: 10px 24px;
   border-radius: 4px;

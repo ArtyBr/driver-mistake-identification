@@ -42,9 +42,14 @@ const Home = () => {
             </div>
           </div>
 
-          <Link to="/analyze" className="btn btn-cyber-primary btn-lg px-5 mt-4">
-            START ANALYSIS
-          </Link>
+          <div className="d-flex justify-content-center gap-3 mt-4">
+            <Link to="/record" className="btn btn-cyber-primary">
+              RECORD DRIVE
+            </Link>
+            <Link to="/analyze" className="btn btn-cyber">
+              ANALYZE PREVIOUS
+            </Link>
+          </div>
         </div>
       </div>
     </div>

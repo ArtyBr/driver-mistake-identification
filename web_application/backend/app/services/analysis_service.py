@@ -8,10 +8,12 @@ from sqlmodel import Session
 from ..core.config import PROJECT_ROOT, UPLOAD_DIR
 from ..db.database import engine
 from ..models.job import Job
+from .sync_service import SyncService
+from .training_service import TrainingService
 
 logger = logging.getLogger(__name__)
 
-def update_job(job_id: str, status: str = None, progress: int = None, error: str = None, result: dict = None):
+def update_job(job_id: str, status: str = None, progress: int = None, error: str = None, result: dict = None, sync_offset: float = None):
     """Helper to update job in a fresh session."""
     with Session(engine) as session:
         job = session.get(Job, job_id)
@@ -22,6 +24,8 @@ def update_job(job_id: str, status: str = None, progress: int = None, error: str
                 job.progress = progress
             if error: 
                 job.error = error
+            if sync_offset is not None:
+                job.sync_offset = sync_offset
             if result: 
                 job.result = json.dumps(result)
                 job.status = "COMPLETED"
@@ -37,6 +41,19 @@ def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_video
     try:
         logger.info(f"Starting analysis for Job {job_id}")
         update_job(job_id, status="PROCESSING")
+
+        # Step 1: Calculate Sync Offset
+        logger.info(f"Calculating sync offset for Job {job_id}")
+        sync_offset = SyncService.get_audio_offset(Path(road_path), Path(face_path))
+        update_job(job_id, sync_offset=sync_offset)
+
+        # Step 2: Train Custom SVM if calibration exists
+        custom_svm_path = None
+        with Session(engine) as session:
+            job = session.get(Job, job_id)
+            if job and job.calibration_data:
+                logger.info(f"Training custom SVM for Job {job_id}")
+                custom_svm_path = TrainingService.train_gaze_model(job_id, job.calibration_data, Path(road_path).parent)
         
         output_json_path = UPLOAD_DIR / job_id / "results.json"
         script_path = PROJECT_ROOT / "combined_analysis/run_headless.py"
@@ -45,8 +62,12 @@ def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_video
             "python", "-u", str(script_path),
             "--road", str(road_path),
             "--face", str(face_path),
-            "--output", str(output_json_path)
+            "--output", str(output_json_path),
+            "--offset", str(sync_offset)
         ]
+
+        if custom_svm_path:
+            cmd.extend(["--svm", str(custom_svm_path)])
 
         if road_metadata:
             cmd.extend(["--road_meta", json.dumps(road_metadata)])
