@@ -28,7 +28,8 @@ class JobService:
         video_road: List[UploadFile], 
         video_face: List[UploadFile], 
         background_tasks: BackgroundTasks, 
-        keep_videos: bool = False
+        keep_videos: bool = False,
+        owner_id: Optional[str] = None
     ) -> Job:
         
         # Generate ID
@@ -69,6 +70,7 @@ class JobService:
                 id=job_id,
                 name=job_id, # Default name is the ID
                 status="PENDING",
+                owner_id=owner_id,
                 road_path=f"REMOTE:{job_id}/road.mp4",
                 face_path=f"REMOTE:{job_id}/face.mp4",
                 road_metadata=road_meta,
@@ -223,59 +225,56 @@ class JobService:
             self.session.refresh(job)
         return job
 
-    def list_analyses(self) -> List[AnalysisItem]:
+    def list_analyses(self, user_id: Optional[str] = None) -> List[AnalysisItem]:
         analyses = []
         found_ids = set()
         
         # 1. Get all jobs from DB to look up names/metadata
         try:
-            statement = select(Job)
+            if user_id:
+                # Include both user's jobs and ALL demo jobs
+                statement = select(Job).where((Job.owner_id == user_id) | (Job.is_demo == True))
+            else:
+                # Unauthenticated users only see demo jobs
+                statement = select(Job).where(Job.is_demo == True)
+                
             results = self.session.exec(statement).all()
             db_jobs = {job.id: job for job in results}
         except Exception as e:
             logger.error(f"Error fetching jobs from DB: {e}")
             db_jobs = {}
 
-        # 2. Fetch directory list from Local Large Storage
-        local_base = Path("/dcs/large/safedrive_cs310_2526/uploads/")
-        
-        try:
-            if local_base.exists() and local_base.is_dir():
-                for entry in local_base.iterdir():
-                    if entry.is_dir():
-                        job_id = entry.name
-                        found_ids.add(job_id)
-                        
-                        name = job_id
-                        count = 0
-                        duration = 0.0
-                        created_at = datetime.now() # Fallback
-                        
-                        if job_id in db_jobs:
-                            job = db_jobs[job_id]
-                            name = job.name or job_id
-                            if job.created_at:
-                                created_at = job.created_at
-                                
-                            if job.road_metadata:
-                                try:
-                                    meta = json.loads(job.road_metadata)
-                                    count = meta.get("count", 0)
-                                    duration = meta.get("duration", 0.0)
-                                except:
-                                    pass
-                        
-                        analyses.append(AnalysisItem(
-                            id=job_id, 
-                            name=name,
-                            video_count=count,
-                            duration_seconds=duration,
-                            created_at=created_at
-                        ))
-            else:
-                 logger.warning(f"Large storage directory not found: {local_base}")
-        except Exception as e:
-            logger.error(f"Failed to fetch analysis list from storage: {e}")
+        # 2. Iterate through matched DB jobs to check filesystem
+        for job_id, job in db_jobs.items():
+            # Check filesystem existence (minimal check)
+            # Both local and fallback storage
+            local_base = Path("/dcs/large/safedrive_cs310_2526/uploads/")
+            job_dir_large = local_base / job_id
+            job_dir_local = UPLOAD_DIR / job_id
+            
+            if job_dir_large.exists() or job_dir_local.exists():
+                found_ids.add(job_id)
+                name = job.name or job_id
+                count = 0
+                duration = 0.0
+                created_at = job.created_at or datetime.now()
+                
+                if job.road_metadata:
+                    try:
+                        meta = json.loads(job.road_metadata)
+                        count = meta.get("count", 0)
+                        duration = meta.get("duration", 0.0)
+                    except:
+                        pass
+                
+                analyses.append(AnalysisItem(
+                    id=job_id, 
+                    name=name,
+                    is_demo=job.is_demo,
+                    video_count=count,
+                    duration_seconds=duration,
+                    created_at=created_at
+                ))
 
         return sorted(analyses, key=lambda x: x.created_at, reverse=True)
         
@@ -309,9 +308,15 @@ class JobService:
 
         return None
 
-    def create_test_job(self, analysis_id: Optional[str] = None) -> Job:
+    def create_test_job(self, analysis_id: Optional[str] = None, owner_id: Optional[str] = None) -> Job:
         source_job_id = analysis_id if analysis_id else "test_video"
         
+        # Check source analysis in DB
+        source_job = self.get_job(source_job_id)
+        is_demo = source_job.is_demo if source_job else False
+        if source_job_id == "test_video":
+             is_demo = True
+             
         # Determine filenames
         if source_job_id == "test_video":
             road_filename = "road_test.mp4"
@@ -344,6 +349,8 @@ class JobService:
             name=source_job_id,
             status="COMPLETED",
             progress=100,
+            owner_id=owner_id,
+            is_demo=is_demo,
             road_path=road_path_val,
             face_path=face_path_val
         )

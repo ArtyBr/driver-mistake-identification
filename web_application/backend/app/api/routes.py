@@ -10,11 +10,17 @@ from sqlmodel import Session
 from ..core.config import UPLOAD_DIR
 from ..db.database import get_session
 from ..services.job_service import JobService
+from ..services.auth_service import get_current_user, get_optional_current_user
 from ..models.schemas import JobCreateResponse, JobStatusResponse, AnalysisListResponse, JobUpdate
 from ..models.job import Job
+from ..models.user import User
+from . import auth_routes
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# Include Auth Routes
+router.include_router(auth_routes.router, tags=["auth"])
 
 def get_job_service(session: Session = Depends(get_session)) -> JobService:
     return JobService(session)
@@ -26,6 +32,7 @@ async def upload_videos(
     video_face: List[UploadFile] = File(...),
     keep_videos: bool = Form(False),
     name: Optional[str] = Form(None),
+    current_user: User = Depends(get_current_user),
     service: JobService = Depends(get_job_service)
 ):
     """
@@ -35,7 +42,7 @@ async def upload_videos(
     if not video_road or not video_face:
         raise HTTPException(status_code=400, detail="Both road and face videos are required")
 
-    job = service.create_job(video_road, video_face, background_tasks, keep_videos)
+    job = service.create_job(video_road, video_face, background_tasks, keep_videos, owner_id=current_user.id)
     
     # Update name if provided
     if name:
@@ -44,12 +51,16 @@ async def upload_videos(
     return {"job_id": job.id}
 
 @router.get("/list_analyses", response_model=AnalysisListResponse)
-async def list_analyses(service: JobService = Depends(get_job_service)):
+async def list_analyses(
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    service: JobService = Depends(get_job_service)
+):
     """
-    Lists all available completed analyses (folders with results.json).
-    Useful for loading previous results.
+    Lists available completed analyses. 
+    Authenticated users see their own + demos.
+    Unauthenticated users see only demos.
     """
-    analyses = service.list_analyses()
+    analyses = service.list_analyses(user_id=current_user.id if current_user else None)
     return {"analyses": analyses}
 
 @router.put("/job/{job_id}/name", response_model=JobStatusResponse)
@@ -70,14 +81,18 @@ async def update_job_name(job_id: str, update: JobUpdate, service: JobService = 
     }
 
 @router.post("/run_test", response_model=JobCreateResponse)
-async def run_test(analysis_id: Optional[str] = None, service: JobService = Depends(get_job_service)):
+async def run_test(
+    analysis_id: Optional[str] = None, 
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    service: JobService = Depends(get_job_service)
+):
     """
     Simulates running an analysis by loading an existing result.
     If analysis_id is not provided, tries to load 'test_video'.
     Returns a new job ID that points to the existing data.
     """
     try:
-        job = service.create_test_job(analysis_id)
+        job = service.create_test_job(analysis_id, owner_id=current_user.id if current_user else None)
         return {"job_id": job.id}
     except FileNotFoundError as e:
          raise HTTPException(status_code=404, detail=str(e))
@@ -86,14 +101,25 @@ async def run_test(analysis_id: Optional[str] = None, service: JobService = Depe
          raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/status/{job_id}", response_model=JobStatusResponse)
-async def get_status(job_id: str, force_refresh: bool = False, service: JobService = Depends(get_job_service)):
+async def get_status(
+    job_id: str, 
+    force_refresh: bool = False, 
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    service: JobService = Depends(get_job_service)
+):
     """
     Retrieves the status of a job.
+    Only accessible by the owner or if the job is marked as a demo.
     """
     job = service.check_job_status(job_id, force_refresh=force_refresh)
     if not job:
         return {"status": "NOT_FOUND"}
     
+    # Check authorization
+    is_owner = current_user and job.owner_id == current_user.id
+    if not job.is_demo and not is_owner:
+         raise HTTPException(status_code=403, detail="Not authorized to view this job")
+
     # Calculate relative URLs for static serving
     road_url = ""
     face_url = ""
@@ -145,6 +171,7 @@ async def get_status(job_id: str, force_refresh: bool = False, service: JobServi
     return {
         "status": job.status,
         "name": job.name,
+        "is_demo": job.is_demo,
         "progress": job.progress,
         "road_url": road_url,
         "face_url": face_url,
@@ -154,15 +181,24 @@ async def get_status(job_id: str, force_refresh: bool = False, service: JobServi
     }
 
 @router.get("/results/{job_id}")
-async def get_results(job_id: str, service: JobService = Depends(get_job_service)):
+async def get_results(
+    job_id: str, 
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    service: JobService = Depends(get_job_service)
+):
     """
     Retrieves the detailed analysis results for a completed job.
-    Prioritizes loading from filesystem to keep DB small.
+    Only accessible by the owner or if the job is marked as a demo.
     """
     job = service.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
+    # Check authorization
+    is_owner = current_user and job.owner_id == current_user.id
+    if not job.is_demo and not is_owner:
+         raise HTTPException(status_code=403, detail="Not authorized to view these results")
+
     # 1. Try loading from filesystem (New preferred way)
     results = service.load_results(job_id)
     if results:

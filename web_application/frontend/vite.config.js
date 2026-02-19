@@ -9,6 +9,8 @@ const proxyConfig = {
 
 // Routes to proxy to the backend
 const apiRoutes = [
+  '/login',
+  '/signup',
   '/upload',
   '/list_analyses',
   '/job',

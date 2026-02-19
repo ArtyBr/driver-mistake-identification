@@ -7,3 +7,5 @@ sqlmodel
 paramiko
 pytest
 pytest-cov
+python-jose[cryptography]
+passlib[bcrypt]

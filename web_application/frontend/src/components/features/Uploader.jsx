@@ -3,8 +3,10 @@ import './Uploader.css'
 import { listAnalyses, updateJobName } from '../../services/api'
 import FileDropZone from '../common/FileDropZone'
 import { useJobUpload } from '../../hooks/useJob'
+import { useAuth } from '../../hooks/useAuth'
 
 function Uploader({ onUploadSuccess }) {
+  const { user } = useAuth();
   const [roadFiles, setRoadFiles] = useState([])
   const [faceFiles, setFaceFiles] = useState([])
   const [keepVideos, setKeepVideos] = useState(false)
@@ -20,7 +22,7 @@ function Uploader({ onUploadSuccess }) {
     listAnalyses()
       .then(data => setAnalyses(data))
       .catch(err => console.error("Failed to fetch analyses:", err))
-  }, [])
+  }, [user])
 
   const validateFile = (file) => {
     const validTypes = ['video/mp4', 'video/avi', 'video/quicktime', 'video/x-msvideo'];
@@ -111,129 +113,157 @@ function Uploader({ onUploadSuccess }) {
 
   return (
     <div className="card-cyber shadow-sm">
-      <div className="card-header">
-        <h4 className="mb-0">Upload New Analysis</h4>
-      </div>
-      <div className="card-body">
-        {displayError && <div className="alert alert-danger">{displayError}</div>}
-        
-        <div className="row">
-          <div className="col-md-12 mb-3">
-             <label className="form-label text-white">Analysis Name (Optional)</label>
-             <input 
-                type="text" 
-                className="form-control form-control-cyber" 
-                placeholder="e.g. Morning Commute Sept 2025"
-                value={uploadName}
-                onChange={(e) => setUploadName(e.target.value)}
-             />
+      {user ? (
+        <>
+          <div className="card-header">
+            <h4 className="mb-0">Upload New Analysis</h4>
           </div>
-          <div className="col-md-6">
-            <FileDropZone 
-              label="Road Video (Front Facing)" 
-              files={roadFiles} 
-              setFiles={setRoadFiles} 
-              accept="video/*"
-              helperText="Supported formats: MP4, AVI, MOV. Select multiple files to splice."
-              multiple={true}
-            />
-          </div>
-          <div className="col-md-6">
-            <FileDropZone 
-              label="Driver Video (Face Facing)" 
-              files={faceFiles} 
-              setFiles={setFaceFiles} 
-              accept="video/*"
-              helperText="Ideally aligned with road video. Select multiple files to splice."
-              multiple={true}
-            />
-          </div>
-        </div>
-
-        <div className="form-check mb-4">
-          <input 
-            className="form-check-input" 
-            type="checkbox" 
-            id="keepVideosCheck" 
-            checked={keepVideos}
-            onChange={(e) => setKeepVideos(e.target.checked)}
-          />
-          <label className="form-check-label text-white" htmlFor="keepVideosCheck">
-            Keep videos on server after analysis (Uncheck to delete after processing)
-          </label>
-        </div>
-        
-        {isUploading && progress > 0 && progress < 100 && (
-          <div className="progress mb-3">
-            <div 
-              className="progress-bar progress-bar-striped progress-bar-animated" 
-              role="progressbar" 
-              style={{ width: `${progress}%` }} 
-              aria-valuenow={progress} 
-              aria-valuemin="0" 
-              aria-valuemax="100"
-            >
-              Uploading {progress}%
+          <div className="card-body">
+            {displayError && <div className="alert alert-danger">{displayError}</div>}
+            
+            <div className="row">
+              <div className="col-md-12 mb-3">
+                 <label className="form-label text-white">Analysis Name (Optional)</label>
+                 <input 
+                    type="text" 
+                    className="form-control form-control-cyber" 
+                    placeholder="e.g. Morning Commute Sept 2025"
+                    value={uploadName}
+                    onChange={(e) => setUploadName(e.target.value)}
+                 />
+              </div>
+              <div className="col-md-6">
+                <FileDropZone 
+                  label="Road Video (Front Facing)" 
+                  files={roadFiles} 
+                  setFiles={setRoadFiles} 
+                  accept="video/*"
+                  helperText="Supported formats: MP4, AVI, MOV. Select multiple files to splice."
+                  multiple={true}
+                />
+              </div>
+              <div className="col-md-6">
+                <FileDropZone 
+                  label="Driver Video (Face Facing)" 
+                  files={faceFiles} 
+                  setFiles={setFaceFiles} 
+                  accept="video/*"
+                  helperText="Ideally aligned with road video. Select multiple files to splice."
+                  multiple={true}
+                />
+              </div>
             </div>
-          </div>
-        )}
 
-        <button 
-          className="btn btn-cyber-primary w-100 mb-4" 
-          onClick={handleUpload} 
-          disabled={isUploading}
-        >
-          {isUploading ? (
-            <span><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...</span>
-          ) : 'START NEW ANALYSIS'}
-        </button>
-        
-        <hr className="my-4 border-secondary" />
-        
-        <h5 className="mb-3 text-muted">Or Load Previous Analysis</h5>
-        <div className="row g-2">
-          <div className="col-md-12 mb-2">
-            <div className="analysis-list">
+            <div className="form-check mb-4">
+              <input 
+                className="form-check-input" 
+                type="checkbox" 
+                id="keepVideosCheck" 
+                checked={keepVideos}
+                onChange={(e) => setKeepVideos(e.target.checked)}
+              />
+              <label className="form-check-label text-white" htmlFor="keepVideosCheck">
+                Keep videos on server after analysis (Uncheck to delete after processing)
+              </label>
+            </div>
+            
+            {isUploading && progress > 0 && progress < 100 && (
+              <div className="progress mb-3">
                 <div 
-                    className={`analysis-item ${selectedAnalysis === "" ? "selected" : ""}`}
-                    onClick={() => setSelectedAnalysis("")}
+                  className="progress-bar progress-bar-striped progress-bar-animated" 
+                  role="progressbar" 
+                  style={{ width: `${progress}%` }} 
+                  aria-valuenow={progress} 
+                  aria-valuemin="0" 
+                  aria-valuemax="100"
                 >
-                    <div className="fw-bold">Test Data (Default)</div>
-                    <div className="small text-muted">Pre-loaded example data</div>
+                  Uploading {progress}%
                 </div>
-                {Array.isArray(analyses) && analyses.map(analysis => (
-                    <div 
-                        key={analysis.id}
-                        className={`analysis-item ${selectedAnalysis === analysis.id ? "selected" : ""}`}
-                        onClick={() => setSelectedAnalysis(analysis.id)}
-                    >
-                        <div className="fw-bold text-cyber-blue">{analysis.name}</div>
-                        <div className="small text-muted d-flex justify-content-between">
-                            <span>{analysis.video_count} videos • {formatDuration(analysis.duration_seconds)}</span>
-                            <span>{formatDate(analysis.created_at)}</span>
-                        </div>
-                    </div>
-                ))}
-            </div>
-          </div>
-          <div className="col-md-6">
-             <button 
-              className="btn btn-outline-cyber w-100" 
-              onClick={handleRename}
-              disabled={!selectedAnalysis}
-              title="Rename Analysis"
-            >
-              RENAME SELECTED
-            </button>
-          </div>
-          <div className="col-md-6">
+              </div>
+            )}
+
             <button 
-              className="btn btn-cyber w-100" 
-              onClick={handleLoadAnalysis} 
+              className="btn btn-cyber-primary w-100 mb-4" 
+              onClick={handleUpload} 
               disabled={isUploading}
             >
-              LOAD ANALYSIS
+              {isUploading ? (
+                <span><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...</span>
+              ) : 'START NEW ANALYSIS'}
             </button>
+            
+            <hr className="my-4 border-secondary" />
+          </div>
+        </>
+      ) : (
+        <div className="card-header text-center py-4">
+            <h4 className="mb-2">Explore Driver Safety</h4>
+            <p className="text-muted mb-0">Select a demo video below to see the analysis in action. <a href="/login" className="text-cyber-blue">Login</a> to upload your own.</p>
+        </div>
+      )}
+
+      <div className="card-body pt-0">
+        <h5 className="mb-3 text-muted">Load Previous Analysis</h5>
+        
+        {/* My Videos Section (Only for logged in) */}
+        {user ? (
+            <div className="mb-3">
+                <h6 className="text-cyber-blue mb-3 fw-bold"><i className="bi bi-person-video me-2"></i>My Private Analyses</h6>
+                <div className="analysis-list border-0 bg-transparent">
+                    {Array.isArray(analyses) && analyses.filter(a => !a.is_demo).map(analysis => (
+                        <div 
+                            key={analysis.id}
+                            className={`analysis-item-modern mb-2 p-3 rounded cursor-pointer ${selectedAnalysis === analysis.id ? "selected-analysis" : ""}`}
+                            onClick={() => setSelectedAnalysis(analysis.id)}
+                            style={{ cursor: 'pointer' }}
+                        >
+                            <div className="d-flex justify-content-between align-items-start">
+                              <div className="fw-bold text-white mb-1">{analysis.name}</div>
+                              {selectedAnalysis === analysis.id && <i className="bi bi-check-circle-fill text-accent-primary"></i>}
+                            </div>
+                            <div className="small text-muted d-flex justify-content-between mt-1">
+                                <span><i className="bi bi-files me-1"></i>{analysis.video_count} videos • {formatDuration(analysis.duration_seconds)}</span>
+                                <span className="opacity-75">{formatDate(analysis.created_at)}</span>
+                            </div>
+                        </div>
+                    ))}
+                    {(!analyses || !analyses.some(a => !a.is_demo)) && (
+                        <div className="p-4 text-center text-muted border border-secondary border-dashed rounded bg-panel-lighter">
+                            <i className="bi bi-cloud-plus fs-2 mb-2 d-block opacity-50"></i>
+                            No personal analyses found.<br/>Upload your first video above.
+                        </div>
+                    )}
+                </div>
+            </div>
+        ) : (
+            <div className="alert alert-cyber-info mb-3">
+                 <p className="mb-0">You are viewing the uploader as a <strong>Guest</strong>. <Link to="/login" className="text-cyber-blue fw-bold">Login</Link> to start your own analysis or view your previous results.</p>
+            </div>
+        )}
+
+        <div className="row g-2">
+          {user && (
+            <div className="col-md-6">
+                <button 
+                className="btn btn-outline-cyber w-100" 
+                onClick={handleRename}
+                disabled={!selectedAnalysis || analyses.find(a => a.id === selectedAnalysis)?.is_demo}
+                title="Rename Analysis"
+                >
+                RENAME SELECTED
+                </button>
+            </div>
+          )}
+          <div className={user ? "col-md-6" : "col-md-12"}>
+            {user && (
+              <button 
+                className="btn btn-cyber w-100" 
+                onClick={handleLoadAnalysis} 
+                disabled={isUploading || !selectedAnalysis}
+              >
+                LOAD ANALYSIS
+              </button>
+            )}
           </div>
         </div>
       </div>

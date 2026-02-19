@@ -4,6 +4,7 @@ from typing import Optional, Dict, Any, List
 class JobStatusResponse(BaseModel):
     status: str
     name: Optional[str] = None
+    is_demo: bool = False
     progress: Optional[int] = 0
     road_url: Optional[str] = None
     face_url: Optional[str] = None
@@ -17,6 +18,7 @@ class JobCreateResponse(BaseModel):
 class AnalysisItem(BaseModel):
     id: str
     name: str
+    is_demo: bool = False
     video_count: Optional[int] = 0
     duration_seconds: Optional[float] = 0.0
     created_at: Optional[Any] = None 

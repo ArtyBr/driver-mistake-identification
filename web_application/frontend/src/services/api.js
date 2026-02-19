@@ -9,6 +9,20 @@ const api = axios.create({
   },
 });
 
+// Add a request interceptor to add the auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 /**
  * Uploads road and face videos to start a new analysis.
  * @param {FormData} formData - Contains 'video_road' and 'video_face'.

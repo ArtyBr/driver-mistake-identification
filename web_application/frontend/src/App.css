@@ -123,6 +123,44 @@ footer {
   }
 }
 
+/* Analysis Item Modern Styling */
+.analysis-item-modern {
+  background-color: var(--bg-panel-lighter);
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.analysis-item-modern:hover {
+  border-color: var(--accent-primary);
+  background-color: var(--bg-panel);
+}
+
+.analysis-item-modern.selected-analysis {
+  background-color: rgba(13, 110, 253, 0.15);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 10px rgba(13, 110, 253, 0.2);
+}
+
+.analysis-item-modern.selected-analysis::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: var(--accent-primary);
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.border-dashed {
+  border-style: dashed !important;
+}
+
 /* Global Text Overrides */
 .text-muted {
   color: var(--text-muted) !important;
@@ -134,20 +172,41 @@ footer {
 
 /* Buttons */
 .btn-cyber {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-color);
   color: var(--text-main);
-  font-weight: 500;
+  font-weight: 600;
   padding: 0.6rem 1.2rem;
   transition: all 0.2s;
   border-radius: 4px;
-  font-size: 1rem;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .btn-cyber:hover {
   background: var(--bg-panel-lighter);
   border-color: var(--text-muted);
   color: #fff;
+}
+
+.btn-outline-cyber {
+  background: transparent;
+  border: 1px solid var(--accent-primary);
+  color: var(--accent-primary);
+  font-weight: 600;
+  padding: 0.6rem 1.2rem;
+  transition: all 0.2s;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-outline-cyber:hover {
+  background: rgba(13, 110, 253, 0.1);
+  color: #fff;
+  border-color: var(--accent-primary);
 }
 
 .btn-cyber-primary {
@@ -187,6 +246,17 @@ footer {
   color: var(--text-main) !important;
   border-radius: 4px;
   padding: 0.6rem 0.75rem;
+}
+
+.input-group-text {
+  background-color: var(--bg-panel-lighter) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-muted) !important;
+}
+
+.form-control::placeholder {
+  color: #dee2e6 !important; /* Lighter placeholder for better contrast on dark bg */
+  opacity: 0.6 !important;
 }
 
 .form-control-cyber:focus, .form-control:focus, .form-select:focus {

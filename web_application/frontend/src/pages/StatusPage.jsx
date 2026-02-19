@@ -65,10 +65,10 @@ const StatusPage = () => {
             </div>
 
             {error && (
-                <div className="alert alert-danger mt-4">
+                <div className="alert alert-cyber-danger mt-4">
                 <p className="small mb-0">{error}</p>
                 <button 
-                    className="btn btn-outline-light btn-sm mt-3"
+                    className="btn btn-cyber btn-sm mt-3"
                     onClick={() => navigate(`/results/${jobId}`, { state: location.state })}
                 >
                     Try Viewing Results Anyway

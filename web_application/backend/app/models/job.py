@@ -17,6 +17,8 @@ class Job(SQLModel, table=True):
     result: Optional[str] = None
     error: Optional[str] = None
     batch_job_id: Optional[str] = None
+    owner_id: Optional[str] = Field(default=None, index=True)
+    is_demo: bool = Field(default=False, index=True)
     progress: int = Field(default=0)
     last_status_check: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)

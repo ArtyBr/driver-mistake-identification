@@ -1,40 +1,9 @@
-INFO:     Started server process [15862]
+INFO:     Started server process [27508]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on https://0.0.0.0:7728 (Press CTRL+C to quit)
-2026-02-11 19:26:40,678 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/list_analyses
-2026-02-11 19:26:41,589 - api_logger - INFO - Response: 200 - Took 0.9107s
-INFO:     51.179.197.157:0 - "GET /list_analyses HTTP/1.1" 200 OK
-2026-02-11 19:26:42,602 - api_logger - INFO - Incoming Request: POST https://127.0.0.1:7728/run_test
-2026-02-11 19:26:42,644 - api_logger - INFO - Response: 200 - Took 0.0421s
-INFO:     51.179.197.157:0 - "POST /run_test HTTP/1.1" 200 OK
-2026-02-11 19:26:42,682 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/3ac3c345-e32f-4fb5-b823-74388c3b97f8
-2026-02-11 19:26:42,689 - api_logger - INFO - Response: 200 - Took 0.0069s
-INFO:     51.179.197.157:0 - "GET /status/3ac3c345-e32f-4fb5-b823-74388c3b97f8 HTTP/1.1" 200 OK
-2026-02-11 19:26:42,753 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/3ac3c345-e32f-4fb5-b823-74388c3b97f8
-2026-02-11 19:26:42,757 - api_logger - INFO - Response: 200 - Took 0.0038s
-INFO:     51.179.197.157:0 - "GET /status/3ac3c345-e32f-4fb5-b823-74388c3b97f8 HTTP/1.1" 200 OK
-2026-02-11 19:26:42,823 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/status/3ac3c345-e32f-4fb5-b823-74388c3b97f8
-2026-02-11 19:26:42,827 - api_logger - INFO - Response: 200 - Took 0.0039s
-INFO:     51.179.197.157:0 - "GET /status/3ac3c345-e32f-4fb5-b823-74388c3b97f8 HTTP/1.1" 200 OK
-2026-02-11 19:26:42,865 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/results/3ac3c345-e32f-4fb5-b823-74388c3b97f8
-2026-02-11 19:26:43,227 - api_logger - INFO - Response: 200 - Took 0.3617s
-INFO:     51.179.197.157:0 - "GET /results/3ac3c345-e32f-4fb5-b823-74388c3b97f8 HTTP/1.1" 200 OK
-2026-02-11 19:26:43,614 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/test_video/road_test.mp4
-2026-02-11 19:26:43,618 - api_logger - INFO - Response: 206 - Took 0.0047s
-INFO:     51.179.197.157:0 - "GET /video/remote/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
-2026-02-11 19:26:43,757 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/test_video/road_test.mp4
-2026-02-11 19:26:43,769 - api_logger - INFO - Response: 206 - Took 0.0117s
-INFO:     51.179.197.157:0 - "GET /video/remote/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
-2026-02-11 19:26:43,786 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/test_video/face_test.mp4
-2026-02-11 19:26:43,789 - api_logger - INFO - Response: 206 - Took 0.0030s
-INFO:     51.179.197.157:0 - "GET /video/remote/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
-2026-02-11 19:26:44,025 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/test_video/face_test.mp4
-2026-02-11 19:26:44,027 - api_logger - INFO - Response: 206 - Took 0.0020s
-INFO:     51.179.197.157:0 - "GET /video/remote/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
-2026-02-11 19:27:23,124 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/test_video/road_test.mp4
-2026-02-11 19:27:23,126 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/video/remote/test_video/face_test.mp4
-2026-02-11 19:27:23,130 - api_logger - INFO - Response: 206 - Took 0.0058s
-INFO:     51.179.197.157:0 - "GET /video/remote/test_video/road_test.mp4 HTTP/1.1" 206 Partial Content
-2026-02-11 19:27:23,133 - api_logger - INFO - Response: 206 - Took 0.0073s
-INFO:     51.179.197.157:0 - "GET /video/remote/test_video/face_test.mp4 HTTP/1.1" 206 Partial Content
+2026-02-19 14:53:34,327 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/list_analyses
+2026-02-19 14:53:34,340 - api_logger - INFO - Response: 200 - Took 0.0131s
+Updated existing job to demo: test_video
+Updated existing job to demo: 2025_0916_134624_007979F_cut_1
+INFO:     172.25.91.4:0 - "GET /list_analyses HTTP/1.1" 200 OK

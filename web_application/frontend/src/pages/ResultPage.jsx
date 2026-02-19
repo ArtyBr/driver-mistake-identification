@@ -114,10 +114,10 @@ const ResultPage = () => {
 
   if (error) {
     return (
-      <div className="alert alert-danger mt-5">
+      <div className="alert alert-cyber-danger mt-5">
         <h4>Error</h4>
         <p>{error}</p>
-        <Link to="/analyze" className="btn btn-outline-danger">Try Again</Link>
+        <Link to="/analyze" className="btn btn-cyber">Try Again</Link>
       </div>
     );
   }
