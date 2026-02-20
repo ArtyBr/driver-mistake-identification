@@ -65,9 +65,9 @@ const Home = () => {
   return (
     <div className="container py-5">
       {/* Hero Section */}
-      <div className="text-center mb-5 pb-3">
+      <div className="mb-5 pb-3">
         <h1 className="display-3 fw-bold mb-3 text-white">SafeDrive AI Analysis</h1>
-        <p className="lead text-muted mb-0 mx-auto" style={{ maxWidth: '900px', fontSize: '1.4rem' }}>
+        <p className="lead text-muted mb-0" style={{ maxWidth: '900px', fontSize: '1.4rem' }}>
           Experience our advanced AI-powered system designed to identify driver mistakes and enhance road safety through real-time dashcam analysis.
         </p>
       </div>
@@ -100,10 +100,46 @@ const Home = () => {
       </div>
 
       <div className="row g-5 align-items-start">
-        {/* Left Column: Demo Section */}
+        {/* Left Column: Action Card */}
         <div className="col-lg-7">
+          <div className="card card-cyber p-4 h-100 shadow-lg border-top-primary">
+            <h3 className="mb-4 fw-bold text-white">Analyze Your Driving</h3>
+            <p className="text-muted mb-4 lead" style={{ fontSize: '1rem' }}>
+              Upload your own dashcam footage to receive a detailed AI-driven safety report.
+            </p>
+            
+            <div className="feature-list mb-5">
+              {features.map((f, i) => (
+                <div key={i} className="mb-4 ps-3 border-start border-cyber-blue">
+                  <div className="text-white fw-bold mb-1" style={{ fontSize: '1rem' }}>{f.title}</div>
+                  <p className="text-muted small mb-0" style={{ lineHeight: '1.4' }}>{f.desc}</p>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-auto">
+              {user ? (
+                <Link to="/analyze" className="btn btn-cyber-primary btn-lg w-100 py-3 fw-bold">
+                  GO TO UPLOADER <i className="bi bi-chevron-right ms-2"></i>
+                </Link>
+              ) : (
+                <div className="d-grid gap-3">
+                  <Link to="/login" className="btn btn-cyber-primary btn-lg py-3 fw-bold">
+                    LOGIN TO UPLOAD <i className="bi bi-lock-fill ms-2"></i>
+                  </Link>
+                  <Link to="/signup" className="btn btn-outline-cyber btn-lg py-3 fw-bold">
+                    CREATE ACCOUNT
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Demo Section */}
+        <div className="col-lg-5">
           <div className="d-flex align-items-center mb-4 border-bottom border-secondary pb-2">
-            <h3 className="mb-0 fw-bold text-white">Demo Scenarios</h3>
+            <h3 className="mb-0 fw-bold text-white">Demo Analyses</h3>
           </div>
           
           {error && <div className="alert alert-cyber-danger py-2 mb-3">{error}</div>}
@@ -140,42 +176,6 @@ const Home = () => {
                 <p className="text-muted small">Loading demos...</p>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Right Column: Action Card */}
-        <div className="col-lg-5">
-          <div className="card card-cyber p-4 h-100 shadow-lg border-top-primary">
-            <h3 className="mb-4 fw-bold text-white">Analyze Your Driving</h3>
-            <p className="text-muted mb-4 lead" style={{ fontSize: '1rem' }}>
-              Upload your own dashcam footage to receive a detailed AI-driven safety report.
-            </p>
-            
-            <div className="feature-list mb-5">
-              {features.map((f, i) => (
-                <div key={i} className="mb-4 ps-3 border-start border-cyber-blue">
-                  <div className="text-white fw-bold mb-1" style={{ fontSize: '1rem' }}>{f.title}</div>
-                  <p className="text-muted small mb-0" style={{ lineHeight: '1.4' }}>{f.desc}</p>
-                </div>
-              ))}
-            </div>
-            
-            <div className="mt-auto">
-              {user ? (
-                <Link to="/analyze" className="btn btn-cyber-primary btn-lg w-100 py-3 fw-bold">
-                  GO TO UPLOADER <i className="bi bi-chevron-right ms-2"></i>
-                </Link>
-              ) : (
-                <div className="d-grid gap-3">
-                  <Link to="/login" className="btn btn-cyber-primary btn-lg py-3 fw-bold">
-                    LOGIN TO UPLOAD <i className="bi bi-lock-fill ms-2"></i>
-                  </Link>
-                  <Link to="/signup" className="btn btn-outline-cyber btn-lg py-3 fw-bold">
-                    CREATE ACCOUNT
-                  </Link>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </div>
