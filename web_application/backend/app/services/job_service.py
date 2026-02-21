@@ -82,14 +82,22 @@ class JobService:
             
             # Trigger Background Task
             # We pass strings because Job object might be detached or updated
+            # Look up owner's calibration model dir (if trained)
+            models_dir = None
+            if owner_id:
+                from . import calibration_service as cal_svc
+                if cal_svc.has_trained_model(owner_id):
+                    models_dir = str(cal_svc.get_user_model_dir(owner_id))
+
             background_tasks.add_task(
-                run_analysis_process, 
-                job_id, 
-                str(road_path), 
-                str(face_path), 
-                keep_videos=keep_videos, 
-                road_metadata=json.loads(road_meta), 
-                face_metadata=json.loads(face_meta)
+                run_analysis_process,
+                job_id,
+                str(road_path),
+                str(face_path),
+                keep_videos=keep_videos,
+                road_metadata=json.loads(road_meta),
+                face_metadata=json.loads(face_meta),
+                models_dir=models_dir
             )
             
             return job
@@ -216,6 +224,25 @@ class JobService:
         
         return job
 
+    def delete_job(self, job_id: str) -> None:
+        """Deletes a job's DB record and its upload directory from disk."""
+        job = self.session.get(Job, job_id)
+        if not job:
+            return
+
+        # Remove files from both possible storage locations
+        large_base = Path("/dcs/large/safedrive_cs310_2526/uploads/")
+        for base in [large_base, UPLOAD_DIR]:
+            job_dir = base / job_id
+            if job_dir.exists():
+                import shutil
+                shutil.rmtree(job_dir, ignore_errors=True)
+                logger.info(f"Deleted job directory: {job_dir}")
+
+        self.session.delete(job)
+        self.session.commit()
+        logger.info(f"Deleted job {job_id} from DB")
+
     def update_job_name(self, job_id: str, name: str) -> Optional[Job]:
         job = self.session.get(Job, job_id)
         if job:
@@ -337,9 +364,15 @@ class JobService:
             logger.error(f"Failed to load analysis: Results not found for {source_job_id}")
             raise FileNotFoundError(f"Could not load analysis for {source_job_id} (checked local and large storage)")
 
-        # Use REMOTE: prefix so that routes.py handles the path via stream_remote_video
-        road_path_val = f"REMOTE:{source_job_id}/{road_filename}"
-        face_path_val = f"REMOTE:{source_job_id}/{face_filename}"
+        # If the source job already has video paths in the DB, reuse them directly.
+        # This handles re-analysis jobs whose videos live in the original source's directory.
+        if source_job and source_job.road_path and source_job.face_path:
+            road_path_val = source_job.road_path
+            face_path_val = source_job.face_path
+        else:
+            # Fallback: construct REMOTE: paths from the job directory
+            road_path_val = f"REMOTE:{source_job_id}/{road_filename}"
+            face_path_val = f"REMOTE:{source_job_id}/{face_filename}"
 
         # 3. Create Job Record (NO 'result' column update)
         new_job_id = str(uuid.uuid4())
@@ -358,4 +391,56 @@ class JobService:
         self.session.add(job)
         self.session.commit()
         self.session.refresh(job)
+        return job
+
+    def create_reanalysis_job(self, source_job: Job, owner_id: str, models_dir: str) -> Job:
+        """
+        Creates a new analysis job from the same videos as source_job, using a
+        custom models_dir (the user's personal calibration model).
+        """
+        results = self.load_results(source_job.id)
+        if not results:
+            raise FileNotFoundError(f"No results found for source job {source_job.id}")
+
+        new_job_id = str(uuid.uuid4())
+        job = Job(
+            id=new_job_id,
+            name=f"Re-analysis of {source_job.name or source_job.id}",
+            status="PENDING",
+            owner_id=owner_id,
+            road_path=source_job.road_path,
+            face_path=source_job.face_path,
+            road_metadata=source_job.road_metadata,
+            face_metadata=source_job.face_metadata,
+        )
+        self.session.add(job)
+        self.session.commit()
+        self.session.refresh(job)
+
+        # Resolve REMOTE: paths to actual filesystem paths
+        large_base = Path("/dcs/large/safedrive_cs310_2526/uploads/")
+        def resolve_remote(remote_str):
+            if remote_str and remote_str.startswith("REMOTE:"):
+                parts = remote_str.split(":")[1].split("/")
+                job_dir_id, filename = parts[0], "/".join(parts[1:])
+                for base in [large_base, UPLOAD_DIR]:
+                    p = base / job_dir_id / filename
+                    if p.exists():
+                        return str(p)
+            return remote_str
+
+        road_actual = resolve_remote(source_job.road_path)
+        face_actual = resolve_remote(source_job.face_path)
+        road_meta = json.loads(source_job.road_metadata) if source_job.road_metadata else None
+        face_meta = json.loads(source_job.face_metadata) if source_job.face_metadata else None
+
+        import threading
+        t = threading.Thread(
+            target=run_analysis_process,
+            args=(new_job_id, road_actual, face_actual),
+            kwargs=dict(road_metadata=road_meta, face_metadata=face_meta, models_dir=models_dir),
+            daemon=True,
+        )
+        t.start()
+
         return job

@@ -61,6 +61,7 @@ def main():
     parser.add_argument("--output", required=True)
     parser.add_argument("--road_meta", type=str, help="JSON string of road video metadata")
     parser.add_argument("--face_meta", type=str, help="JSON string of face video metadata")
+    parser.add_argument("--models_dir", type=str, default=None, help="Path to custom gaze model directory (user calibration)")
     args_cli = parser.parse_args()
 
     try:
@@ -89,7 +90,11 @@ def main():
 
         # Initialize Models
         logger.info("Initializing FaceAnalyzer...")
-        face_model_path = project_root / 'face_analysis' / 'models'
+        if args_cli.models_dir:
+            face_model_path = Path(args_cli.models_dir)
+            logger.info(f"Using custom calibration models from: {face_model_path}")
+        else:
+            face_model_path = project_root / 'face_analysis' / 'models'
         face_analyzer = FaceAnalyzer(str(face_model_path))
         
         logger.info("Initializing LaneDetectorWrapper...")

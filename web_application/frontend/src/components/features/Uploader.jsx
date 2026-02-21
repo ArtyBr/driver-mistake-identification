@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './Uploader.css'
-import { listAnalyses, updateJobName } from '../../services/api'
+import { listAnalyses, updateJobName, deleteJob } from '../../services/api'
 import FileDropZone from '../common/FileDropZone'
 import { useJobUpload } from '../../hooks/useJob'
 import { useAuth } from '../../hooks/useAuth'
@@ -74,6 +74,20 @@ function Uploader({ onUploadSuccess }) {
       // Error handled in hook
     }
   }
+
+  const handleDelete = async () => {
+    if (!selectedAnalysis) return;
+    const current = analyses.find(a => a.id === selectedAnalysis);
+    if (!window.confirm(`Delete "${current?.name || selectedAnalysis}" and all its files? This cannot be undone.`)) return;
+    try {
+      await deleteJob(selectedAnalysis);
+      setSelectedAnalysis('');
+      const data = await listAnalyses();
+      setAnalyses(data);
+    } catch (e) {
+      setLocalError(e.response?.data?.detail || 'Failed to delete analysis.');
+    }
+  };
 
   const handleRename = async () => {
     if (!selectedAnalysis) return;
@@ -243,28 +257,50 @@ function Uploader({ onUploadSuccess }) {
 
         <div className="row g-2">
           {user && (
-            <div className="col-md-6">
-                <button 
-                className="btn btn-outline-cyber w-100" 
-                onClick={handleRename}
-                disabled={!selectedAnalysis || analyses.find(a => a.id === selectedAnalysis)?.is_demo}
-                title="Rename Analysis"
+            <>
+              <div className="col-md-4">
+                <button
+                  className="btn btn-outline-cyber w-100"
+                  onClick={handleRename}
+                  disabled={!selectedAnalysis || analyses.find(a => a.id === selectedAnalysis)?.is_demo}
+                  title="Rename Analysis"
                 >
-                RENAME SELECTED
+                  RENAME
                 </button>
-            </div>
+              </div>
+              <div className="col-md-4">
+                <button
+                  className="btn btn-cyber w-100"
+                  style={{ borderColor: 'var(--accent-danger)', color: 'var(--accent-danger)' }}
+                  onClick={handleDelete}
+                  disabled={!selectedAnalysis || analyses.find(a => a.id === selectedAnalysis)?.is_demo}
+                  title="Delete Analysis and Files"
+                >
+                  DELETE
+                </button>
+              </div>
+              <div className="col-md-4">
+                <button
+                  className="btn btn-cyber w-100"
+                  onClick={handleLoadAnalysis}
+                  disabled={isUploading || !selectedAnalysis}
+                >
+                  LOAD
+                </button>
+              </div>
+            </>
           )}
-          <div className={user ? "col-md-6" : "col-md-12"}>
-            {user && (
-              <button 
-                className="btn btn-cyber w-100" 
-                onClick={handleLoadAnalysis} 
+          {!user && (
+            <div className="col-md-12">
+              <button
+                className="btn btn-cyber w-100"
+                onClick={handleLoadAnalysis}
                 disabled={isUploading || !selectedAnalysis}
               >
                 LOAD ANALYSIS
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

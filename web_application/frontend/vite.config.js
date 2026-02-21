@@ -20,7 +20,10 @@ const apiRoutes = [
   '/video',
   '/static',
   '/docs',
-  '/openapi.json'
+  '/openapi.json',
+  '/calibration',
+  '/auth',
+  '/session',
 ];
 
 const proxy = {};

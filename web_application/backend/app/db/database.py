@@ -11,6 +11,7 @@ engine = create_engine(sqlite_url, echo=False, connect_args={"check_same_thread"
 def init_db():
     """Initializes the database tables and seeds demo data."""
     from ..models.job import Job
+    from ..models.calibration import UserCalibration  # ensures table is created
     from sqlmodel import select
     
     SQLModel.metadata.create_all(engine)

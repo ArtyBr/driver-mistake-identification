@@ -12,7 +12,7 @@ from .batch_service import BatchService
 
 logger = logging.getLogger(__name__)
 
-def update_job(job_id: str, status: str = None, progress: int = None, error: str = None, result: dict = None, batch_job_id: str = None):
+def update_job(job_id: str, status: str = None, progress: int = None, error: str = None, batch_job_id: str = None):
     """Helper to update job in a fresh session."""
     with Session(engine) as session:
         job = session.get(Job, job_id)
@@ -25,14 +25,10 @@ def update_job(job_id: str, status: str = None, progress: int = None, error: str
                 job.error = error
             if batch_job_id:
                 job.batch_job_id = batch_job_id
-            if result: 
-                job.result = json.dumps(result)
-                job.status = "COMPLETED"
-                job.progress = 100
             session.add(job)
             session.commit()
 
-def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_videos: bool = False, road_metadata: dict = None, face_metadata: dict = None) -> None:
+def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_videos: bool = False, road_metadata: dict = None, face_metadata: dict = None, models_dir: str = None) -> None:
 
     """
 
@@ -50,7 +46,7 @@ def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_video
 
         output_json_path = UPLOAD_DIR / job_id / "results.json"
 
-        
+        output_json_path.parent.mkdir(parents=True, exist_ok=True)
 
         batch_service = BatchService()
 
@@ -74,7 +70,9 @@ def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_video
 
             road_meta=road_meta_str,
 
-            face_meta=face_meta_str
+            face_meta=face_meta_str,
+
+            models_dir=models_dir
 
         )
 

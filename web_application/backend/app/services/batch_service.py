@@ -116,9 +116,9 @@ class BatchService:
             logger.error(f"Error reading results locally: {e}")
             return None
 
-    def _generate_sbatch_script(self, job_name: str, road_path: str, face_path: str, output_path: str, road_meta: str = None, face_meta: str = None) -> str:
+    def _generate_sbatch_script(self, job_name: str, road_path: str, face_path: str, output_path: str, road_meta: str = None, face_meta: str = None, models_dir: str = None) -> str:
         cmd = f"python combined_analysis/run_headless.py \\\n    --road {road_path} \\\n    --face {face_path} \\\n    --output {output_path}"
-        
+
         if road_meta:
             # Escape double quotes for shell
             escaped_road_meta = road_meta.replace('"', '\\"')
@@ -126,6 +126,8 @@ class BatchService:
         if face_meta:
             escaped_face_meta = face_meta.replace('"', '\\"')
             cmd += f" \\\n    --face_meta \"{escaped_face_meta}\""
+        if models_dir:
+            cmd += f" \\\n    --models_dir {models_dir}"
 
         # Extract job directory from output_path (which is .../results.json)
         job_dir = Path(output_path).parent

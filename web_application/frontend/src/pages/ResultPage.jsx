@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import VideoPlayer from '../components/features/VideoPlayer';
 import MissingVideosUploader from '../components/features/MissingVideosUploader';
+import GazeCorrectionModal from '../components/GazeCorrectionModal';
 import { getJobStatus, getJobResults, getFileUrl } from '../services/api';
 import '../App.css'; // Import the custom styles for VideoPlayer
 
@@ -13,6 +14,7 @@ const ResultPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [correctionModal, setCorrectionModal] = useState(null);
 
   // Locally provided files if server files are missing
   const [localRoadFiles, setLocalRoadFiles] = useState([]);
@@ -156,11 +158,23 @@ const ResultPage = () => {
        )}
 
        {results && hasVideos && (
-          <VideoPlayer 
-            results={results} 
+          <VideoPlayer
+            results={results}
             roadUrls={videoUrls.road}
             faceUrls={videoUrls.face}
+            jobId={jobId}
           />
+       )}
+
+       {correctionModal && (
+         <GazeCorrectionModal
+           jobId={jobId}
+           detectedLabel={correctionModal.detectedLabel}
+           startTime={correctionModal.startTime}
+           endTime={correctionModal.endTime}
+           onClose={() => setCorrectionModal(null)}
+           onSuccess={() => setCorrectionModal(null)}
+         />
        )}
     </div>
   );

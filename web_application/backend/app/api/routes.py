@@ -63,6 +63,22 @@ async def list_analyses(
     analyses = service.list_analyses(user_id=current_user.id if current_user else None)
     return {"analyses": analyses}
 
+@router.delete("/job/{job_id}")
+async def delete_job(
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+    service: JobService = Depends(get_job_service),
+):
+    """Deletes a job and its files from disk. Only the owner can delete their jobs."""
+    job = service.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.is_demo or job.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this job")
+    service.delete_job(job_id)
+    return {"message": "Job deleted"}
+
+
 @router.put("/job/{job_id}/name", response_model=JobStatusResponse)
 async def update_job_name(job_id: str, update: JobUpdate, service: JobService = Depends(get_job_service)):
     """
@@ -199,19 +215,11 @@ async def get_results(
     if not job.is_demo and not is_owner:
          raise HTTPException(status_code=403, detail="Not authorized to view these results")
 
-    # 1. Try loading from filesystem (New preferred way)
     results = service.load_results(job_id)
     if results:
         return results
 
-    # 2. Fallback to DB (Migration support for older records)
-    if (job.status == "COMPLETED" or job.status == "FAILED") and job.result:
-        try:
-            return json.loads(job.result)
-        except Exception:
-            pass
-
-    # 3. Handle status-based responses
+    # Handle status-based responses
     if job.status == "FAILED":
         return {"error": job.error or "Analysis failed without detailed error message."}
     else:

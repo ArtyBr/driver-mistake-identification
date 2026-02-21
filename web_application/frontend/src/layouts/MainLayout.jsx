@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import CalibrationBanner from '../components/CalibrationBanner';
 
 const MainLayout = () => {
   const { user, logout } = useAuth();
@@ -22,6 +23,11 @@ const MainLayout = () => {
                 <li className="nav-item">
                   <Link className="nav-link" to="/analyze">ANALYZE VIDEO</Link>
                 </li>
+                {user && (
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/calibrate">CALIBRATE</Link>
+                  </li>
+                )}
               </ul>
               <ul className="navbar-nav ms-auto">
                 {user ? (
@@ -56,6 +62,7 @@ const MainLayout = () => {
 
       <main className="flex-grow-1 py-4">
         <div className="container app-container">
+          <CalibrationBanner />
           <Outlet />
         </div>
       </main>

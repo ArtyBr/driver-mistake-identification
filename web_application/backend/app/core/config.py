@@ -16,7 +16,7 @@ WEB_APP_DIR = BACKEND_DIR.parent
 PROJECT_ROOT = WEB_APP_DIR.parent
 # Large storage for cluster accessibility
 UPLOAD_DIR = Path("/dcs/large/safedrive_cs310_2526/uploads")
-DB_PATH = BACKEND_DIR / "jobs.db"
+DB_PATH = Path("/dcs/large/safedrive_cs310_2526/jobs.db")
 
 # Create necessary directories
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -45,4 +45,4 @@ VERSION = "1.0.0"
 # JWT Configuration
 SECRET_KEY = "super-secret-key-replace-in-production" # In a real app, use an environment variable
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days

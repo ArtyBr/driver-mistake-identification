@@ -7,6 +7,7 @@ import ResultPage from './pages/ResultPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import CalibrationPage from './pages/CalibrationPage';
 import './App.css'; // Global styles (VideoPlayer styles etc)
 
 function App() {
@@ -17,6 +18,11 @@ function App() {
         <Route path="analyze" element={
           <ProtectedRoute>
             <UploadPage />
+          </ProtectedRoute>
+        } />
+        <Route path="calibrate" element={
+          <ProtectedRoute>
+            <CalibrationPage />
           </ProtectedRoute>
         } />
         <Route path="status/:jobId" element={<StatusPage />} />

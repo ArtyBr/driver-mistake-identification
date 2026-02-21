@@ -64,6 +64,11 @@ export const updateJobName = async (jobId, name) => {
   return response.data;
 };
 
+export const deleteJob = async (jobId) => {
+  const response = await api.delete(`/job/${jobId}`);
+  return response.data;
+};
+
 /**
  * Starts a test analysis or loads an existing one.
  * @param {string} [analysisId] - Optional existing analysis ID to load.

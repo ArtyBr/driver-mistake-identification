@@ -36,7 +36,7 @@ const NextIcon = () => (
   </svg>
 );
 
-function VideoPlayer({ results, roadUrls, faceUrls }) {
+function VideoPlayer({ results, roadUrls, faceUrls, jobId }) {
   // DOM Refs
   const roadVideoRef = useRef(null)
   const faceVideoRef = useRef(null)

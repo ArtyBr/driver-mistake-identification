@@ -12,9 +12,6 @@ class Job(SQLModel, table=True):
     # Storing JSON as strings for SQLite simplicity
     road_metadata: Optional[str] = None 
     face_metadata: Optional[str] = None
-    # result: Deprecated - Storing full JSON in DB is avoided for new jobs. 
-    # Use JobService.load_results() to fetch from disk instead.
-    result: Optional[str] = None
     error: Optional[str] = None
     batch_job_id: Optional[str] = None
     owner_id: Optional[str] = Field(default=None, index=True)
