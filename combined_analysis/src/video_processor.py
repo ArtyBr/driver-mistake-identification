@@ -75,20 +75,39 @@ class VideoProcessor:
         num_frames = end_frame - start_frame
         print(f"Processing frames {start_frame} to {end_frame} ({num_frames} frames) @ {fps} FPS...")
 
+        # Face video may have a different frame rate (e.g. 60 fps phone vs 30 fps dashcam).
+        # Track its position so we can advance it in lock-step with road time rather than
+        # reading one face frame per road frame.
+        last_good_face_frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        face_exhausted = False
+        face_current_time = -1.0  # sentinel: no face frame read yet
+
         # Data collection containers
         timeline_events = []
         frame_data = []
 
         try:
             for i in tqdm(range(num_frames), mininterval=2.0):
-                # 3. Read Frames
+                # 3. Read road frame
                 ret_r, frame_road = cap_road.read()
-                ret_f, frame_face = cap_face.read()
-
                 if not ret_r: break
-                if not ret_f: frame_face = np.zeros((480, 640, 3), dtype=np.uint8)
 
                 current_time = cap_road.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
+
+                # Advance face video to road time, handling FPS mismatches.
+                # We keep reading face frames until the face position meets or
+                # passes the current road time.  For a 60 fps phone video vs a
+                # 30 fps dashcam this skips every other face frame, keeping the
+                # overlay in sync with actual video playback.
+                if not face_exhausted:
+                    while face_current_time < current_time:
+                        ret_f, candidate = cap_face.read()
+                        if not ret_f:
+                            face_exhausted = True
+                            break
+                        face_current_time = cap_face.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
+                        last_good_face_frame = candidate
+                frame_face = last_good_face_frame
 
                 if export_json:
                     # Headless processing
