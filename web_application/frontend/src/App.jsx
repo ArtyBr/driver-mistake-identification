@@ -8,6 +8,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import CalibrationPage from './pages/CalibrationPage';
+import SyncTestPage from './pages/SyncTestPage';
 import './App.css'; // Global styles (VideoPlayer styles etc)
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
         } />
         <Route path="status/:jobId" element={<StatusPage />} />
         <Route path="results/:jobId" element={<ResultPage />} />
+        <Route path="sync-test" element={<SyncTestPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="signup" element={<SignupPage />} />
         {/* Fallback for unknown routes */}
