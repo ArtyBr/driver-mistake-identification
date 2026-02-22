@@ -1,26 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { listAnalyses, runTestAnalysis } from '../services/api';
+import { runTestAnalysis } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import { useAnalysesList } from '../hooks/useAnalysesList';
+import AnalysisListItem from '../components/common/AnalysisListItem';
 
 const Home = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [demoAnalyses, setDemoAnalyses] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    // Fetch only demo analyses
-    listAnalyses()
-      .then(data => {
-        setDemoAnalyses(data.filter(a => a.is_demo));
-      })
-      .catch(err => {
-        console.error("Failed to fetch demo analyses:", err);
-        setError("Could not load demo videos.");
-      });
-  }, []);
+  const { analyses, getEtaMs } = useAnalysesList();
+  const demoAnalyses = analyses.filter(a => a.is_demo);
+  const myAnalyses   = analyses.filter(a => !a.is_demo);
 
   const handleLoadDemo = async (analysisId) => {
     setIsLoading(true);
@@ -33,6 +26,14 @@ const Home = () => {
       setError("Failed to load demo analysis.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleItemClick = (analysis) => {
+    if (analysis.status === 'COMPLETED' || analysis.status === 'FAILED') {
+      navigate(`/results/${analysis.id}`);
+    } else {
+      navigate(`/status/${analysis.id}`);
     }
   };
 
@@ -83,11 +84,11 @@ const Home = () => {
                   <p className="text-muted small mb-0">Explore the platform immediately! Anyone can view our pre-uploaded <strong>demo videos</strong> to see the AI analysis in action without an account.</p>
                 </div>
               </div>
-              
+
               <div className="col-md-2 d-none d-md-flex justify-content-center">
                 <div className="vr bg-secondary opacity-25" style={{ height: '80px', width: '1px' }}></div>
               </div>
-              
+
               <div className="col-md-5">
                 <div>
                   <div className="text-white fw-bold mb-1">Private Analysis</div>
@@ -99,6 +100,36 @@ const Home = () => {
         </div>
       </div>
 
+      {/* My Analyses Section (logged-in users only) */}
+      {user && (
+        <div className="mb-5">
+          <div className="d-flex align-items-center justify-content-between mb-3 border-bottom border-secondary pb-2">
+            <h3 className="mb-0 fw-bold text-white">My Analyses</h3>
+            <Link to="/analyze" className="btn btn-sm btn-outline-cyber fw-bold">
+              + New Analysis
+            </Link>
+          </div>
+
+          {myAnalyses.length === 0 ? (
+            <div className="text-center py-4 border border-color rounded bg-panel-lighter">
+              <p className="text-muted small mb-2">No analyses yet.</p>
+              <Link to="/analyze" className="btn btn-sm btn-cyber">Upload your first video</Link>
+            </div>
+          ) : (
+            <div className="my-analyses-list">
+              {myAnalyses.map(analysis => (
+                <AnalysisListItem
+                  key={analysis.id}
+                  analysis={analysis}
+                  onClick={() => handleItemClick(analysis)}
+                  etaMs={getEtaMs(analysis.id, analysis.progress || 0)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="row g-5 align-items-start">
         {/* Left Column: Action Card */}
         <div className="col-lg-7">
@@ -107,7 +138,7 @@ const Home = () => {
             <p className="text-muted mb-4 lead" style={{ fontSize: '1rem' }}>
               Upload your own dashcam footage to receive a detailed AI-driven safety report.
             </p>
-            
+
             <div className="feature-list mb-5">
               {features.map((f, i) => (
                 <div key={i} className="mb-4 ps-3 border-start border-cyber-blue">
@@ -116,7 +147,7 @@ const Home = () => {
                 </div>
               ))}
             </div>
-            
+
             <div className="mt-auto">
               {user ? (
                 <Link to="/analyze" className="btn btn-cyber-primary btn-lg w-100 py-3 fw-bold">
@@ -141,9 +172,9 @@ const Home = () => {
           <div className="d-flex align-items-center mb-4 border-bottom border-secondary pb-2">
             <h3 className="mb-0 fw-bold text-white">Demo Analyses</h3>
           </div>
-          
+
           {error && <div className="alert alert-cyber-danger py-2 mb-3">{error}</div>}
-          
+
           <div className="demo-list-container">
             {demoAnalyses.length > 0 ? (
               demoAnalyses.map(analysis => (
@@ -157,7 +188,7 @@ const Home = () => {
                       </div>
                     </div>
                   </div>
-                  <button 
+                  <button
                     className="btn btn-sm btn-cyber px-4 py-2 fw-bold"
                     onClick={() => handleLoadDemo(analysis.id)}
                     disabled={isLoading}
@@ -179,10 +210,14 @@ const Home = () => {
           </div>
         </div>
       </div>
-      
+
       <style dangerouslySetInnerHTML={{ __html: `
         .demo-list-container {
           max-height: 550px;
+          overflow-y: auto;
+        }
+        .my-analyses-list {
+          max-height: 400px;
           overflow-y: auto;
         }
         .analysis-item-modern {

@@ -271,6 +271,14 @@ class JobService:
             logger.error(f"Error fetching jobs from DB: {e}")
             db_jobs = {}
 
+        # 1.5 Refresh status/progress for any active jobs by reading SLURM logs.
+        # check_job_status is already rate-limited to once per 2s per job, so this is safe.
+        for job_id, job in list(db_jobs.items()):
+            if job.status in ('PENDING', 'SUBMITTED', 'RUNNING'):
+                refreshed = self.check_job_status(job_id)
+                if refreshed:
+                    db_jobs[job_id] = refreshed
+
         # 2. Iterate through matched DB jobs to check filesystem
         for job_id, job in db_jobs.items():
             # Check filesystem existence (minimal check)
@@ -295,9 +303,11 @@ class JobService:
                         pass
                 
                 analyses.append(AnalysisItem(
-                    id=job_id, 
+                    id=job_id,
                     name=name,
                     is_demo=job.is_demo,
+                    status=job.status,
+                    progress=job.progress,
                     video_count=count,
                     duration_seconds=duration,
                     created_at=created_at

@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import './Uploader.css'
-import api, { listAnalyses, updateJobName, deleteJob } from '../../services/api'
+import api, { updateJobName, deleteJob } from '../../services/api'
 import FileDropZone from '../common/FileDropZone'
 import SyncConfirmStep from './SyncConfirmStep'
 import { useJobUpload } from '../../hooks/useJob'
 import { useAuth } from '../../hooks/useAuth'
+import { useAnalysesList } from '../../hooks/useAnalysesList'
+import AnalysisListItem from '../common/AnalysisListItem'
 
 function Uploader({ onUploadSuccess }) {
   const { user } = useAuth();
@@ -13,7 +15,6 @@ function Uploader({ onUploadSuccess }) {
   const [keepVideos, setKeepVideos] = useState(false)
   const [alreadySynced, setAlreadySynced] = useState(false)
   const [uploadName, setUploadName] = useState("")
-  const [analyses, setAnalyses] = useState([])
   const [selectedAnalysis, setSelectedAnalysis] = useState("")
 
   // Sync flow state
@@ -27,11 +28,7 @@ function Uploader({ onUploadSuccess }) {
   const { upload, loadAnalysis, progress, isUploading, error: uploadError } = useJobUpload();
   const [localError, setLocalError] = useState(null);
 
-  useEffect(() => {
-    listAnalyses()
-      .then(data => setAnalyses(data))
-      .catch(err => console.error("Failed to fetch analyses:", err))
-  }, [user])
+  const { analyses, refetch: refetchAnalyses, getEtaMs } = useAnalysesList();
 
   const validateFile = (file) => {
     const validTypes = ['video/mp4', 'video/avi', 'video/quicktime', 'video/x-msvideo'];
@@ -133,8 +130,7 @@ function Uploader({ onUploadSuccess }) {
     try {
       await deleteJob(selectedAnalysis);
       setSelectedAnalysis('');
-      const data = await listAnalyses();
-      setAnalyses(data);
+      await refetchAnalyses();
     } catch (e) {
       setLocalError(e.response?.data?.detail || 'Failed to delete analysis.');
     }
@@ -147,28 +143,12 @@ function Uploader({ onUploadSuccess }) {
     if (newName && newName.trim() !== "") {
       try {
         await updateJobName(selectedAnalysis, newName);
-        const data = await listAnalyses();
-        setAnalyses(data);
+        await refetchAnalyses();
       } catch (e) {
         console.error("Failed to rename:", e);
         setLocalError("Failed to update name.");
       }
     }
-  }
-
-  const formatDuration = (seconds) => {
-    if (!seconds) return "Unknown duration";
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}m ${remainingSeconds}s`;
-  }
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "Unknown date";
-    return new Date(dateString).toLocaleDateString(undefined, {
-      year: 'numeric', month: 'short', day: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    });
   }
 
   const displayError = localError || uploadError;
@@ -325,24 +305,16 @@ function Uploader({ onUploadSuccess }) {
           <div className="mb-3">
             <h6 className="text-cyber-blue mb-3 fw-bold"><i className="bi bi-person-video me-2"></i>My Private Analyses</h6>
             <div className="analysis-list border-0 bg-transparent">
-              {Array.isArray(analyses) && analyses.filter(a => !a.is_demo).map(analysis => (
-                <div
+              {analyses.filter(a => !a.is_demo).map(analysis => (
+                <AnalysisListItem
                   key={analysis.id}
-                  className={`analysis-item-modern mb-2 p-3 rounded cursor-pointer ${selectedAnalysis === analysis.id ? "selected-analysis" : ""}`}
+                  analysis={analysis}
+                  selected={selectedAnalysis === analysis.id}
                   onClick={() => setSelectedAnalysis(analysis.id)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <div className="d-flex justify-content-between align-items-start">
-                    <div className="fw-bold text-white mb-1">{analysis.name}</div>
-                    {selectedAnalysis === analysis.id && <i className="bi bi-check-circle-fill text-accent-primary"></i>}
-                  </div>
-                  <div className="small text-muted d-flex justify-content-between mt-1">
-                    <span><i className="bi bi-files me-1"></i>{analysis.video_count} videos • {formatDuration(analysis.duration_seconds)}</span>
-                    <span className="opacity-75">{formatDate(analysis.created_at)}</span>
-                  </div>
-                </div>
+                  etaMs={getEtaMs(analysis.id, analysis.progress || 0)}
+                />
               ))}
-              {(!analyses || !analyses.some(a => !a.is_demo)) && (
+              {!analyses.some(a => !a.is_demo) && (
                 <div className="p-4 text-center text-muted border border-secondary border-dashed rounded bg-panel-lighter">
                   <i className="bi bi-cloud-plus fs-2 mb-2 d-block opacity-50"></i>
                   No personal analyses found.<br />Upload your first video above.
@@ -384,7 +356,8 @@ function Uploader({ onUploadSuccess }) {
                 <button
                   className="btn btn-cyber w-100"
                   onClick={handleLoadAnalysis}
-                  disabled={isUploading || !selectedAnalysis}
+                  disabled={isUploading || !selectedAnalysis || analyses.find(a => a.id === selectedAnalysis)?.status !== 'COMPLETED'}
+                  title={selectedAnalysis && analyses.find(a => a.id === selectedAnalysis)?.status !== 'COMPLETED' ? 'Analysis must be completed before loading' : ''}
                 >
                   LOAD
                 </button>
