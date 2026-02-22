@@ -17,8 +17,19 @@ const VideoDisplay = ({
   isBuffering,
   currentEvent
 }) => {
-  const roadWrapperRef = useRef(null);
-  const [roadHeight, setRoadHeight] = useState(null);
+  const containerRef = useRef(null);
+  const [contentWidth, setContentWidth] = useState(null);
+
+  // Observe the container's content width (not any child) — no feedback loop possible
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      setContentWidth(entries[0].contentRect.width);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Force video reload when src changes (important for local blobs)
   useEffect(() => {
@@ -29,38 +40,34 @@ const VideoDisplay = ({
     if (faceVideoRef.current) faceVideoRef.current.load();
   }, [faceUrl, faceVideoRef]);
 
-  // Track road wrapper height so the face cam can match it exactly
-  useEffect(() => {
-    const el = roadWrapperRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(entries => {
-      const h = entries[0].contentRect.height;
-      setRoadHeight(h > 0 ? h : null);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+  // Compute a shared height so both videos are the same height and fill the container.
+  // H = (containerContentWidth - gap) / (roadAR + faceAR)
+  // On mobile (< 768px content width) fall back to CSS stacking layout.
+  const GAP = 15; // matches CSS gap
+  const isMobile = contentWidth !== null && contentWidth < 768;
+  const videoHeight =
+    !isMobile && contentWidth && roadAspectRatio && faceAspectRatio
+      ? (contentWidth - GAP) / (roadAspectRatio + faceAspectRatio)
+      : null;
+
+  const roadWrapperStyle = videoHeight
+    ? { height: `${videoHeight}px`, width: `${videoHeight * roadAspectRatio}px`, flex: '0 0 auto', minWidth: 0 }
+    : {};
+  const faceWrapperStyle = videoHeight
+    ? { height: `${videoHeight}px`, width: `${videoHeight * faceAspectRatio}px`, flex: '0 0 auto', minWidth: 0 }
+    : {};
 
   const containerClass = `video-container ${currentEvent ? `event-active ${currentEvent.severity.toLowerCase()}` : ''}`;
 
-  // When road height is known, constrain face wrapper to the same height.
-  // flex: '0 0 auto' + explicit width prevents flex from resizing it.
-  const faceWrapperStyle = roadHeight
-    ? { height: `${roadHeight}px`, width: `${roadHeight * faceAspectRatio}px`, flex: '0 0 auto', minWidth: 0 }
-    : { aspectRatio: faceAspectRatio };
-
-  // When face wrapper has an explicit height, fill it by height rather than width.
-  const faceVideoStyle = roadHeight ? { height: '100%', width: 'auto' } : undefined;
-
   return (
-    <div className={containerClass}>
+    <div ref={containerRef} className={containerClass}>
       {isBuffering && (
         <div className="video-buffering-overlay">
           <div className="spinner"></div>
           <span>Loading video...</span>
         </div>
       )}
-      <div ref={roadWrapperRef} className="video-wrapper road" style={{ aspectRatio: roadAspectRatio }}>
+      <div className="video-wrapper road" style={roadWrapperStyle}>
         <video
           ref={roadVideoRef}
           src={roadUrl}
@@ -80,7 +87,6 @@ const VideoDisplay = ({
         <video
           ref={faceVideoRef}
           src={faceUrl}
-          style={faceVideoStyle}
           muted
         />
         <canvas
