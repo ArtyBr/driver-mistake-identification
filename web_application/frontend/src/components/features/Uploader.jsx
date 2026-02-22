@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import './Uploader.css'
-import { listAnalyses, updateJobName, deleteJob } from '../../services/api'
+import api, { listAnalyses, updateJobName, deleteJob } from '../../services/api'
 import FileDropZone from '../common/FileDropZone'
+import SyncConfirmStep from './SyncConfirmStep'
 import { useJobUpload } from '../../hooks/useJob'
 import { useAuth } from '../../hooks/useAuth'
 
@@ -10,15 +11,23 @@ function Uploader({ onUploadSuccess }) {
   const [roadFiles, setRoadFiles] = useState([])
   const [faceFiles, setFaceFiles] = useState([])
   const [keepVideos, setKeepVideos] = useState(false)
+  const [alreadySynced, setAlreadySynced] = useState(false)
   const [uploadName, setUploadName] = useState("")
   const [analyses, setAnalyses] = useState([])
   const [selectedAnalysis, setSelectedAnalysis] = useState("")
-  
+
+  // Sync flow state
+  const [syncStep,           setSyncStep]           = useState('upload') // 'upload' | 'sync_confirm'
+  const [syncData,           setSyncData]           = useState(null)
+  const [manualOffset,       setManualOffset]       = useState(0)
+  const [isSyncAnalyzing,    setIsSyncAnalyzing]    = useState(false)
+  const [syncUploadProgress, setSyncUploadProgress] = useState(0)
+  const [isSubmitting,       setIsSubmitting]       = useState(false)
+
   const { upload, loadAnalysis, progress, isUploading, error: uploadError } = useJobUpload();
   const [localError, setLocalError] = useState(null);
 
   useEffect(() => {
-    // Fetch available analyses
     listAnalyses()
       .then(data => setAnalyses(data))
       .catch(err => console.error("Failed to fetch analyses:", err))
@@ -26,7 +35,6 @@ function Uploader({ onUploadSuccess }) {
 
   const validateFile = (file) => {
     const validTypes = ['video/mp4', 'video/avi', 'video/quicktime', 'video/x-msvideo'];
-
     if (!validTypes.includes(file.type) && !file.name.match(/\.(mp4|avi|mov)$/i)) {
       return `Invalid file type: ${file.name}. Please upload MP4, AVI, or MOV.`;
     }
@@ -41,29 +49,72 @@ function Uploader({ onUploadSuccess }) {
       return
     }
 
-    // Validate all files
     for (const file of roadFiles) {
       const err = validateFile(file);
-      if (err) {
-        setLocalError(`Road Video Error: ${err}`);
-        return;
-      }
+      if (err) { setLocalError(`Road Video Error: ${err}`); return; }
     }
     for (const file of faceFiles) {
       const err = validateFile(file);
-      if (err) {
-        setLocalError(`Driver Video Error: ${err}`);
-        return;
-      }
+      if (err) { setLocalError(`Driver Video Error: ${err}`); return; }
     }
 
-    try {
+    if (alreadySynced) {
+      // Existing upload path — unchanged
+      try {
         const jobId = await upload(roadFiles, faceFiles, keepVideos, uploadName);
         onUploadSuccess(jobId, {}, { roadFiles, faceFiles });
-    } catch {
-        // Error is handled in hook
+      } catch {
+        // Error handled in hook
+      }
+      return;
+    }
+
+    // Sync analysis path
+    setIsSyncAnalyzing(true);
+    setSyncUploadProgress(0);
+    try {
+      const formData = new FormData();
+      roadFiles.forEach(f => formData.append('road_video', f));
+      faceFiles.forEach(f => formData.append('face_video', f));
+
+      const res = await api.post('/sync/analyze', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (evt) => {
+          if (evt.total) {
+            setSyncUploadProgress(Math.round((evt.loaded * 100) / evt.total));
+          }
+        },
+      });
+
+      setSyncData(res.data);
+      setManualOffset(res.data.offset_seconds ?? 0);
+      setSyncStep('sync_confirm');
+    } catch (err) {
+      setLocalError(
+        err.response?.data?.detail || 'Sync analysis failed. Check your videos and try again.'
+      );
+    } finally {
+      setIsSyncAnalyzing(false);
     }
   }
+
+  const handleConfirmSync = async () => {
+    setIsSubmitting(true);
+    try {
+      const res = await api.post('/sync/submit', {
+        session_id: syncData.session_id,
+        offset: manualOffset,
+        name: uploadName || undefined,
+        keep_videos: keepVideos,
+      });
+      onUploadSuccess(res.data.job_id, {}, {});
+    } catch (err) {
+      setLocalError(err.response?.data?.detail || 'Submission failed.');
+      setSyncStep('upload');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleLoadAnalysis = async () => {
     setLocalError(null);
@@ -91,39 +142,53 @@ function Uploader({ onUploadSuccess }) {
 
   const handleRename = async () => {
     if (!selectedAnalysis) return;
-    
     const currentAnalysis = analyses.find(a => a.id === selectedAnalysis);
     const newName = prompt("Enter new name for this analysis:", currentAnalysis?.name || "");
-    
     if (newName && newName.trim() !== "") {
-        try {
-            await updateJobName(selectedAnalysis, newName);
-            // Refresh list
-            const data = await listAnalyses();
-            setAnalyses(data);
-        } catch (e) {
-            console.error("Failed to rename:", e);
-            setLocalError("Failed to update name.");
-        }
+      try {
+        await updateJobName(selectedAnalysis, newName);
+        const data = await listAnalyses();
+        setAnalyses(data);
+      } catch (e) {
+        console.error("Failed to rename:", e);
+        setLocalError("Failed to update name.");
+      }
     }
   }
 
   const formatDuration = (seconds) => {
-      if (!seconds) return "Unknown duration";
-      const minutes = Math.floor(seconds / 60);
-      const remainingSeconds = Math.floor(seconds % 60);
-      return `${minutes}m ${remainingSeconds}s`;
+    if (!seconds) return "Unknown duration";
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}m ${remainingSeconds}s`;
   }
-  
+
   const formatDate = (dateString) => {
-      if (!dateString) return "Unknown date";
-      return new Date(dateString).toLocaleDateString(undefined, {
-          year: 'numeric', month: 'short', day: 'numeric',
-          hour: '2-digit', minute: '2-digit'
-      });
+    if (!dateString) return "Unknown date";
+    return new Date(dateString).toLocaleDateString(undefined, {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
   }
-  
+
   const displayError = localError || uploadError;
+
+  // ── Sync confirm step ──────────────────────────────────────────────
+  if (syncStep === 'sync_confirm') {
+    return (
+      <SyncConfirmStep
+        syncData={syncData}
+        manualOffset={manualOffset}
+        setManualOffset={setManualOffset}
+        onConfirm={handleConfirmSync}
+        onBack={() => { setSyncStep('upload'); setLocalError(null); }}
+        isSubmitting={isSubmitting}
+      />
+    );
+  }
+
+  // ── Upload step ────────────────────────────────────────────────────
+  const isBusy = isUploading || isSyncAnalyzing;
 
   return (
     <div className="card-cyber shadow-sm">
@@ -134,33 +199,33 @@ function Uploader({ onUploadSuccess }) {
           </div>
           <div className="card-body">
             {displayError && <div className="alert alert-danger">{displayError}</div>}
-            
+
             <div className="row">
               <div className="col-md-12 mb-3">
-                 <label className="form-label text-white">Analysis Name (Optional)</label>
-                 <input 
-                    type="text" 
-                    className="form-control form-control-cyber" 
-                    placeholder="e.g. Morning Commute Sept 2025"
-                    value={uploadName}
-                    onChange={(e) => setUploadName(e.target.value)}
-                 />
+                <label className="form-label text-white">Analysis Name (Optional)</label>
+                <input
+                  type="text"
+                  className="form-control form-control-cyber"
+                  placeholder="e.g. Morning Commute Sept 2025"
+                  value={uploadName}
+                  onChange={(e) => setUploadName(e.target.value)}
+                />
               </div>
               <div className="col-md-6">
-                <FileDropZone 
-                  label="Road Video (Front Facing)" 
-                  files={roadFiles} 
-                  setFiles={setRoadFiles} 
+                <FileDropZone
+                  label="Road Video (Front Facing)"
+                  files={roadFiles}
+                  setFiles={setRoadFiles}
                   accept="video/*"
                   helperText="Supported formats: MP4, AVI, MOV. Select multiple files to splice."
                   multiple={true}
                 />
               </div>
               <div className="col-md-6">
-                <FileDropZone 
-                  label="Driver Video (Face Facing)" 
-                  files={faceFiles} 
-                  setFiles={setFaceFiles} 
+                <FileDropZone
+                  label="Driver Video (Face Facing)"
+                  files={faceFiles}
+                  setFiles={setFaceFiles}
                   accept="video/*"
                   helperText="Ideally aligned with road video. Select multiple files to splice."
                   multiple={true}
@@ -168,11 +233,11 @@ function Uploader({ onUploadSuccess }) {
               </div>
             </div>
 
-            <div className="form-check mb-4">
-              <input 
-                className="form-check-input" 
-                type="checkbox" 
-                id="keepVideosCheck" 
+            <div className="form-check mb-3">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="keepVideosCheck"
                 checked={keepVideos}
                 onChange={(e) => setKeepVideos(e.target.checked)}
               />
@@ -180,15 +245,49 @@ function Uploader({ onUploadSuccess }) {
                 Keep videos on server after analysis (Uncheck to delete after processing)
               </label>
             </div>
-            
+
+            <div className="form-check mb-4">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="alreadySyncedCheck"
+                checked={alreadySynced}
+                onChange={(e) => setAlreadySynced(e.target.checked)}
+              />
+              <label className="form-check-label text-white" htmlFor="alreadySyncedCheck">
+                Videos are already synchronised (e.g., recorded by the same device or hardware-synced)
+              </label>
+            </div>
+
+            {/* Progress indicators */}
+            {isSyncAnalyzing && syncUploadProgress > 0 && syncUploadProgress < 100 && (
+              <div className="progress mb-2">
+                <div
+                  className="progress-bar progress-bar-striped progress-bar-animated"
+                  role="progressbar"
+                  style={{ width: `${syncUploadProgress}%` }}
+                  aria-valuenow={syncUploadProgress}
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                >
+                  Uploading {syncUploadProgress}%
+                </div>
+              </div>
+            )}
+            {isSyncAnalyzing && (
+              <div className="d-flex align-items-center text-muted small mb-3">
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                Analysing audio for synchronisation…
+              </div>
+            )}
             {isUploading && progress > 0 && progress < 100 && (
               <div className="progress mb-3">
-                <div 
-                  className="progress-bar progress-bar-striped progress-bar-animated" 
-                  role="progressbar" 
-                  style={{ width: `${progress}%` }} 
-                  aria-valuenow={progress} 
-                  aria-valuemin="0" 
+                <div
+                  className="progress-bar progress-bar-striped progress-bar-animated"
+                  role="progressbar"
+                  style={{ width: `${progress}%` }}
+                  aria-valuenow={progress}
+                  aria-valuemin="0"
                   aria-valuemax="100"
                 >
                   Uploading {progress}%
@@ -196,63 +295,65 @@ function Uploader({ onUploadSuccess }) {
               </div>
             )}
 
-            <button 
-              className="btn btn-cyber-primary w-100 mb-4" 
-              onClick={handleUpload} 
-              disabled={isUploading}
+            <button
+              className="btn btn-cyber-primary w-100 mb-4"
+              onClick={handleUpload}
+              disabled={isBusy}
             >
-              {isUploading ? (
-                <span><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...</span>
+              {isBusy ? (
+                <span>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                  {isSyncAnalyzing ? 'Analysing…' : 'Processing…'}
+                </span>
               ) : 'START NEW ANALYSIS'}
             </button>
-            
+
             <hr className="my-4 border-secondary" />
           </div>
         </>
       ) : (
         <div className="card-header text-center py-4">
-            <h4 className="mb-2">Explore Driver Safety</h4>
-            <p className="text-muted mb-0">Select a demo video below to see the analysis in action. <a href="/login" className="text-cyber-blue">Login</a> to upload your own.</p>
+          <h4 className="mb-2">Explore Driver Safety</h4>
+          <p className="text-muted mb-0">Select a demo video below to see the analysis in action. <a href="/login" className="text-cyber-blue">Login</a> to upload your own.</p>
         </div>
       )}
 
       <div className="card-body pt-0">
         <h5 className="mb-3 text-muted">Load Previous Analysis</h5>
-        
-        {/* My Videos Section (Only for logged in) */}
+
         {user ? (
-            <div className="mb-3">
-                <h6 className="text-cyber-blue mb-3 fw-bold"><i className="bi bi-person-video me-2"></i>My Private Analyses</h6>
-                <div className="analysis-list border-0 bg-transparent">
-                    {Array.isArray(analyses) && analyses.filter(a => !a.is_demo).map(analysis => (
-                        <div 
-                            key={analysis.id}
-                            className={`analysis-item-modern mb-2 p-3 rounded cursor-pointer ${selectedAnalysis === analysis.id ? "selected-analysis" : ""}`}
-                            onClick={() => setSelectedAnalysis(analysis.id)}
-                            style={{ cursor: 'pointer' }}
-                        >
-                            <div className="d-flex justify-content-between align-items-start">
-                              <div className="fw-bold text-white mb-1">{analysis.name}</div>
-                              {selectedAnalysis === analysis.id && <i className="bi bi-check-circle-fill text-accent-primary"></i>}
-                            </div>
-                            <div className="small text-muted d-flex justify-content-between mt-1">
-                                <span><i className="bi bi-files me-1"></i>{analysis.video_count} videos • {formatDuration(analysis.duration_seconds)}</span>
-                                <span className="opacity-75">{formatDate(analysis.created_at)}</span>
-                            </div>
-                        </div>
-                    ))}
-                    {(!analyses || !analyses.some(a => !a.is_demo)) && (
-                        <div className="p-4 text-center text-muted border border-secondary border-dashed rounded bg-panel-lighter">
-                            <i className="bi bi-cloud-plus fs-2 mb-2 d-block opacity-50"></i>
-                            No personal analyses found.<br/>Upload your first video above.
-                        </div>
-                    )}
+          <div className="mb-3">
+            <h6 className="text-cyber-blue mb-3 fw-bold"><i className="bi bi-person-video me-2"></i>My Private Analyses</h6>
+            <div className="analysis-list border-0 bg-transparent">
+              {Array.isArray(analyses) && analyses.filter(a => !a.is_demo).map(analysis => (
+                <div
+                  key={analysis.id}
+                  className={`analysis-item-modern mb-2 p-3 rounded cursor-pointer ${selectedAnalysis === analysis.id ? "selected-analysis" : ""}`}
+                  onClick={() => setSelectedAnalysis(analysis.id)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="d-flex justify-content-between align-items-start">
+                    <div className="fw-bold text-white mb-1">{analysis.name}</div>
+                    {selectedAnalysis === analysis.id && <i className="bi bi-check-circle-fill text-accent-primary"></i>}
+                  </div>
+                  <div className="small text-muted d-flex justify-content-between mt-1">
+                    <span><i className="bi bi-files me-1"></i>{analysis.video_count} videos • {formatDuration(analysis.duration_seconds)}</span>
+                    <span className="opacity-75">{formatDate(analysis.created_at)}</span>
+                  </div>
                 </div>
+              ))}
+              {(!analyses || !analyses.some(a => !a.is_demo)) && (
+                <div className="p-4 text-center text-muted border border-secondary border-dashed rounded bg-panel-lighter">
+                  <i className="bi bi-cloud-plus fs-2 mb-2 d-block opacity-50"></i>
+                  No personal analyses found.<br />Upload your first video above.
+                </div>
+              )}
             </div>
+          </div>
         ) : (
-            <div className="alert alert-cyber-info mb-3">
-                 <p className="mb-0">You are viewing the uploader as a <strong>Guest</strong>. <Link to="/login" className="text-cyber-blue fw-bold">Login</Link> to start your own analysis or view your previous results.</p>
-            </div>
+          <div className="alert alert-cyber-info mb-3">
+            <p className="mb-0">You are viewing the uploader as a <strong>Guest</strong>. <a href="/login" className="text-cyber-blue fw-bold">Login</a> to start your own analysis or view your previous results.</p>
+          </div>
         )}
 
         <div className="row g-2">

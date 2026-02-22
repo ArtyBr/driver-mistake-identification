@@ -92,6 +92,26 @@ def splice_videos(input_paths: List[Path], output_path: Path) -> bool:
             except OSError:
                 pass
 
+def trim_video(input_path: Path, output_path: Path,
+               start_seconds: float, duration_seconds: float) -> bool:
+    """Trim video with frame-accurate FFmpeg seek."""
+    cmd = [
+        "ffmpeg", "-i", str(input_path),
+        "-ss", str(start_seconds),
+        "-t", str(duration_seconds),
+        "-c", "copy",
+        "-avoid_negative_ts", "make_zero",
+        str(output_path), "-y",
+    ]
+    env = os.environ.copy()
+    env.pop("LD_LIBRARY_PATH", None)
+    result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+    if result.returncode != 0:
+        logger.error("FFmpeg trim error: %s", result.stderr)
+        return False
+    return True
+
+
 def get_video_duration(video_path: Path) -> float:
     """
     Returns the duration of the video in seconds using ffprobe.
