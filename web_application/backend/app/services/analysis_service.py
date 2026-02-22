@@ -95,3 +95,29 @@ def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_video
         traceback.print_exc()
 
         update_job(job_id, status="FAILED", error=str(e))
+
+
+def run_recalibrate_process(job_id: str, source_results_path: str, models_dir: str) -> None:
+    """Submits a lightweight CPU-only recalibration SLURM job."""
+    try:
+        logger.info(f"Submitting recalibration job {job_id} to batch cluster")
+        update_job(job_id, status="SUBMITTED")
+
+        output_path = UPLOAD_DIR / job_id / "results.json"
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        batch_service = BatchService()
+        script = batch_service._generate_recalibrate_sbatch_script(
+            job_name=f"recal_{job_id[:8]}",
+            results_path=source_results_path,
+            models_dir=models_dir,
+            output_path=str(output_path),
+        )
+
+        slurm_id = batch_service.submit_job(script)
+        logger.info(f"Recalibration job {job_id} submitted to SLURM with ID: {slurm_id}")
+        update_job(job_id, status="SUBMITTED", batch_job_id=slurm_id)
+
+    except Exception as e:
+        logger.error(f"Failed to submit recalibration job {job_id}: {e}")
+        update_job(job_id, status="FAILED", error=str(e))
