@@ -28,6 +28,11 @@ const MainLayout = () => {
                     <Link className="nav-link" to="/calibrate">CALIBRATE</Link>
                   </li>
                 )}
+                <li className="nav-item">
+                  <Link className="nav-link" to="/sync-test">
+                    SYNC TEST <span className="badge bg-warning text-dark ms-1" style={{ fontSize: '0.6rem' }}>beta</span>
+                  </Link>
+                </li>
               </ul>
               <ul className="navbar-nav ms-auto">
                 {user ? (

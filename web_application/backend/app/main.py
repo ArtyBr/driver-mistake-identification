@@ -8,6 +8,7 @@ from .db import database
 from .models.job import Job
 from .api import routes
 from .api import calibration_routes
+from .api import sync_routes
 
 # Configure Logging
 logging.basicConfig(
@@ -60,6 +61,7 @@ app.add_middleware(
 # Include API Routes
 app.include_router(routes.router)
 app.include_router(calibration_routes.router)
+app.include_router(sync_routes.router)
 
 # Mount Static Files
 app.mount("/static", StaticFiles(directory=str(UPLOAD_DIR)), name="static")

@@ -11,3 +11,4 @@ pytest
 pytest-cov
 python-jose[cryptography]
 passlib[bcrypt]
+scipy

@@ -19,9 +19,11 @@ class AnalysisItem(BaseModel):
     id: str
     name: str
     is_demo: bool = False
+    status: Optional[str] = None
+    progress: Optional[int] = 0
     video_count: Optional[int] = 0
     duration_seconds: Optional[float] = 0.0
-    created_at: Optional[Any] = None 
+    created_at: Optional[Any] = None
 
 class AnalysisListResponse(BaseModel):
     analyses: List[AnalysisItem]

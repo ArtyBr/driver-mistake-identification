@@ -1,9 +1,0 @@
-INFO:     Started server process [27508]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on https://0.0.0.0:7728 (Press CTRL+C to quit)
-2026-02-19 14:53:34,327 - api_logger - INFO - Incoming Request: GET https://127.0.0.1:7728/list_analyses
-2026-02-19 14:53:34,340 - api_logger - INFO - Response: 200 - Took 0.0131s
-Updated existing job to demo: test_video
-Updated existing job to demo: 2025_0916_134624_007979F_cut_1
-INFO:     172.25.91.4:0 - "GET /list_analyses HTTP/1.1" 200 OK

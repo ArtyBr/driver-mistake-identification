@@ -1,6 +1,8 @@
 import logging
+import uuid
+from pathlib import Path
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 from sqlmodel import Session
 
@@ -9,6 +11,7 @@ from ..models.user import User
 from ..models.job import Job
 from ..services.auth_service import get_current_user
 from ..services import calibration_service
+from ..core.config import UPLOAD_DIR
 
 router = APIRouter(prefix="/calibration", tags=["calibration"])
 logger = logging.getLogger(__name__)
@@ -171,12 +174,14 @@ async def submit_correction(
 @router.post("/reanalyze/{job_id}")
 async def reanalyze_with_user_model(
     job_id: str,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     """
-    Creates a new analysis job from the same videos as job_id, using the
-    user's personal calibration model. Returns the new job_id.
+    Creates a lightweight recalibration job: re-classifies stored head poses
+    with the user's PCA+SVM model and replays safety logic. No GPU needed.
+    Returns the new job_id immediately; frontend polls /status/{new_job_id}.
     """
     if not calibration_service.has_trained_model(current_user.id):
         raise HTTPException(
@@ -185,19 +190,34 @@ async def reanalyze_with_user_model(
         )
 
     job = _get_authorized_job(job_id, current_user, session)
-
     models_dir = str(calibration_service.get_user_model_dir(current_user.id))
 
-    # Import here to avoid circular imports at module level
-    from ..services.job_service import JobService
-    job_service = JobService(session)
-    try:
-        new_job = job_service.create_reanalysis_job(
-            source_job=job,
-            owner_id=current_user.id,
-            models_dir=models_dir,
-        )
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    # Resolve source results.json
+    source_results = None
+    for base in [UPLOAD_DIR, Path("/dcs/large/safedrive_cs310_2526/uploads")]:
+        p = base / job_id / "results.json"
+        if p.exists():
+            source_results = p
+            break
+    if not source_results:
+        raise HTTPException(status_code=404, detail="No results found for this job.")
 
-    return {"job_id": new_job.id}
+    # Create lightweight new job record
+    new_job_id = str(uuid.uuid4())
+    new_job = Job(
+        id=new_job_id,
+        name=f"Re-analysis of {job.name or job_id}",
+        status="PENDING",
+        owner_id=current_user.id,
+        road_path=job.road_path,
+        face_path=job.face_path,
+        road_metadata=job.road_metadata,
+        face_metadata=job.face_metadata,
+    )
+    session.add(new_job)
+    session.commit()
+
+    from ..services.analysis_service import run_recalibrate_process
+    background_tasks.add_task(run_recalibrate_process, new_job_id, str(source_results), models_dir)
+
+    return {"job_id": new_job_id}

@@ -24,6 +24,7 @@ const apiRoutes = [
   '/calibration',
   '/auth',
   '/session',
+  '/sync',
 ];
 
 const proxy = {};

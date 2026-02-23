@@ -149,6 +149,31 @@ cd {self.remote_project_root}
 """
         return script
 
+    def _generate_recalibrate_sbatch_script(
+        self, job_name: str, results_path: str, models_dir: str, output_path: str
+    ) -> str:
+        job_dir = Path(output_path).parent
+        cmd = (
+            f"python combined_analysis/recalibrate_headless.py \\\n"
+            f"    --results_path {results_path} \\\n"
+            f"    --models_dir {models_dir} \\\n"
+            f"    --output {output_path}"
+        )
+        return f"""#!/bin/bash
+#SBATCH --job-name={job_name}
+#SBATCH --partition=eagle
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=2G
+#SBATCH --time=00:05:00
+#SBATCH --output={job_dir}/slurm_%j.log
+
+source {self.venv_path}/bin/activate
+cd {self.remote_project_root}
+{cmd}
+"""
+
     def submit_job(self, script_content: str) -> str:
         client = self._get_ssh_client()
         try:
