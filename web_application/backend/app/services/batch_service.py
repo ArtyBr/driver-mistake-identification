@@ -73,7 +73,7 @@ class BatchService:
             with open(log_file, 'rb') as f:
                 # Seek to end and read last 4096 bytes
                 try:
-                    f.seek(-4096, 2)
+                    f.seek(-8192, 2)
                 except OSError:
                     # File smaller than 4096 bytes
                     pass
@@ -134,11 +134,11 @@ class BatchService:
 
         script = f"""#!/bin/bash
 #SBATCH --job-name={job_name}
-#SBATCH --partition=eagle
+#SBATCH --partition=gecko
 #SBATCH --gres=gpu:1
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --time=01:00:00
+#SBATCH --time=04:00:00
 #SBATCH --output={job_dir}/slurm_%j.log
 
 # Load environment
@@ -161,7 +161,7 @@ cd {self.remote_project_root}
         )
         return f"""#!/bin/bash
 #SBATCH --job-name={job_name}
-#SBATCH --partition=eagle
+#SBATCH --partition=gecko
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=2

@@ -245,9 +245,10 @@ async def stream_remote_video(
         resolved_path = safe_path.resolve()
         resolved_base = base_path.resolve()
         if not resolved_path.is_relative_to(resolved_base):
-             raise HTTPException(status_code=403, detail="Access denied")
-    except Exception:
-         pass
+            raise HTTPException(status_code=403, detail="Access denied")
+    except (OSError, ValueError):
+        # resolve() failed (e.g. permissions); treat as not found
+        raise HTTPException(status_code=404, detail="Video file not found")
 
     if not safe_path.exists():
         raise HTTPException(status_code=404, detail="Video file not found")

@@ -34,6 +34,9 @@ export const uploadVideos = async (formData, onProgress) => {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
+    // 30-minute ceiling: prevents a stalled connection hanging indefinitely
+    // while still accommodating very large video uploads over slow links.
+    timeout: 30 * 60 * 1000,
     onUploadProgress: (progressEvent) => {
       if (onProgress) {
         const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);

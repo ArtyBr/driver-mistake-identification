@@ -7,7 +7,7 @@
  * Videos are served from the backend (/static/sync_temp/...) to avoid
  * blob: URLs, which are blocked by the production nginx CSP.
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import api, { getFileUrl } from '../services/api';
 import FileDropZone from '../components/common/FileDropZone';
 import AudioWaveform from '../components/features/AudioWaveform';
@@ -24,6 +24,10 @@ export default function SyncTestPage() {
   const [error,          setError]          = useState(null);
   // 'none' | 'road' | 'face'
   const [audioSource,    setAudioSource]    = useState('none');
+  const [pollingSessionId, setPollingSessionId] = useState(null);
+  const pollIntervalRef = useRef(null);
+  const pollAttemptsRef = useRef(0);
+  const MAX_POLL_ATTEMPTS = 150; // 150 × 2 s = 5 minutes
 
   // ------------------------------------------------------------------
   // Video sync hook
@@ -48,6 +52,48 @@ export default function SyncTestPage() {
   }, [audioSource, roadVideoRef, faceVideoRef]);
 
   // ------------------------------------------------------------------
+  // Polling for async sync result
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    if (!pollingSessionId) return;
+    pollAttemptsRef.current = 0;
+    const poll = async () => {
+      pollAttemptsRef.current += 1;
+      if (pollAttemptsRef.current > MAX_POLL_ATTEMPTS) {
+        clearInterval(pollIntervalRef.current);
+        setPollingSessionId(null);
+        setError('Sync analysis timed out. The server may be under load — please try again.');
+        setIsAnalyzing(false);
+        return;
+      }
+      try {
+        const res = await api.get(`/sync/status/${pollingSessionId}`);
+        const { status, ...data } = res.data;
+        if (status === 'done') {
+          clearInterval(pollIntervalRef.current);
+          setPollingSessionId(null);
+          setSyncData(data);
+          setManualOffset(data.offset_seconds);
+          setIsAnalyzing(false);
+        } else if (status === 'error') {
+          clearInterval(pollIntervalRef.current);
+          setPollingSessionId(null);
+          setError(data.detail || 'Analysis failed.');
+          setIsAnalyzing(false);
+        }
+      } catch (err) {
+        clearInterval(pollIntervalRef.current);
+        setPollingSessionId(null);
+        setError(err.message || 'Failed to get sync status.');
+        setIsAnalyzing(false);
+      }
+    };
+    poll();
+    pollIntervalRef.current = setInterval(poll, 2000);
+    return () => clearInterval(pollIntervalRef.current);
+  }, [pollingSessionId]);
+
+  // ------------------------------------------------------------------
   // Analyze handler
   // ------------------------------------------------------------------
   const handleAnalyze = useCallback(async () => {
@@ -65,18 +111,18 @@ export default function SyncTestPage() {
     try {
       const response = await api.post('/sync/analyze', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 30 * 60 * 1000,
         onUploadProgress: (evt) => {
           if (evt.total) {
             setUploadProgress(Math.round((evt.loaded / evt.total) * 100));
           }
         },
       });
-      setSyncData(response.data);
-      setManualOffset(response.data.offset_seconds);
+      // Backend returns immediately; start polling for result
+      setPollingSessionId(response.data.session_id);
     } catch (err) {
       const msg = err.response?.data?.detail || err.message || 'Analysis failed.';
       setError(msg);
-    } finally {
       setIsAnalyzing(false);
     }
   }, [roadFiles, faceFiles]);

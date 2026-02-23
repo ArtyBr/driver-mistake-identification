@@ -68,21 +68,44 @@ def _cleanup_old_sessions():
             pass
 
 
+def _do_analyze_background(
+    session_id: str, road_parts: List[Path], face_parts: List[Path], temp_dir: Path
+) -> None:
+    """Splice videos and compute sync offset; write result or error JSON to session dir."""
+    road_path   = temp_dir / "road.mp4"
+    face_path   = temp_dir / "face.mp4"
+    result_path = temp_dir / "sync_result.json"
+    error_path  = temp_dir / "sync_error.json"
+    try:
+        if not splice_videos(road_parts, road_path):
+            raise ValueError("Failed to splice road video parts.")
+        if not splice_videos(face_parts, face_path):
+            raise ValueError("Failed to splice face video parts.")
+
+        result = sync_service.analyze_sync(road_path, face_path)
+        result["session_id"]     = session_id
+        result["road_video_url"] = f"/static/sync_temp/{session_id}/road.mp4"
+        result["face_video_url"] = f"/static/sync_temp/{session_id}/face.mp4"
+        result_path.write_text(json.dumps(result))
+    except Exception as exc:
+        logger.exception("Background sync analysis failed for session %s: %s", session_id, exc)
+        try:
+            error_path.write_text(json.dumps({"detail": str(exc)}))
+        except Exception:
+            pass
+
+
 @router.post("/analyze")
 async def analyze_sync(
+    background_tasks: BackgroundTasks,
     road_video: List[UploadFile] = File(...),
     face_video: List[UploadFile] = File(...),
 ):
     """
-    Compute the audio-based temporal offset between two videos.
+    Save uploaded video parts and kick off audio cross-correlation in the background.
 
-    Each of road_video and face_video may be a list of parts that will be
-    spliced (concatenated) before analysis — matching the multi-part upload
-    flow in the main /upload endpoint.
-
-    Returns offset_seconds, per-video durations, downsampled waveforms,
-    a correlation confidence score, a session_id, and backend URLs to stream
-    the spliced videos.
+    Returns immediately with {session_id, status: "processing"}.
+    Poll GET /sync/status/{session_id} for the result.
     """
     _cleanup_old_sessions()
 
@@ -90,46 +113,51 @@ async def analyze_sync(
     temp_dir = SYNC_TEMP_DIR / session_id
     temp_dir.mkdir(parents=True, exist_ok=True)
 
-    road_path = temp_dir / "road.mp4"
-    face_path = temp_dir / "face.mp4"
-
     try:
-        # Save uploaded parts then splice (or just move if single part)
         road_parts: List[Path] = []
         for i, part in enumerate(road_video):
             p = temp_dir / f"road_part_{i}.mp4"
-            p.write_bytes(await part.read())
+            with open(p, "wb") as buf:
+                shutil.copyfileobj(part.file, buf)
             road_parts.append(p)
 
         face_parts: List[Path] = []
         for i, part in enumerate(face_video):
             p = temp_dir / f"face_part_{i}.mp4"
-            p.write_bytes(await part.read())
+            with open(p, "wb") as buf:
+                shutil.copyfileobj(part.file, buf)
             face_parts.append(p)
-
-        if not splice_videos(road_parts, road_path):
-            raise ValueError("Failed to splice road video parts.")
-        if not splice_videos(face_parts, face_path):
-            raise ValueError("Failed to splice face video parts.")
-
-        result = sync_service.analyze_sync(road_path, face_path)
-
-        result["session_id"]     = session_id
-        result["road_video_url"] = f"/static/sync_temp/{session_id}/road.mp4"
-        result["face_video_url"] = f"/static/sync_temp/{session_id}/face.mp4"
-        return result
-
-    except ValueError as exc:
-        shutil.rmtree(temp_dir, ignore_errors=True)
-        logger.warning("Sync analysis failed (bad input): %s", exc)
-        raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
         shutil.rmtree(temp_dir, ignore_errors=True)
-        logger.exception("Unexpected error during sync analysis: %s", exc)
-        raise HTTPException(
-            status_code=500,
-            detail="An unexpected error occurred during synchronisation analysis.",
-        )
+        logger.error("Failed to save uploaded files for session %s: %s", session_id, exc)
+        raise HTTPException(status_code=500, detail="Failed to save uploaded files.")
+
+    background_tasks.add_task(_do_analyze_background, session_id, road_parts, face_parts, temp_dir)
+    return {"session_id": session_id, "status": "processing"}
+
+
+@router.get("/status/{session_id}")
+async def get_sync_status(session_id: str):
+    """
+    Poll the status of a sync analysis session started by POST /sync/analyze.
+
+    Returns {status: "processing"} while running,
+    {status: "done", ...result_fields} on success, or
+    {status: "error", detail: "..."} on failure.
+    """
+    temp_dir = SYNC_TEMP_DIR / session_id
+    if not temp_dir.exists():
+        raise HTTPException(status_code=404, detail="Session not found or expired.")
+
+    result_path = temp_dir / "sync_result.json"
+    error_path  = temp_dir / "sync_error.json"
+
+    if result_path.exists():
+        return {"status": "done", **json.loads(result_path.read_text())}
+    if error_path.exists():
+        error_data = json.loads(error_path.read_text())
+        return {"status": "error", "detail": error_data.get("detail", "Unknown error")}
+    return {"status": "processing"}
 
 
 class SyncSubmitRequest(BaseModel):
