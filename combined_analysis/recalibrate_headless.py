@@ -98,7 +98,7 @@ def replay_safety(timeline_events: list, frame_data: list) -> None:
     )
 
     for event in timeline_events:
-        if event.get("type") != "safety_alert":
+        if event.get("type") not in ("safety_alert", "turn_event"):
             continue
 
         T = float(event["timestamp"])
