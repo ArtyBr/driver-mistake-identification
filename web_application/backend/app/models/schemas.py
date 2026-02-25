@@ -26,6 +26,8 @@ class AnalysisItem(BaseModel):
     video_count: Optional[int] = 0
     duration_seconds: Optional[float] = 0.0
     created_at: Optional[Any] = None
+    calibration_id: Optional[str] = None
+    calibration_name: Optional[str] = None
 
 class AnalysisListResponse(BaseModel):
     analyses: List[AnalysisItem]

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import VideoPlayer from '../components/features/VideoPlayer';
 import MissingVideosUploader from '../components/features/MissingVideosUploader';
@@ -27,29 +27,29 @@ const ResultPage = () => {
     });
   };
 
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      // Fetch status to get URLs and metadata
+      const statusData = await getJobStatus(jobId);
+      setJobData(statusData);
+
+      // Fetch results
+      const resultsData = await getJobResults(jobId);
+      setResults(resultsData);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError("Failed to load results. They might not be ready or the ID is invalid.");
+    } finally {
+      setLoading(false);
+    }
+  }, [jobId]);
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        // Fetch status to get URLs and metadata
-        const statusData = await getJobStatus(jobId);
-        setJobData(statusData);
-
-        // Fetch results
-        const resultsData = await getJobResults(jobId);
-        setResults(resultsData);
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        setError("Failed to load results. They might not be ready or the ID is invalid.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (jobId) {
       fetchData();
     }
-  }, [jobId]);
+  }, [jobId, fetchData]);
 
   const videoUrls = useMemo(() => {
       let rUrls = [];
@@ -204,7 +204,10 @@ const ResultPage = () => {
            endTime={correctionModal.endTime}
            calibrationId={jobData?.calibration_id}
            onClose={() => setCorrectionModal(null)}
-           onSuccess={() => setCorrectionModal(null)}
+           onSuccess={() => {
+             setCorrectionModal(null);
+             fetchData();
+           }}
          />
        )}
     </div>

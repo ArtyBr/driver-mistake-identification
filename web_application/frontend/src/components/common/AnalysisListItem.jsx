@@ -181,6 +181,12 @@ const AnalysisListItem = ({ analysis, selected, onClick, etaMs, events: propEven
           {analysis.status && (
             <span className={`badge ${cls} ms-1`} style={{ fontSize: '0.7rem' }}>{label}</span>
           )}
+          {analysis.calibration_id && (
+            <span className="badge bg-info-subtle text-info border border-info ms-1" style={{ fontSize: '0.65rem' }}>
+              <i className="bi bi-eye-fill me-1"></i>
+              Calibrated
+            </span>
+          )}
         </div>
         {selected && <i className="bi bi-check-circle-fill text-accent-primary" />}
       </div>

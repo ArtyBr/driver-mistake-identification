@@ -273,6 +273,15 @@ class JobService:
             logger.error(f"Error fetching jobs from DB: {e}")
             db_jobs = {}
 
+        # Pre-fetch calibration names if needed
+        cal_names = {}
+        cal_ids = {job.calibration_id for job in db_jobs.values() if job.calibration_id}
+        if cal_ids:
+            from ..models.calibration import UserCalibration
+            statement = select(UserCalibration).where(UserCalibration.id.in_(list(cal_ids)))
+            cals = self.session.exec(statement).all()
+            cal_names = {c.id: c.name for c in cals}
+
         # 1.5 Refresh status/progress for any active jobs by reading SLURM logs.
         # check_job_status is already rate-limited to once per 2s per job, so this is safe.
         for job_id, job in list(db_jobs.items()):
@@ -312,7 +321,9 @@ class JobService:
                     progress=job.progress,
                     video_count=count,
                     duration_seconds=duration,
-                    created_at=created_at
+                    created_at=created_at,
+                    calibration_id=job.calibration_id,
+                    calibration_name=cal_names.get(job.calibration_id) if job.calibration_id else None
                 ))
 
         return sorted(analyses, key=lambda x: x.created_at, reverse=True)

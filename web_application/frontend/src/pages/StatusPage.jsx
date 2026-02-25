@@ -8,7 +8,7 @@ const StatusPage = () => {
   const location = useLocation();
   const [copied, setCopied] = useState(false);
   
-  const { status, progress, error } = useJobStatus(jobId);
+  const { status, progress, error, data } = useJobStatus(jobId);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(jobId).then(() => {
@@ -19,9 +19,13 @@ const StatusPage = () => {
 
   useEffect(() => {
     if (status === 'COMPLETED') {
-      navigate(`/view/${jobId}`, { state: location.state, replace: true });
+      const navState = { 
+        ...location.state, 
+        calibrationId: data?.calibration_id 
+      };
+      navigate(`/view/${jobId}`, { state: navState, replace: true });
     }
-  }, [status, jobId, navigate, location.state]);
+  }, [status, jobId, navigate, location.state, data]);
 
   // Fallback for failed jobs that might actually have results (late-stage crashes)
   useEffect(() => {

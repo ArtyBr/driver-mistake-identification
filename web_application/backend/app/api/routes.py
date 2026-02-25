@@ -189,7 +189,7 @@ async def get_status(
     calibration_name = None
     if job.calibration_id:
         from ..services import calibration_service as cal_svc
-        cal = cal_svc.get_calibration(job.calibration_id, job.owner_id, service.session)
+        cal = cal_svc.get_calibration_by_id(job.calibration_id, service.session)
         if cal:
             calibration_name = cal.name
 

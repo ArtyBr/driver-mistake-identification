@@ -49,6 +49,11 @@ def get_calibration(cal_id: str, user_id: str, session: Session) -> Optional[Use
     return None
 
 
+def get_calibration_by_id(cal_id: str, session: Session) -> Optional[UserCalibration]:
+    """Fetches a specific calibration by ID, regardless of user (internal helper)."""
+    return session.get(UserCalibration, cal_id)
+
+
 def create_calibration(user_id: str, session: Session, name: Optional[str] = None) -> UserCalibration:
     """Creates a new calibration entry for the user."""
     if not name:

@@ -245,6 +245,14 @@ async def submit_correction(
 
     calibration_service.add_samples(cal_id, current_user.id, new_samples, session)
     result = calibration_service.train_user_model(cal_id, current_user.id, session)
+
+    # Update the job to reflect which calibration was used
+    job = session.get(Job, request.job_id)
+    if job:
+        job.calibration_id = cal_id
+        session.add(job)
+        session.commit()
+
     return {
         "added": len(new_samples),
         "retrained": result["success"],
