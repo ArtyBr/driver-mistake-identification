@@ -28,6 +28,11 @@ const MainLayout = () => {
                     <Link className="nav-link" to="/calibrate">CALIBRATE</Link>
                   </li>
                 )}
+                {user?.is_admin && (
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/admin">ADMIN</Link>
+                  </li>
+                )}
                 <li className="nav-item">
                   <Link className="nav-link" to="/sync-test">
                     SYNC TEST <span className="badge bg-warning text-dark ms-1" style={{ fontSize: '0.6rem' }}>beta</span>

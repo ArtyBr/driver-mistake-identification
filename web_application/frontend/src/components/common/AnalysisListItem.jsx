@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { getJobEvents } from '../../services/api';
 
 const ACTIVE_STATUSES = new Set(['PENDING', 'SUBMITTED', 'RUNNING']);
 
@@ -31,6 +32,107 @@ const formatEta = (ms) => {
   return mins < 1 ? '< 1m remaining' : `~${mins}m remaining`;
 };
 
+// ---------------------------------------------------------------------------
+// Event display helpers
+// ---------------------------------------------------------------------------
+
+function pctColor(pct) {
+  if (pct == null) return 'var(--text-muted)';
+  if (pct >= 75) return 'var(--accent-success)';
+  if (pct >= 40) return '#e5a500';
+  return 'var(--accent-danger)';
+}
+
+/**
+ * Shows one event type (Turns or Lane Changes) with optional left/right expansion.
+ * stopPropagation prevents the parent AnalysisListItem click from firing.
+ */
+function TypeSection({ label, data }) {
+  const [open, setOpen] = useState(false);
+  if (!data || data.total === 0) return null;
+
+  const hasDirections = (data.left?.total || 0) + (data.right?.total || 0) > 0;
+
+  const toggle = (e) => {
+    e.stopPropagation();
+    if (hasDirections) setOpen(o => !o);
+  };
+
+  return (
+    <div className="me-4">
+      {/* Summary row */}
+      <div
+        className="d-flex align-items-center gap-1"
+        onClick={toggle}
+        style={{ cursor: hasDirections ? 'pointer' : 'default', userSelect: 'none' }}
+      >
+        {hasDirections && (
+          <span style={{
+            display: 'inline-block',
+            fontSize: '0.6rem',
+            transition: 'transform 0.15s',
+            transform: open ? 'rotate(90deg)' : 'none',
+            color: 'var(--text-muted)',
+            marginRight: 2,
+          }}>▶</span>
+        )}
+        <span className="small text-muted">{label}:</span>
+        <span className="small fw-semibold text-white">{data.total}</span>
+        {data.pct_safe != null && (
+          <span className="small fw-semibold" style={{ color: pctColor(data.pct_safe) }}>
+            ({data.pct_safe}% safe)
+          </span>
+        )}
+        <span className="small text-muted">{data.safe} ✓ · {data.unsafe} ✗</span>
+      </div>
+
+      {/* Direction breakdown (expanded) */}
+      {open && hasDirections && (
+        <div className="mt-1 ms-3 d-flex flex-wrap gap-3" onClick={e => e.stopPropagation()}>
+          {['left', 'right'].map(dir => {
+            const d = data[dir];
+            if (!d || d.total === 0) return null;
+            return (
+              <div key={dir} className="small">
+                <span className="text-muted text-capitalize">{dir}: </span>
+                <span className="text-white">{d.total}</span>
+                {d.pct_safe != null && (
+                  <span className="ms-1 fw-semibold" style={{ color: pctColor(d.pct_safe) }}>
+                    {d.pct_safe}%
+                  </span>
+                )}
+                <span className="text-muted ms-1">({d.safe} ✓ · {d.unsafe} ✗)</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EventDisplay({ events }) {
+  if (!events) return null;
+  const hasData = (events.turns?.total || 0) + (events.lane_changes?.total || 0) > 0;
+  if (!hasData) {
+    return (
+      <div className="small text-muted mt-2 pt-2" style={{ borderTop: '1px solid var(--border-color)' }}>
+        No manoeuvre events recorded.
+      </div>
+    );
+  }
+  return (
+    <div className="mt-2 pt-2 d-flex flex-wrap gap-0" style={{ borderTop: '1px solid var(--border-color)' }}>
+      <TypeSection label="Turns" data={events.turns} />
+      <TypeSection label="Lane Changes" data={events.lane_changes} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
+
 /**
  * Shared list item for displaying an analysis in any context.
  *
@@ -40,11 +142,31 @@ const formatEta = (ms) => {
  *   selected  – boolean; when true shows a checkmark and highlight
  *   onClick   – click handler (navigation or selection, depending on context)
  *   etaMs     – estimated milliseconds remaining (from useAnalysesList.getEtaMs)
+ *   events    – pre-loaded event stats object (from admin endpoint).
+ *               If omitted, auto-fetched for COMPLETED jobs.
+ *               Pass null to suppress the fetch entirely.
  */
-const AnalysisListItem = ({ analysis, selected, onClick, etaMs }) => {
+const AnalysisListItem = ({ analysis, selected, onClick, etaMs, events: propEvents }) => {
   const isActive = ACTIVE_STATUSES.has(analysis.status);
   const { cls, label } = STATUS_MAP[analysis.status] || { cls: 'bg-secondary', label: analysis.status };
   const eta = isActive ? formatEta(etaMs) : null;
+
+  // If propEvents is explicitly provided (including null), use it.
+  // Otherwise auto-fetch for COMPLETED jobs.
+  const controlled = propEvents !== undefined;
+  const [fetchedEvents, setFetchedEvents] = useState(null);
+
+  useEffect(() => {
+    if (controlled) return;
+    if (analysis.status !== 'COMPLETED') return;
+    let cancelled = false;
+    getJobEvents(analysis.id)
+      .then(data => { if (!cancelled) setFetchedEvents(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [analysis.id, analysis.status, controlled]);
+
+  const events = controlled ? propEvents : fetchedEvents;
 
   return (
     <div
@@ -66,10 +188,15 @@ const AnalysisListItem = ({ analysis, selected, onClick, etaMs }) => {
       {/* Row 2: metadata */}
       <div className="small text-muted d-flex justify-content-between mt-1">
         <span>
-          <i className="bi bi-files me-1" />
-          {analysis.video_count} videos &bull; {formatDuration(analysis.duration_seconds)}
+          {analysis.video_count != null && (
+            <><i className="bi bi-files me-1" />{analysis.video_count} videos &bull; {formatDuration(analysis.duration_seconds)}</>
+          )}
         </span>
-        <span className="opacity-75">{formatDate(analysis.created_at)}</span>
+        {analysis.created_at && (
+          <span className="opacity-75">
+            Analysed {formatDate(analysis.created_at)}
+          </span>
+        )}
       </div>
 
       {/* Row 3: progress bar + ETA (active jobs only) */}
@@ -93,6 +220,11 @@ const AnalysisListItem = ({ analysis, selected, onClick, etaMs }) => {
             }
           </div>
         </div>
+      )}
+
+      {/* Row 4: Event stats (completed jobs only) */}
+      {!isActive && analysis.status === 'COMPLETED' && (
+        <EventDisplay events={events} />
       )}
     </div>
   );

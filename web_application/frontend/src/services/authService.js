@@ -23,6 +23,19 @@ export const authService = {
     if (data.access_token) {
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('userEmail', email);
+
+      // Fetch user profile to get is_admin flag
+      try {
+        const meRes = await fetch(`${API_BASE_URL}/me`, {
+          headers: { Authorization: `Bearer ${data.access_token}` },
+        });
+        if (meRes.ok) {
+          const me = await meRes.json();
+          localStorage.setItem('userIsAdmin', me.is_admin ? 'true' : 'false');
+        }
+      } catch (_) {
+        localStorage.setItem('userIsAdmin', 'false');
+      }
     }
     return data;
   },
@@ -47,6 +60,7 @@ export const authService = {
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('userIsAdmin');
   },
 
   getToken() {
@@ -55,6 +69,10 @@ export const authService = {
 
   getUserEmail() {
     return localStorage.getItem('userEmail');
+  },
+
+  getUserIsAdmin() {
+    return localStorage.getItem('userIsAdmin') === 'true';
   },
 
   isAuthenticated() {
