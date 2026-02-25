@@ -25,6 +25,8 @@ const apiRoutes = [
   '/auth',
   '/session',
   '/sync',
+  '/me',
+  '/admin',
 ];
 
 const proxy = {};

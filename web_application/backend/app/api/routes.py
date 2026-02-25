@@ -225,6 +225,30 @@ async def get_results(
     else:
         return {"status": job.status}
 
+@router.get("/job/{job_id}/events")
+async def get_job_events(
+    job_id: str,
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    service: JobService = Depends(get_job_service),
+):
+    """Returns lightweight event stats for a completed job (same auth rules as /results)."""
+    from ..services.event_stats import read_event_stats
+    job = service.get_job(job_id)
+    if not job or job.status != "COMPLETED":
+        raise HTTPException(status_code=404, detail="Job not found or not completed")
+    is_owner = current_user and job.owner_id == current_user.id
+    if not job.is_demo and not is_owner:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    large_base = Path("/dcs/large/safedrive_cs310_2526/uploads/")
+    for base in [large_base, UPLOAD_DIR]:
+        p = base / job_id / "results.json"
+        if p.exists():
+            stats = read_event_stats(p)
+            if stats is not None:
+                return stats
+    raise HTTPException(status_code=404, detail="Results not found")
+
+
 @router.get("/video/remote/{job_id}/{filename}")
 async def stream_remote_video(
     job_id: str, 

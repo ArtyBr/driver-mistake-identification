@@ -120,4 +120,27 @@ export const getFileUrl = (relativePath) => {
   return `${base}${path}`;
 };
 
+// ---------------------------------------------------------------------------
+// Admin API
+// ---------------------------------------------------------------------------
+
+export const getJobEvents = (jobId) => api.get(`/job/${jobId}/events`).then(r => r.data);
+
+export const getAdminStats = () => api.get('/admin/stats').then(r => r.data);
+export const getAdminUsers = () => api.get('/admin/users').then(r => r.data);
+export const getAdminUserJobs = (userId) => api.get(`/admin/users/${userId}/jobs`).then(r => r.data);
+export const updateAdminUser = (userId, data) => api.put(`/admin/users/${userId}`, data).then(r => r.data);
+export const deleteAdminUser = (userId, deleteJobs = false) =>
+  api.delete(`/admin/users/${userId}`, { params: { delete_jobs: deleteJobs } }).then(r => r.data);
+
+export const getAdminJobs = (params = {}) => api.get('/admin/jobs', { params }).then(r => r.data);
+export const updateAdminJob = (jobId, data) => api.put(`/admin/jobs/${jobId}`, data).then(r => r.data);
+export const deleteAdminJob = (jobId) => api.delete(`/admin/jobs/${jobId}`).then(r => r.data);
+
+export const getAdminSessions = () => api.get('/admin/sessions').then(r => r.data);
+export const deleteAdminSession = (sessionId) => api.delete(`/admin/sessions/${sessionId}`).then(r => r.data);
+
+export const getAdminCalibrations = () => api.get('/admin/calibrations').then(r => r.data);
+export const deleteAdminCalibration = (userId) => api.delete(`/admin/calibrations/${userId}`).then(r => r.data);
+
 export default api;

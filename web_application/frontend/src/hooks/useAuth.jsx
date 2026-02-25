@@ -11,7 +11,8 @@ export const AuthProvider = ({ children }) => {
     const token = authService.getToken();
     const email = authService.getUserEmail();
     if (token && email) {
-      setUser({ email });
+      const is_admin = authService.getUserIsAdmin();
+      setUser({ email, is_admin });
     }
     setLoading(false);
   }, []);
@@ -19,7 +20,8 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const data = await authService.login(email, password);
-      setUser({ email });
+      const is_admin = authService.getUserIsAdmin();
+      setUser({ email, is_admin });
       return data;
     } catch (error) {
       throw error;

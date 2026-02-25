@@ -1,4 +1,7 @@
+import os
 from sqlmodel import SQLModel, create_engine, Session
+from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 from ..core.config import DB_PATH
 
 # SQLite URL
@@ -12,9 +15,38 @@ def init_db():
     """Initializes the database tables and seeds demo data."""
     from ..models.job import Job
     from ..models.calibration import UserCalibration  # ensures table is created
+    from ..models.user import User
+    from ..services.auth_service import get_password_hash
     from sqlmodel import select
-    
+
     SQLModel.metadata.create_all(engine)
+
+    # Migrate: add columns that may not exist in older DB schemas
+    with engine.connect() as conn:
+        for stmt in [
+            "ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN created_at DATETIME",
+        ]:
+            try:
+                conn.execute(text(stmt))
+                conn.commit()
+            except OperationalError:
+                pass  # Column already exists
+
+    # Seed admin account
+    admin_email = "admin@admin.com"
+    admin_password = os.environ.get("ADMIN_PASSWORD", "SafeDrive2026!")
+    with Session(engine) as session:
+        existing_admin = session.exec(select(User).where(User.email == admin_email)).first()
+        if not existing_admin:
+            admin_user = User(
+                email=admin_email,
+                hashed_password=get_password_hash(admin_password),
+                is_admin=True,
+            )
+            session.add(admin_user)
+            session.commit()
+            print(f"Seeded admin user: {admin_email}")
     
     # Seed test_video as a demo
     with Session(engine) as session:

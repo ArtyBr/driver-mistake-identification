@@ -6,10 +6,11 @@ from sqlmodel import Session, select
 from ..db.database import get_session
 from ..models.user import User, UserCreate, UserResponse, Token
 from ..services.auth_service import (
-    get_password_hash, 
-    verify_password, 
+    get_password_hash,
+    verify_password,
     create_access_token,
-    ACCESS_TOKEN_EXPIRE_MINUTES
+    get_current_user,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
 )
 
 router = APIRouter()
@@ -53,3 +54,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Sessi
         data={"sub": user.email}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.get("/me", response_model=UserResponse)
+async def get_me(current_user: User = Depends(get_current_user)):
+    return current_user
