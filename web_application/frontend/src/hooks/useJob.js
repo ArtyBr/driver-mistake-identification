@@ -6,7 +6,7 @@ export const useJobUpload = () => {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState(null);
 
-  const upload = useCallback(async (roadFiles, faceFiles, keepVideos, name) => {
+  const upload = useCallback(async (roadFiles, faceFiles, keepVideos, name, calibrationId) => {
     setIsUploading(true);
     setProgress(0);
     setError(null);
@@ -17,6 +17,9 @@ export const useJobUpload = () => {
     formData.append('keep_videos', keepVideos);
     if (name) {
         formData.append('name', name);
+    }
+    if (calibrationId) {
+        formData.append('calibration_id', calibrationId);
     }
 
     try {

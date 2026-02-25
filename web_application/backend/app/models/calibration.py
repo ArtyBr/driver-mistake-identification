@@ -11,8 +11,9 @@ class UserCalibration(SQLModel, table=True):
         default_factory=lambda: str(uuid.uuid4()),
         primary_key=True
     )
-    # One calibration row per user (unique constraint enforced in logic + DB)
-    user_id: str = Field(unique=True, index=True)
+    # Multiple calibrations per user allowed
+    user_id: str = Field(index=True)
+    name: str = Field(default="New Calibration")
     is_trained: bool = Field(default=False)
     # JSON string: list of {"yaw": int, "pitch": int, "roll": int, "label": str}
     training_data: Optional[str] = Field(default=None)

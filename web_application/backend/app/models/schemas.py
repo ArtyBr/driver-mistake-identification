@@ -11,6 +11,8 @@ class JobStatusResponse(BaseModel):
     road_metadata: Optional[Dict[str, Any]] = None
     face_metadata: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
+    calibration_id: Optional[str] = None
+    calibration_name: Optional[str] = None
 
 class JobCreateResponse(BaseModel):
     job_id: str

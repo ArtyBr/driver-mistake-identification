@@ -158,12 +158,42 @@ const ResultPage = () => {
        )}
 
        {results && hasVideos && (
-          <VideoPlayer
-            results={results}
-            roadUrls={videoUrls.road}
-            faceUrls={videoUrls.face}
-            jobId={jobId}
-          />
+          <>
+            <VideoPlayer
+              results={results}
+              roadUrls={videoUrls.road}
+              faceUrls={videoUrls.face}
+              jobId={jobId}
+            />
+            
+            <div className="card card-cyber mt-4 shadow-sm border-info-subtle">
+              <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                  <h6 className="mb-1 text-white fw-bold">
+                    <i className="bi bi-eye me-2"></i>
+                    Gaze Accuracy
+                  </h6>
+                  <p className="text-muted small mb-0">
+                    {jobData?.calibration_id ? (
+                      <>Analyzed using calibration: <strong className="text-info">{jobData.calibration_name || 'Personal Model'}</strong></>
+                    ) : (
+                      <>Using default gaze model. Results might be less accurate for some camera angles.</>
+                    )}
+                  </p>
+                </div>
+                <div className="d-flex align-items-center gap-3">
+                  <span className="text-muted small d-none d-md-inline">Gaze classifications incorrect?</span>
+                  <Link 
+                    to="/calibrate" 
+                    state={{ jobId, calibrationId: jobData?.calibration_id }}
+                    className="btn btn-outline-cyber btn-sm"
+                  >
+                    CALIBRATE GAZE
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </>
        )}
 
        {correctionModal && (
@@ -172,6 +202,7 @@ const ResultPage = () => {
            detectedLabel={correctionModal.detectedLabel}
            startTime={correctionModal.startTime}
            endTime={correctionModal.endTime}
+           calibrationId={jobData?.calibration_id}
            onClose={() => setCorrectionModal(null)}
            onSuccess={() => setCorrectionModal(null)}
          />

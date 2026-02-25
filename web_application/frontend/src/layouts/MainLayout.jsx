@@ -23,11 +23,6 @@ const MainLayout = () => {
                 <li className="nav-item">
                   <Link className="nav-link" to="/analyze">ANALYZE VIDEO</Link>
                 </li>
-                {user && (
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/calibrate">CALIBRATE</Link>
-                  </li>
-                )}
                 {user?.is_admin && (
                   <li className="nav-item">
                     <Link className="nav-link" to="/dashboard">ADMIN</Link>

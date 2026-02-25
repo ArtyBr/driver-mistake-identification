@@ -7,6 +7,7 @@ import { useJobUpload } from '../../hooks/useJob'
 import { useAuth } from '../../hooks/useAuth'
 import { useAnalysesList } from '../../hooks/useAnalysesList'
 import AnalysisListItem from '../common/AnalysisListItem'
+import { listCalibrations } from '../../services/calibrationService'
 
 function Uploader({ onUploadSuccess }) {
   const { user } = useAuth();
@@ -16,6 +17,8 @@ function Uploader({ onUploadSuccess }) {
   const [alreadySynced, setAlreadySynced] = useState(false)
   const [uploadName, setUploadName] = useState("")
   const [selectedAnalysis, setSelectedAnalysis] = useState("")
+  const [calibrations, setCalibrations] = useState([])
+  const [selectedCalId, setSelectedCalId] = useState("")
 
   // Sync flow state
   const [syncStep,           setSyncStep]           = useState('upload') // 'upload' | 'sync_confirm'
@@ -33,6 +36,18 @@ function Uploader({ onUploadSuccess }) {
   const [localError, setLocalError] = useState(null);
 
   const { analyses, refetch: refetchAnalyses, getEtaMs } = useAnalysesList();
+
+  useEffect(() => {
+    if (user) {
+      listCalibrations().then(data => {
+        const trained = data.filter(c => c.is_trained);
+        setCalibrations(trained);
+        if (trained.length > 0) {
+          setSelectedCalId(trained[0].id);
+        }
+      }).catch(err => console.error("Failed to load calibrations", err));
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!pollingSessionId) return
@@ -102,7 +117,7 @@ function Uploader({ onUploadSuccess }) {
     if (alreadySynced) {
       // Existing upload path — unchanged
       try {
-        const jobId = await upload(roadFiles, faceFiles, keepVideos, uploadName);
+        const jobId = await upload(roadFiles, faceFiles, keepVideos, uploadName, selectedCalId);
         onUploadSuccess(jobId, {}, { roadFiles, faceFiles });
       } catch {
         // Error handled in hook
@@ -146,6 +161,7 @@ function Uploader({ onUploadSuccess }) {
         offset: manualOffset,
         name: uploadName || undefined,
         keep_videos: keepVideos,
+        calibration_id: selectedCalId || undefined,
       });
       onUploadSuccess(res.data.job_id, {}, {});
     } catch (err) {
@@ -224,7 +240,7 @@ function Uploader({ onUploadSuccess }) {
             {displayError && <div className="alert alert-danger">{displayError}</div>}
 
             <div className="row">
-              <div className="col-md-12 mb-3">
+              <div className="col-md-6 mb-3">
                 <label className="form-label text-white">Analysis Name (Optional)</label>
                 <input
                   type="text"
@@ -233,6 +249,24 @@ function Uploader({ onUploadSuccess }) {
                   value={uploadName}
                   onChange={(e) => setUploadName(e.target.value)}
                 />
+              </div>
+              <div className="col-md-6 mb-3">
+                <label className="form-label text-white">Gaze Calibration (Optional)</label>
+                <select
+                  className="form-select form-control-cyber"
+                  value={selectedCalId}
+                  onChange={(e) => setSelectedCalId(e.target.value)}
+                >
+                  <option value="">-- Use Default Model --</option>
+                  {calibrations.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                {calibrations.length === 0 && (
+                  <div className="form-text text-muted small" style={{ fontSize: '0.7rem' }}>
+                    No trained calibrations found. <a href="/calibrate" className="text-info">Calibrate here</a> to improve results.
+                  </div>
+                )}
               </div>
               <div className="col-md-6">
                 <FileDropZone

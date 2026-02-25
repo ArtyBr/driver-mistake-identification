@@ -22,6 +22,7 @@ const GazeCorrectionModal = ({
   detectedLabel,
   startTime,
   endTime,
+  calibrationId,
   onClose,
   onSuccess,
 }) => {
@@ -32,7 +33,7 @@ const GazeCorrectionModal = ({
     setSubmitting(true);
     setError(null);
     try {
-      await submitCorrection(jobId, startTime, endTime, correctLabel);
+      await submitCorrection(jobId, startTime, endTime, correctLabel, calibrationId);
       onSuccess(correctLabel);
     } catch (e) {
       setError(e.response?.data?.detail || 'Failed to submit correction. Please try again.');

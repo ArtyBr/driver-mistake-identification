@@ -165,6 +165,7 @@ class SyncSubmitRequest(BaseModel):
     offset: float
     name: Optional[str] = None
     keep_videos: bool = False
+    calibration_id: Optional[str] = None
 
 
 @router.post("/submit")
@@ -249,6 +250,7 @@ async def submit_sync(
         name=body.name or job_id,
         status="PENDING",
         owner_id=current_user.id,
+        calibration_id=body.calibration_id,
         road_path=f"REMOTE:{job_id}/road.mp4",
         face_path=f"REMOTE:{job_id}/face.mp4",
         road_metadata=road_meta,
@@ -261,8 +263,8 @@ async def submit_sync(
     # Check per-user calibration
     models_dir = None
     from ..services import calibration_service as cal_svc
-    if cal_svc.has_trained_model(current_user.id):
-        models_dir = str(cal_svc.get_user_model_dir(current_user.id))
+    if body.calibration_id and cal_svc.has_trained_model(current_user.id, body.calibration_id):
+        models_dir = str(cal_svc.get_user_model_dir(current_user.id, body.calibration_id))
 
     # Submit to SLURM pipeline
     background_tasks.add_task(

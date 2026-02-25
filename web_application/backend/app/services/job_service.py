@@ -29,7 +29,8 @@ class JobService:
         video_face: List[UploadFile], 
         background_tasks: BackgroundTasks, 
         keep_videos: bool = False,
-        owner_id: Optional[str] = None
+        owner_id: Optional[str] = None,
+        calibration_id: Optional[str] = None
     ) -> Job:
         
         # Generate ID
@@ -71,6 +72,7 @@ class JobService:
                 name=job_id, # Default name is the ID
                 status="PENDING",
                 owner_id=owner_id,
+                calibration_id=calibration_id,
                 road_path=f"REMOTE:{job_id}/road.mp4",
                 face_path=f"REMOTE:{job_id}/face.mp4",
                 road_metadata=road_meta,
@@ -84,10 +86,10 @@ class JobService:
             # We pass strings because Job object might be detached or updated
             # Look up owner's calibration model dir (if trained)
             models_dir = None
-            if owner_id:
+            if owner_id and calibration_id:
                 from . import calibration_service as cal_svc
-                if cal_svc.has_trained_model(owner_id):
-                    models_dir = str(cal_svc.get_user_model_dir(owner_id))
+                if cal_svc.has_trained_model(owner_id, calibration_id):
+                    models_dir = str(cal_svc.get_user_model_dir(owner_id, calibration_id))
 
             background_tasks.add_task(
                 run_analysis_process,

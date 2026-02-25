@@ -1,8 +1,9 @@
 import json
 import pickle
 import logging
+import shutil
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from sqlmodel import Session, select
 
@@ -20,35 +21,86 @@ MIN_SAMPLES_PER_CLASS = 3
 LARGE_STORAGE = Path("/dcs/large/safedrive_cs310_2526/uploads")
 
 
-def get_user_model_dir(user_id: str) -> Path:
-    """Returns the path to the user's personal calibration model directory."""
-    return UPLOAD_DIR / "calibrations" / user_id
+def get_user_model_dir(user_id: str, cal_id: str) -> Path:
+    """Returns the path to a specific calibration model directory."""
+    return UPLOAD_DIR / "calibrations" / user_id / cal_id
 
 
-def has_trained_model(user_id: str) -> bool:
-    """Returns True if both pkl files exist on disk for this user."""
-    model_dir = get_user_model_dir(user_id)
+def has_trained_model(user_id: str, cal_id: str) -> bool:
+    """Returns True if both pkl files exist on disk for this calibration."""
+    model_dir = get_user_model_dir(user_id, cal_id)
     return (
         (model_dir / "svm_head_pose_model.pkl").exists() and
         (model_dir / "pca_head_pose_model.pkl").exists()
     )
 
 
-def get_or_create(user_id: str, session: Session) -> UserCalibration:
-    """Fetches the existing UserCalibration row or creates a new one."""
-    statement = select(UserCalibration).where(UserCalibration.user_id == user_id)
-    cal = session.exec(statement).first()
-    if not cal:
-        cal = UserCalibration(user_id=user_id)
-        session.add(cal)
-        session.commit()
-        session.refresh(cal)
+def list_calibrations(user_id: str, session: Session) -> List[UserCalibration]:
+    """Returns all calibrations for a given user."""
+    statement = select(UserCalibration).where(UserCalibration.user_id == user_id).order_by(UserCalibration.created_at.desc())
+    return session.exec(statement).all()
+
+
+def get_calibration(cal_id: str, user_id: str, session: Session) -> Optional[UserCalibration]:
+    """Fetches a specific calibration, ensuring it belongs to the user."""
+    cal = session.get(UserCalibration, cal_id)
+    if cal and cal.user_id == user_id:
+        return cal
+    return None
+
+
+def create_calibration(user_id: str, session: Session, name: Optional[str] = None) -> UserCalibration:
+    """Creates a new calibration entry for the user."""
+    if not name:
+        # Generate a default name like "Calibration 1", "Calibration 2"
+        existing_count = len(list_calibrations(user_id, session))
+        name = f"Calibration {existing_count + 1}"
+    
+    cal = UserCalibration(user_id=user_id, name=name)
+    session.add(cal)
+    session.commit()
+    session.refresh(cal)
     return cal
 
 
-def get_status(user_id: str, session: Session) -> dict:
+def delete_calibration(cal_id: str, user_id: str, session: Session) -> bool:
+    """Deletes a calibration and its associated files."""
+    cal = get_calibration(cal_id, user_id, session)
+    if not cal:
+        return False
+    
+    # Delete from DB
+    session.delete(cal)
+    session.commit()
+    
+    # Delete files
+    model_dir = get_user_model_dir(user_id, cal_id)
+    if model_dir.exists():
+        shutil.rmtree(model_dir)
+    
+    return True
+
+
+def rename_calibration(cal_id: str, user_id: str, new_name: str, session: Session) -> Optional[UserCalibration]:
+    """Renames an existing calibration."""
+    cal = get_calibration(cal_id, user_id, session)
+    if not cal:
+        return None
+    
+    cal.name = new_name
+    cal.updated_at = datetime.utcnow()
+    session.add(cal)
+    session.commit()
+    session.refresh(cal)
+    return cal
+
+
+def get_status(cal_id: str, user_id: str, session: Session) -> dict:
     """Returns calibration status and per-class sample counts."""
-    cal = get_or_create(user_id, session)
+    cal = get_calibration(cal_id, user_id, session)
+    if not cal:
+        return {"error": "Calibration not found"}
+        
     samples = json.loads(cal.training_data) if cal.training_data else []
 
     counts = {name: 0 for name in CLASS_NAMES.values()}
@@ -58,10 +110,14 @@ def get_status(user_id: str, session: Session) -> dict:
             counts[label] += 1
 
     return {
+        "id": cal.id,
+        "name": cal.name,
         "has_calibration": cal.is_trained,
         "is_trained": cal.is_trained,
         "sample_counts": counts,
         "total_samples": len(samples),
+        "created_at": cal.created_at,
+        "updated_at": cal.updated_at,
     }
 
 
@@ -119,9 +175,12 @@ def extract_pose_from_job(
     return extracted
 
 
-def add_samples(user_id: str, new_samples: list, session: Session) -> dict:
+def add_samples(cal_id: str, user_id: str, new_samples: list, session: Session) -> dict:
     """Merges new_samples into the user's existing training data. Returns updated status."""
-    cal = get_or_create(user_id, session)
+    cal = get_calibration(cal_id, user_id, session)
+    if not cal:
+        return {"error": "Calibration not found"}
+        
     existing = json.loads(cal.training_data) if cal.training_data else []
     combined = existing + new_samples
     cal.training_data = json.dumps(combined)
@@ -129,18 +188,22 @@ def add_samples(user_id: str, new_samples: list, session: Session) -> dict:
     session.add(cal)
     session.commit()
     session.refresh(cal)
-    return get_status(user_id, session)
+    return get_status(cal_id, user_id, session)
 
 
-def get_samples(user_id: str, session: Session) -> list:
+def get_samples(cal_id: str, user_id: str, session: Session) -> list:
     """Returns the raw stored training samples [{yaw, pitch, roll, label}]."""
-    cal = get_or_create(user_id, session)
+    cal = get_calibration(cal_id, user_id, session)
+    if not cal:
+        return []
     return json.loads(cal.training_data) if cal.training_data else []
 
 
-def reset_samples(user_id: str, session: Session) -> None:
+def reset_samples(cal_id: str, user_id: str, session: Session) -> None:
     """Clears all training samples and marks model as untrained."""
-    cal = get_or_create(user_id, session)
+    cal = get_calibration(cal_id, user_id, session)
+    if not cal:
+        return
     cal.training_data = None
     cal.is_trained = False
     cal.updated_at = datetime.utcnow()
@@ -159,13 +222,7 @@ _CLASS_COLORS = {
 
 def _generate_plots(X, X_pca, y, samples, pca, svm, model_dir: Path) -> dict:
     """
-    Generates 3 dark-themed diagnostic PNGs:
-      1. head_pose  — Yaw vs Pitch scatter coloured by class
-      2. pca        — PC1 vs PC2 scatter coloured by class
-      3. decision_boundary — SVM regions + training points in PCA space
-
-    Saves PNGs to model_dir and returns {"head_pose": "data:image/png;base64,...", ...}.
-    Returns {} on any import/rendering error.
+    Generates 3 dark-themed diagnostic PNGs.
     """
     try:
         import io, base64 as b64lib
@@ -269,6 +326,7 @@ def _generate_plots(X, X_pca, y, samples, pca, svm, model_dir: Path) -> dict:
 
     # Persist PNGs alongside model files
     import base64 as b64lib2
+    model_dir.mkdir(parents=True, exist_ok=True)
     for key, data_url in plots.items():
         png_bytes = b64lib2.b64decode(data_url.split(',', 1)[1])
         with open(model_dir / f"plot_{key}.png", 'wb') as f:
@@ -277,10 +335,10 @@ def _generate_plots(X, X_pca, y, samples, pca, svm, model_dir: Path) -> dict:
     return plots
 
 
-def get_saved_plots_b64(user_id: str) -> dict:
+def get_saved_plots_b64(cal_id: str, user_id: str) -> dict:
     """Loads plot PNGs saved by the last training run and returns them as data URLs."""
     import base64
-    model_dir = get_user_model_dir(user_id)
+    model_dir = get_user_model_dir(user_id, cal_id)
     plots = {}
     for key in ('head_pose', 'pca', 'decision_boundary'):
         path = model_dir / f"plot_{key}.png"
@@ -291,12 +349,9 @@ def get_saved_plots_b64(user_id: str) -> dict:
     return plots
 
 
-def train_user_model(user_id: str, session: Session) -> dict:
+def train_user_model(cal_id: str, user_id: str, session: Session) -> dict:
     """
-    Trains a PCA (n_components=2) + SVC (rbf, C=10, probability=True) model
-    from the user's saved pose samples. Saves pkl files to the user's model dir.
-
-    Returns {success: bool, message: str, plots: dict}.
+    Trains a PCA + SVC model from a specific calibration's samples.
     """
     try:
         import numpy as np
@@ -305,7 +360,10 @@ def train_user_model(user_id: str, session: Session) -> dict:
     except ImportError as e:
         return {"success": False, "message": f"Missing dependency: {e}"}
 
-    cal = get_or_create(user_id, session)
+    cal = get_calibration(cal_id, user_id, session)
+    if not cal:
+        return {"success": False, "message": "Calibration not found"}
+        
     samples = json.loads(cal.training_data) if cal.training_data else []
 
     if not samples:
@@ -339,7 +397,7 @@ def train_user_model(user_id: str, session: Session) -> dict:
     svm.fit(X_pca, y)
 
     # Persist models
-    model_dir = get_user_model_dir(user_id)
+    model_dir = get_user_model_dir(user_id, cal_id)
     model_dir.mkdir(parents=True, exist_ok=True)
 
     with open(model_dir / "pca_head_pose_model.pkl", "wb") as f:
@@ -360,7 +418,7 @@ def train_user_model(user_id: str, session: Session) -> dict:
     # Generate diagnostic plots (non-fatal if matplotlib unavailable)
     plots = _generate_plots(X, X_pca, y, samples, pca, svm, model_dir)
 
-    logger.info(f"Trained calibration model for user {user_id} with {len(samples)} samples.")
+    logger.info(f"Trained calibration model {cal_id} for user {user_id} with {len(samples)} samples.")
     return {
         "success": True,
         "message": f"Model trained on {len(samples)} samples across {len(counts)} classes.",

@@ -1,8 +1,8 @@
 import logging
 import uuid
 from pathlib import Path
-from typing import List
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from typing import List, Optional
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlmodel import Session
 
@@ -27,6 +27,7 @@ class RawSampleInput(BaseModel):
 
 
 class AddRawSamplesRequest(BaseModel):
+    cal_id: str
     samples: List[RawSampleInput]
 
 
@@ -35,6 +36,15 @@ class CorrectionRequest(BaseModel):
     start_time: float
     end_time: float
     correct_label: str
+    cal_id: Optional[str] = None
+
+
+class RenameRequest(BaseModel):
+    name: str
+
+
+class CreateRequest(BaseModel):
+    name: Optional[str] = None
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -51,13 +61,72 @@ def _get_authorized_job(job_id: str, user: User, session: Session) -> Job:
 
 # ─── Endpoints ───────────────────────────────────────────────────────────────
 
-@router.get("/status")
-async def get_calibration_status(
+@router.get("/list")
+async def list_calibrations(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """Returns the user's calibration status and per-class sample counts."""
-    return calibration_service.get_status(current_user.id, session)
+    """Returns all calibrations for the current user."""
+    return calibration_service.list_calibrations(current_user.id, session)
+
+
+@router.post("/create")
+async def create_calibration(
+    request: CreateRequest,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Creates a new calibration."""
+    return calibration_service.create_calibration(current_user.id, session, name=request.name)
+
+
+@router.patch("/{cal_id}/rename")
+async def rename_calibration(
+    cal_id: str,
+    request: RenameRequest,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Renames a calibration."""
+    cal = calibration_service.rename_calibration(cal_id, current_user.id, request.name, session)
+    if not cal:
+        raise HTTPException(status_code=404, detail="Calibration not found")
+    return cal
+
+
+@router.delete("/{cal_id}")
+async def delete_calibration(
+    cal_id: str,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Deletes a calibration."""
+    success = calibration_service.delete_calibration(cal_id, current_user.id, session)
+    if not success:
+        raise HTTPException(status_code=404, detail="Calibration not found")
+    return {"message": "Calibration deleted"}
+
+
+@router.get("/status")
+async def get_calibration_status(
+    cal_id: Optional[str] = Query(None),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Returns calibration status. If cal_id is provided, returns per-class counts for it.
+    If not, returns whether the user has ANY trained calibration."""
+    if cal_id:
+        status = calibration_service.get_status(cal_id, current_user.id, session)
+        if "error" in status:
+            raise HTTPException(status_code=404, detail=status["error"])
+        return status
+    
+    cals = calibration_service.list_calibrations(current_user.id, session)
+    return {
+        "has_any_calibration": len(cals) > 0,
+        "is_trained": any(c.is_trained for c in cals),
+        "total_calibrations": len(cals)
+    }
 
 
 @router.post("/samples")
@@ -67,10 +136,7 @@ async def add_calibration_samples(
     session: Session = Depends(get_session),
 ):
     """
-    Accepts pre-computed {yaw, pitch, roll, label} samples from the frontend
-    and stores them directly as training data.
-    The frontend sends the exact data points it visualises in the scatter plot,
-    guaranteeing that what the user sees == what gets trained.
+    Accepts pre-computed {yaw, pitch, roll, label} samples and stores them.
     """
     new_samples = [s.model_dump() for s in request.samples]
 
@@ -81,39 +147,46 @@ async def add_calibration_samples(
     if unknown_labels:
         raise HTTPException(status_code=400, detail=f"Unknown label(s): {list(set(unknown_labels))}")
 
-    # Replace (not accumulate) — the user submits exactly what they labeled this session.
-    calibration_service.reset_samples(current_user.id, session)
-    updated_status = calibration_service.add_samples(current_user.id, new_samples, session)
+    # Replace (not accumulate) for this specific calibration session submission
+    calibration_service.reset_samples(request.cal_id, current_user.id, session)
+    updated_status = calibration_service.add_samples(request.cal_id, current_user.id, new_samples, session)
+    
+    if "error" in updated_status:
+        raise HTTPException(status_code=404, detail=updated_status["error"])
+        
     return {"added": len(new_samples), "status": updated_status}
 
 
 @router.get("/samples")
 async def get_calibration_samples(
+    cal_id: str = Query(...),
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """Returns all stored raw training samples for the current user."""
-    samples = calibration_service.get_samples(current_user.id, session)
+    """Returns all stored raw training samples for a calibration."""
+    samples = calibration_service.get_samples(cal_id, current_user.id, session)
     return {"samples": samples}
 
 
 @router.delete("/samples")
 async def reset_calibration_samples(
+    cal_id: str = Query(...),
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """Clears all training samples and marks the model as untrained."""
-    calibration_service.reset_samples(current_user.id, session)
+    """Clears all training samples for a calibration."""
+    calibration_service.reset_samples(cal_id, current_user.id, session)
     return {"message": "Training data cleared."}
 
 
 @router.post("/train")
 async def train_calibration_model(
+    cal_id: str = Query(...),
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """Trains the user's personal PCA+SVM model from saved samples."""
-    result = calibration_service.train_user_model(current_user.id, session)
+    """Trains a specific calibration model."""
+    result = calibration_service.train_user_model(cal_id, current_user.id, session)
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result["message"])
     return result
@@ -121,10 +194,11 @@ async def train_calibration_model(
 
 @router.get("/plots")
 async def get_calibration_plots(
+    cal_id: str = Query(...),
     current_user: User = Depends(get_current_user),
 ):
-    """Returns base64-encoded diagnostic plot PNGs from the last training run."""
-    plots = calibration_service.get_saved_plots_b64(current_user.id)
+    """Returns diagnostic plots for a specific calibration."""
+    plots = calibration_service.get_saved_plots_b64(cal_id, current_user.id)
     if not plots:
         raise HTTPException(status_code=404, detail="No plots found. Train the model first.")
     return {"plots": plots}
@@ -137,10 +211,19 @@ async def submit_correction(
     session: Session = Depends(get_session),
 ):
     """
-    Adds a gaze correction for a time segment and immediately retrains the model.
-    Called from the ResultPage when the user spots a mislabelled segment.
+    Adds a gaze correction and retrains the specified (or first) calibration.
     """
     _get_authorized_job(request.job_id, current_user, session)
+    
+    cal_id = request.cal_id
+    if not cal_id:
+        # Fallback to the first available calibration or create one
+        cals = calibration_service.list_calibrations(current_user.id, session)
+        if not cals:
+            cal = calibration_service.create_calibration(current_user.id, session)
+            cal_id = cal.id
+        else:
+            cal_id = cals[0].id
 
     segments = [{
         "start_time": request.start_time,
@@ -160,14 +243,13 @@ async def submit_correction(
             detail="No face data found in the given time range.",
         )
 
-    calibration_service.add_samples(current_user.id, new_samples, session)
-
-    # Retrain immediately — sklearn SVM on small datasets completes in < 1s
-    result = calibration_service.train_user_model(current_user.id, session)
+    calibration_service.add_samples(cal_id, current_user.id, new_samples, session)
+    result = calibration_service.train_user_model(cal_id, current_user.id, session)
     return {
         "added": len(new_samples),
         "retrained": result["success"],
         "message": result["message"],
+        "cal_id": cal_id
     }
 
 
@@ -175,22 +257,21 @@ async def submit_correction(
 async def reanalyze_with_user_model(
     job_id: str,
     background_tasks: BackgroundTasks,
+    cal_id: str = Query(...),
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     """
-    Creates a lightweight recalibration job: re-classifies stored head poses
-    with the user's PCA+SVM model and replays safety logic. No GPU needed.
-    Returns the new job_id immediately; frontend polls /status/{new_job_id}.
+    Re-analyzes a job with a specific calibration model.
     """
-    if not calibration_service.has_trained_model(current_user.id):
+    if not calibration_service.has_trained_model(current_user.id, cal_id):
         raise HTTPException(
             status_code=400,
-            detail="No trained calibration model found. Please train your model first.",
+            detail="Calibration model not found or not trained.",
         )
 
     job = _get_authorized_job(job_id, current_user, session)
-    models_dir = str(calibration_service.get_user_model_dir(current_user.id))
+    models_dir = str(calibration_service.get_user_model_dir(current_user.id, cal_id))
 
     # Resolve source results.json
     source_results = None
@@ -209,6 +290,7 @@ async def reanalyze_with_user_model(
         name=f"Re-analysis of {job.name or job_id}",
         status="PENDING",
         owner_id=current_user.id,
+        calibration_id=cal_id,
         road_path=job.road_path,
         face_path=job.face_path,
         road_metadata=job.road_metadata,

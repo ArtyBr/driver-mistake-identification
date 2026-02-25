@@ -26,6 +26,8 @@ def init_db():
         for stmt in [
             "ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0",
             "ALTER TABLE users ADD COLUMN created_at DATETIME",
+            "ALTER TABLE user_calibrations ADD COLUMN name TEXT DEFAULT 'New Calibration'",
+            "ALTER TABLE jobs ADD COLUMN calibration_id TEXT",
         ]:
             try:
                 conn.execute(text(stmt))

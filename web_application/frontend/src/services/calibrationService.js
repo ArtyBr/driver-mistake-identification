@@ -1,86 +1,133 @@
 import api from './api';
 
 /**
- * Gets the current user's calibration status and per-class sample counts.
- * @returns {Promise<{has_calibration, is_trained, sample_counts, total_samples}>}
+ * Lists all calibrations for the current user.
+ * @returns {Promise<Array>}
  */
-export const getCalibrationStatus = async () => {
-  const response = await api.get('/calibration/status');
+export const listCalibrations = async () => {
+  const response = await api.get('/calibration/list');
   return response.data;
 };
 
 /**
- * Submits pre-computed {yaw, pitch, roll, label} data points directly.
- * These are exactly the points shown in the live scatter plot on the calibration page,
- * ensuring what the user sees is precisely what gets trained.
- * @param {Array<{yaw: number, pitch: number, roll: number, label: string}>} samples
- * @returns {Promise<{added: number, status: object}>}
+ * Creates a new calibration.
+ * @param {string} [name]
+ * @returns {Promise<Object>}
  */
-export const submitSamples = async (samples) => {
-  const response = await api.post('/calibration/samples', { samples });
+export const createCalibration = async (name) => {
+  const response = await api.post('/calibration/create', { name });
   return response.data;
 };
 
 /**
- * Returns the raw stored training samples [{yaw, pitch, roll, label}] for the current user.
- * @returns {Promise<{samples: Array<{yaw: number, pitch: number, roll: number, label: string}>}>}
+ * Renames a calibration.
+ * @param {string} calId
+ * @param {string} name
+ * @returns {Promise<Object>}
  */
-export const getStoredSamples = async () => {
-  const response = await api.get('/calibration/samples');
+export const renameCalibration = async (calId, name) => {
+  const response = await api.patch(`/calibration/${calId}/rename`, { name });
   return response.data;
 };
 
 /**
- * Clears all calibration training data for the current user.
- * @returns {Promise<{message: string}>}
+ * Deletes a calibration.
+ * @param {string} calId
+ * @returns {Promise<Object>}
  */
-export const resetSamples = async () => {
-  const response = await api.delete('/calibration/samples');
+export const deleteCalibration = async (calId) => {
+  const response = await api.delete(`/calibration/${calId}`);
   return response.data;
 };
 
 /**
- * Triggers training of the user's personal PCA+SVM model from saved samples.
- * @returns {Promise<{success: boolean, message: string}>}
+ * Gets the status of a specific calibration.
+ * @param {string} calId
+ * @returns {Promise<Object>}
  */
-export const trainModel = async () => {
-  const response = await api.post('/calibration/train');
+export const getCalibrationStatus = async (calId) => {
+  const response = await api.get('/calibration/status', { params: { cal_id: calId } });
   return response.data;
 };
 
 /**
- * Submits a gaze correction for a time segment and immediately retrains the model.
+ * Submits samples for a specific calibration.
+ * @param {string} calId
+ * @param {Array} samples
+ * @returns {Promise<Object>}
+ */
+export const submitSamples = async (calId, samples) => {
+  const response = await api.post('/calibration/samples', { cal_id: calId, samples });
+  return response.data;
+};
+
+/**
+ * Gets stored samples for a specific calibration.
+ * @param {string} calId
+ * @returns {Promise<Object>}
+ */
+export const getStoredSamples = async (calId) => {
+  const response = await api.get('/calibration/samples', { params: { cal_id: calId } });
+  return response.data;
+};
+
+/**
+ * Resets samples for a specific calibration.
+ * @param {string} calId
+ * @returns {Promise<Object>}
+ */
+export const resetSamples = async (calId) => {
+  const response = await api.delete('/calibration/samples', { params: { cal_id: calId } });
+  return response.data;
+};
+
+/**
+ * Trains a specific calibration model.
+ * @param {string} calId
+ * @returns {Promise<Object>}
+ */
+export const trainModel = async (calId) => {
+  const response = await api.post('/calibration/train', null, { params: { cal_id: calId } });
+  return response.data;
+};
+
+/**
+ * Fetches diagnostic plots for a specific calibration.
+ * @param {string} calId
+ * @returns {Promise<Object>}
+ */
+export const getCalibrationPlots = async (calId) => {
+  const response = await api.get('/calibration/plots', { params: { cal_id: calId } });
+  return response.data;
+};
+
+/**
+ * Requests re-analysis of a job using a specific calibration model.
+ * @param {string} jobId
+ * @param {string} calId
+ * @returns {Promise<Object>}
+ */
+export const requestReanalysis = async (jobId, calId) => {
+  const response = await api.post(`/calibration/reanalyze/${jobId}`, null, { params: { cal_id: calId } });
+  return response.data;
+};
+
+/**
+ * Submits a gaze correction.
  * @param {string} jobId
  * @param {number} startTime
  * @param {number} endTime
- * @param {string} correctLabel  One of: 'Left Mirror', 'Right Mirror', 'Looking Ahead', 'Rear Mirror'
- * @returns {Promise<{added: number, retrained: boolean, message: string}>}
+ * @param {string} correctLabel
+ * @param {string} [calId]
+ * @returns {Promise<Object>}
  */
-export const submitCorrection = async (jobId, startTime, endTime, correctLabel) => {
+export const submitCorrection = async (jobId, startTime, endTime, correctLabel, calId) => {
   const response = await api.post('/calibration/correct', {
     job_id: jobId,
     start_time: startTime,
     end_time: endTime,
     correct_label: correctLabel,
+    cal_id: calId,
   });
-  return response.data;
-};
-
-/**
- * Fetches the diagnostic plot images (base64 data URLs) from the last training run.
- * @returns {Promise<{plots: {head_pose: string, pca: string, decision_boundary: string}}>}
- */
-export const getCalibrationPlots = async () => {
-  const response = await api.get('/calibration/plots');
-  return response.data;
-};
-
-/**
- * Requests re-analysis of a job using the user's personal calibration model.
- * @param {string} jobId
- * @returns {Promise<{job_id: string}>}
- */
-export const requestReanalysis = async (jobId) => {
-  const response = await api.post(`/calibration/reanalyze/${jobId}`);
   return response.data;
 };

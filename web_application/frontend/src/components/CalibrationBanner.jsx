@@ -36,17 +36,24 @@ const CalibrationBanner = () => {
       style={{ borderLeft: '4px solid var(--accent-info)' }}
       role="alert"
     >
-      <span className="small">
-        <strong className="text-white">Improve accuracy —</strong>
-        {' '}Your camera angle may differ from the default model.
-        Set up your personal gaze model for better results.
-      </span>
+      <div className="d-flex align-items-center">
+        <div className="bg-info-subtle p-2 rounded-circle me-3 d-none d-md-flex" style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
+          <i className="bi bi-info-circle text-info fs-5"></i>
+        </div>
+        <div>
+          <strong className="text-white d-block mb-1">Optimise Analysis Accuracy</strong>
+          <span className="small text-muted">
+            The default gaze model may not account for your specific camera placement. 
+            Create a personal calibration for more precise results.
+          </span>
+        </div>
+      </div>
       <div className="d-flex gap-2 ms-3 flex-shrink-0">
-        <Link to="/calibrate" className="btn btn-cyber btn-sm fw-bold">
-          CALIBRATE
+        <Link to="/calibrate" className="btn btn-cyber-primary btn-sm fw-bold px-3">
+          CALIBRATE NOW
         </Link>
         <button
-          className="btn btn-cyber btn-sm"
+          className="btn btn-outline-cyber btn-sm"
           onClick={handleDismiss}
           aria-label="Dismiss"
         >
