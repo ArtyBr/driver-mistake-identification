@@ -28,7 +28,9 @@ const clearStoredEta = (jobId) => {
       delete all[jobId];
       localStorage.setItem(LS_KEY, JSON.stringify(all));
     }
-  } catch {}
+  } catch {
+    /* Silently ignore storage errors */
+  }
 };
 
 /**

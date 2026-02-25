@@ -33,7 +33,7 @@ export const authService = {
           const me = await meRes.json();
           localStorage.setItem('userIsAdmin', me.is_admin ? 'true' : 'false');
         }
-      } catch (_) {
+      } catch {
         localStorage.setItem('userIsAdmin', 'false');
       }
     }

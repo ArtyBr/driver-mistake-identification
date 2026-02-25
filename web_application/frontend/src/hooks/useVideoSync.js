@@ -26,6 +26,13 @@ export function useVideoSync(offset) {
 
   const driftTimerRef = useRef(null);
 
+  const stopDriftCorrection = useCallback(() => {
+    if (driftTimerRef.current) {
+      clearInterval(driftTimerRef.current);
+      driftTimerRef.current = null;
+    }
+  }, []);
+
   // ------------------------------------------------------------------
   // Seek both videos to positions implied by the current offset
   // ------------------------------------------------------------------
@@ -63,14 +70,7 @@ export function useVideoSync(offset) {
         face.currentTime = expectedFaceTime;
       }
     }, DRIFT_INTERVAL);
-  }, [offset]);
-
-  function stopDriftCorrection() {
-    if (driftTimerRef.current) {
-      clearInterval(driftTimerRef.current);
-      driftTimerRef.current = null;
-    }
-  }
+  }, [offset, stopDriftCorrection]);
 
   // ------------------------------------------------------------------
   // Toggle play / pause
@@ -94,7 +94,7 @@ export function useVideoSync(offset) {
         startDriftCorrection();
       }, SEEK_SETTLE_MS);
     }
-  }, [isPlaying, applyOffset, startDriftCorrection]);
+  }, [isPlaying, applyOffset, startDriftCorrection, stopDriftCorrection]);
 
   // ------------------------------------------------------------------
   // Re-apply offset when it changes while paused
@@ -110,7 +110,7 @@ export function useVideoSync(offset) {
   // ------------------------------------------------------------------
   useEffect(() => {
     return () => stopDriftCorrection();
-  }, []);
+  }, [stopDriftCorrection]);
 
   // ------------------------------------------------------------------
   // Event handlers forwarded to <video> elements
@@ -123,7 +123,7 @@ export function useVideoSync(offset) {
   const onRoadEnded = useCallback(() => {
     stopDriftCorrection();
     setIsPlaying(false);
-  }, []);
+  }, [stopDriftCorrection]);
 
   return {
     roadVideoRef,

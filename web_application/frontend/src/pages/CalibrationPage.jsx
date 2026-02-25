@@ -14,6 +14,8 @@ const GAZE_CLASS_NAMES = ['Looking Ahead', 'Left Mirror', 'Right Mirror', 'Rear 
 const MANDATORY_CLASS_NAMES = ['Looking Ahead', 'Left Mirror', 'Right Mirror'];
 const MIN_SECONDS_PER_CLASS = 0.5;
 const MIN_SAMPLES = 3; // frame-level minimum for Step 3 train button
+// Fixed zoom preset levels (seconds). Each step in/out snaps to the next preset.
+const ZOOM_PRESETS = [1, 5, 15, 30, 60, 120, 300, 600];
 
 /**
  * Draws a gaze-direction line from nose_2d — matches style used in useVideoCanvas.js
@@ -123,14 +125,17 @@ const CalibrationTimeline = ({
 
   // Always-current snapshot — avoids stale closures in global event handlers
   const stateRef = useRef({ rangeStart, rangeEnd, duration, vs, ve, vDur });
-  stateRef.current = { rangeStart, rangeEnd, duration, vs, ve, vDur };
+  
+  useEffect(() => {
+    stateRef.current = { rangeStart, rangeEnd, duration, vs, ve, vDur };
+  }, [rangeStart, rangeEnd, duration, vs, ve, vDur]);
 
-  const getTimeFromEvent = (e) => {
+  const getTimeFromEvent = useCallback((e) => {
     if (!trackRef.current || !stateRef.current.vDur) return 0;
     const rect = trackRef.current.getBoundingClientRect();
     const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     return stateRef.current.vs + frac * stateRef.current.vDur;
-  };
+  }, []);
 
   // Click bare track → snap nearest handle to clicked position
   const handleTrackMouseDown = (e) => {
@@ -159,21 +164,24 @@ const CalibrationTimeline = ({
       const { rangeStart: rs, rangeEnd: re, duration: d } = stateRef.current;
       if (draggingRef.current === 'start') {
         const ns = Math.max(0, Math.min(t, re - 0.2));
-        onRangeChange(ns, re); onSeek?.(ns);
+        onRangeChange(ns, re); 
+        onSeek?.(ns);
       } else if (draggingRef.current === 'end') {
         const ne = Math.max(rs + 0.2, Math.min(t, d));
-        onRangeChange(rs, ne); onSeek?.(ne);
+        onRangeChange(rs, ne); 
+        onSeek?.(ne);
       } else {
         const w = re - rs;
         let s = Math.max(0, Math.min(d - w, t - dragOffsetRef.current));
-        onRangeChange(s, s + w); onSeek?.(s);
+        onRangeChange(s, s + w); 
+        onSeek?.(s);
       }
     };
     const handleUp = () => { draggingRef.current = null; };
     window.addEventListener('mousemove', handleMove);
     window.addEventListener('mouseup', handleUp);
     return () => { window.removeEventListener('mousemove', handleMove); window.removeEventListener('mouseup', handleUp); };
-  }, [onRangeChange]);
+  }, [onRangeChange, onSeek, getTimeFromEvent]);
 
   // Scroll-wheel zoom — centred on cursor (secondary to the zoom buttons)
   useEffect(() => {
@@ -310,7 +318,10 @@ const CalibrationPage = () => {
   const minimapRef = useRef(null);
   const minimapDragRef = useRef(null); // null | { offsetSecs }
   const viewRef = useRef({ viewStart: 0, viewEnd: 0, duration: 0 });
-  viewRef.current = { viewStart, viewEnd, duration: videoDuration };
+
+  useEffect(() => {
+    viewRef.current = { viewStart, viewEnd, duration: videoDuration };
+  }, [viewStart, viewEnd, videoDuration]);
 
   // Frame times from results.json — used for snapping range handles to actual frames
   const frameTimesRef = useRef([]);
@@ -495,9 +506,6 @@ const CalibrationPage = () => {
     setViewEnd(ne);
   }, []);
 
-  // Fixed zoom preset levels (seconds). Each step in/out snaps to the next preset.
-  const ZOOM_PRESETS = [1, 5, 15, 30, 60, 120, 300, 600];
-
   const handleZoomIn = useCallback(() => {
     const { viewStart: vs, viewEnd: ve, duration: d } = viewRef.current;
     if (!d) return;
@@ -580,7 +588,7 @@ const CalibrationPage = () => {
       await resetSamples();
       const status = await getCalibrationStatus();
       setCalStatus(status);
-    } catch (e) {
+    } catch {
       // silently ignore
     } finally {
       setResetting(false);
@@ -727,6 +735,8 @@ const CalibrationPage = () => {
                     setCurrentTime(t);
                     setCurrentFrameInfo(findCurrentFrame(t));
                   }}
+                  playsInline
+                  webkit-playsinline="true"
                 />
                 {/* Nose-direction arrow overlay */}
                 <canvas

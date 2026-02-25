@@ -75,6 +75,8 @@ const VideoDisplay = ({
           onLoadedMetadata={onLoadedMetadata}
           onEnded={onEnded}
           muted
+          playsInline
+          webkit-playsinline="true"
         />
         <canvas
           ref={canvasRef}
@@ -88,6 +90,8 @@ const VideoDisplay = ({
           ref={faceVideoRef}
           src={faceUrl}
           muted
+          playsInline
+          webkit-playsinline="true"
         />
         <canvas
           ref={faceCanvasRef}

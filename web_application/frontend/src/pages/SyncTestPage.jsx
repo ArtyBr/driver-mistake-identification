@@ -320,6 +320,8 @@ export default function SyncTestPage() {
                       onEnded={onRoadEnded}
                       onLoadedMetadata={e => setRoadDuration(e.target.duration)}
                       muted
+                      playsInline
+                      webkit-playsinline="true"
                     />
                   </div>
                   <div className="col-md-6">
@@ -338,6 +340,8 @@ export default function SyncTestPage() {
                       style={{ background: '#000', maxHeight: '280px' }}
                       onLoadedMetadata={e => setFaceDuration(e.target.duration)}
                       muted
+                      playsInline
+                      webkit-playsinline="true"
                     />
                   </div>
                 </div>

@@ -147,6 +147,8 @@ export default function RecordSession() {
             controls 
             className="w-100 h-100 object-fit-contain" 
             style={{ transform: 'scaleX(1)' }} 
+            playsInline
+            webkit-playsinline="true"
           />
         ) : (
           <>
@@ -155,6 +157,7 @@ export default function RecordSession() {
                 autoPlay 
                 muted 
                 playsInline 
+                webkit-playsinline="true"
                 className="w-100 h-100 object-fit-cover" 
             />
             <FaceOverlay 
