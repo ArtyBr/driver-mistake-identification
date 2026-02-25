@@ -10,7 +10,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import AdminDashboard from './pages/AdminDashboard';
 import CalibrationPage from './pages/CalibrationPage';
-import SyncTestPage from './pages/SyncTestPage';
 import './App.css'; // Global styles (VideoPlayer styles etc)
 
 function App() {
@@ -35,7 +34,6 @@ function App() {
             <AdminDashboard />
           </AdminRoute>
         } />
-        <Route path="sync-test" element={<SyncTestPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="signup" element={<SignupPage />} />
         {/* Fallback for unknown routes */}
