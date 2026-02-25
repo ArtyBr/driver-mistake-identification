@@ -2,6 +2,28 @@ import React, { useRef, useEffect } from 'react';
 import './LogViewer.css';
 import { getColorForState, getIconForState } from '../../../constants/videoConstants';
 
+const parseEventFields = (event) => {
+  const msg = event.message || '';
+  const msgLower = msg.toLowerCase();
+  const safety = event.severity !== 'CRITICAL' ? 'Safe' : 'Unsafe';
+
+  let eventType = 'Event';
+  let direction = '—';
+
+  if (event.type === 'safety_alert' || msgLower.includes('lane change')) {
+    eventType = 'Lane Change';
+    if (msgLower.includes('left-to-right')) direction = 'Right';
+    else if (msgLower.includes('right-to-left')) direction = 'Left';
+  } else if (event.type === 'turn_event') {
+    eventType = 'Turn';
+    const afterBefore = msgLower.split('before ')[1] || '';
+    if (afterBefore.includes('left')) direction = 'Left';
+    else if (afterBefore.includes('right')) direction = 'Right';
+  }
+
+  return { safety, eventType, direction };
+};
+
 const LogViewer = ({
   history,
   events,
@@ -98,19 +120,21 @@ const LogViewer = ({
     <div className="logs-row">
       <div className="face-log">
         <h3>Face Direction Log (Transitions)</h3>
+        <div className="log-list-header">
+          <span>Time</span>
+          <span>From</span>
+          <span></span>
+          <span>To</span>
+        </div>
         <div className="log-list" ref={logListRef}>
           {history.map((item, i) => {
             const isCurrent = i === activeLogIndex
             const isHovered = i === hoveredLogIndex
-            
-            // Check if this log corresponds to the hovered face segment
-            const isSegmentHovered = hoveredFaceSegmentIndex !== null && 
+            const isSegmentHovered = hoveredFaceSegmentIndex !== null &&
                                    getLogIndexForSegment(faceSegments[hoveredFaceSegmentIndex]) === i
-
-            // Calculate duration until next transition or current segment end
             const nextItem = history[i + 1]
-            const duration = nextItem ? (nextItem.time - item.time).toFixed(1) : null
-            
+            const endTime = nextItem ? nextItem.time.toFixed(1) : null
+
             return (
               <div
                 key={i}
@@ -120,18 +144,17 @@ const LogViewer = ({
                 onMouseEnter={() => setHoveredLogIndex(i)}
                 onMouseLeave={() => setHoveredLogIndex(null)}
               >
-                <div className="log-time-column">
-                  <span className="log-time">{item.time.toFixed(1)}s</span>
-                  {duration && <span className="log-duration">({duration}s)</span>}
-                </div>
-                <span className="log-state-container">
-                  <span className="log-state-from">
-                    {getIconForState(item.from)} <strong style={{ color: getColorForState(item.from) }}>{item.from}</strong>
-                  </span>
-                  <span className="log-arrow">→</span>
-                  <span className="log-state-to">
-                    {getIconForState(item.to)} <strong style={{ color: getColorForState(item.to) }}>{item.to}</strong>
-                  </span>
+                <span className="log-time">
+                  {endTime ? `${item.time.toFixed(1)} – ${endTime}s` : `${item.time.toFixed(1)}s`}
+                </span>
+                <span className="log-col-from">
+                  {getIconForState(item.from)}{' '}
+                  <strong style={{ color: getColorForState(item.from) }}>{item.from}</strong>
+                </span>
+                <span className="log-arrow">⇒</span>
+                <span className="log-col-to">
+                  {getIconForState(item.to)}{' '}
+                  <strong style={{ color: getColorForState(item.to) }}>{item.to}</strong>
                 </span>
               </div>
             )
@@ -141,11 +164,18 @@ const LogViewer = ({
 
       <div className="events-timeline">
         <h3>Detected Events</h3>
+        <div className="event-list-header">
+          <span>Time</span>
+          <span>Safety</span>
+          <span>Event</span>
+          <span>Direction</span>
+        </div>
         <div className="event-list" ref={eventListRef}>
           {events.map((event, i) => {
             const isTimeActive = currentTime >= (event.timestamp - 5) && currentTime <= event.timestamp
             const isHovered = i === hoveredEventIndex
-            
+            const { safety, eventType, direction } = parseEventFields(event)
+
             return (
               <div
                 key={i}
@@ -155,8 +185,10 @@ const LogViewer = ({
                 onMouseEnter={() => setHoveredEventIndex(i)}
                 onMouseLeave={() => setHoveredEventIndex(null)}
               >
-                <span className="event-time">{event.timestamp.toFixed(1)}s</span>
-                <span className="event-message">{event.message}</span>
+                <span className="event-time">{Math.max(0, event.timestamp - 5).toFixed(1)} – {event.timestamp.toFixed(1)}s</span>
+                <span className={`event-col-safety ${event.severity !== 'CRITICAL' ? 'safe' : 'unsafe'}`}>{safety}</span>
+                <span className="event-col-type">{eventType}</span>
+                <span className="event-col-direction">{direction}</span>
               </div>
             )
           })}

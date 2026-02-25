@@ -3,13 +3,13 @@
  */
 
 export const GAZE_STATES = {
-  'Looking Ahead': { color: '#20c997', icon: '[ ^ ]' },
-  'Left Mirror': { color: '#6f42c1', icon: '[ < ]' },
-  'Right Mirror': { color: '#0ffc10', icon: '[ > ]' },
-  'Rear Mirror': { color: '#ffc107', icon: '[ | ]' },
-  'N/A': { color: '#00d2df', icon: '[ ? ]' },
-  'Unknown': { color: '#ffc107', icon: '[ ? ]' },
-  'Start': { color: '#adb5bd', icon: '[ S ]' }
+  'Looking Ahead': { color: '#20c997', icon: '↑' },
+  'Left Mirror':   { color: '#6f42c1', icon: '←' },
+  'Right Mirror':  { color: '#0ffc10', icon: '→' },
+  'Rear Mirror':   { color: '#ffc107', icon: '↓' },
+  'N/A':           { color: '#00d2df', icon: '·' },
+  'Unknown':       { color: '#ffc107', icon: '·' },
+  'Start':         { color: '#adb5bd', icon: '◦' }
 };
 
 export const EVENT_SEVERITIES = {

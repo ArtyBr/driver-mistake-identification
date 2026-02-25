@@ -55,10 +55,60 @@
   overflow-anchor: none;
 }
 
-/* List Items */
-.event-item, .log-item {
+/* Column header row for event list */
+.event-list-header {
   display: flex;
-  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+  padding: 0 12px 8px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 4px;
+}
+
+.event-list-header span:nth-child(1) { flex: 0 0 120px; white-space: nowrap; }
+.event-list-header span:nth-child(2) { flex: 0 0 62px;  white-space: nowrap; margin-left: auto; }
+.event-list-header span:nth-child(3) { flex: 0 0 110px; white-space: nowrap; }
+.event-list-header span:nth-child(4) { flex: 0 0 70px;  white-space: nowrap; }
+
+/* List Items */
+.event-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-left: 3px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.log-list-header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 0 12px 8px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 4px;
+}
+
+.log-list-header span:nth-child(1) { flex: 0 0 120px; white-space: nowrap; }
+.log-list-header span:nth-child(2) { flex: 0 0 140px; white-space: nowrap; margin-left: auto; text-align: left; }
+.log-list-header span:nth-child(3) { flex: 0 0 16px; }
+.log-list-header span:nth-child(4) { flex: 0 0 140px; white-space: nowrap; text-align: right; }
+
+.log-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   padding: 8px 12px;
   background: rgba(255, 255, 255, 0.02);
   border-left: 3px solid transparent;
@@ -89,29 +139,22 @@
 
 .event-time, .log-time {
   color: var(--text-muted);
-  min-width: 60px;
   font-family: var(--font-mono);
   font-size: 0.9em;
 }
 
-.log-time-column {
-  display: flex;
-  flex-direction: column;
-  min-width: 60px;
-}
+.event-time { flex: 0 0 120px; white-space: nowrap; }
+.log-time   { flex: 0 0 120px; white-space: nowrap; }
 
-.log-duration {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  opacity: 0.7;
-}
+.event-col-safety    { flex: 0 0 62px;  white-space: nowrap; margin-left: auto; font-weight: 600; }
+.event-col-type      { flex: 0 0 110px; white-space: nowrap; color: var(--text-main); }
+.event-col-direction { flex: 0 0 70px;  white-space: nowrap; color: var(--text-muted); }
 
-.log-state-container {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  margin-left: 15%;
-}
+.event-col-safety.safe   { color: var(--accent-success); }
+.event-col-safety.unsafe { color: var(--accent-danger); }
+
+.log-col-from { flex: 0 0 140px; white-space: nowrap; margin-left: auto; text-align: left; }
+.log-col-to   { flex: 0 0 140px; white-space: nowrap; text-align: right; }
 
 @media (max-width: 576px) {
   .log-state-container {
@@ -121,23 +164,46 @@
     font-size: 0.75rem;
     line-height: 1.2;
   }
-  .event-item, .log-item {
+  .event-item {
+    gap: 8px;
     padding: 4px 6px;
   }
+  .event-list-header {
+    gap: 8px;
+    padding: 0 6px 6px;
+  }
+  .event-time,
+  .event-list-header span:nth-child(1) { flex-basis: 96px; }
+  .event-col-safety,
+  .event-list-header span:nth-child(2) { flex-basis: 52px; }
+  .event-col-type,
+  .event-list-header span:nth-child(3) { flex-basis: 88px; }
+  .event-col-direction,
+  .event-list-header span:nth-child(4) { flex-basis: 56px; }
+  .log-item {
+    gap: 8px;
+    padding: 4px 6px;
+  }
+  .log-list-header {
+    gap: 8px;
+    padding: 0 6px 6px;
+  }
   .event-time, .log-time {
-    min-width: 40px;
     font-size: 0.7em;
   }
-  .log-arrow {
-    font-size: 0.8em;
-    margin: 0 4px;
-  }
+  .log-time,
+  .log-list-header span:nth-child(1) { flex-basis: 96px; }
+  .log-col-from,
+  .log-list-header span:nth-child(2) { flex-basis: 110px; }
+  .log-col-to,
+  .log-list-header span:nth-child(4) { flex-basis: 110px; }
   .events-timeline h3, .face-log h3 {
     font-size: 0.8rem;
     margin-bottom: 8px;
     padding-bottom: 5px;
   }
-  .log-state-container strong {
+  .log-col-from strong,
+  .log-col-to strong {
     font-weight: 500;
   }
   .events-timeline, .face-log {
@@ -145,19 +211,7 @@
   }
 }
 
-.log-state-from {
-  flex: 0 0 40%;
-  text-align: left;
-}
-
 .log-arrow {
-  flex: 1;
-  text-align: center;
+  flex: 0 0 auto;
   color: var(--text-muted);
-  font-size: 1.2em;
-}
-
-.log-state-to {
-  flex: 0 0 35%;
-  text-align: right;
 }
