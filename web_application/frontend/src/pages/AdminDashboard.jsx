@@ -148,7 +148,7 @@ function UserRow({ user, jobs }) {
               <AnalysisListItem
                 analysis={job}
                 events={job.events ?? null}
-                onClick={() => navigate(`/results/${job.id}`)}
+                onClick={() => navigate(`/view/${job.id}`)}
               />
             </div>
           ))}

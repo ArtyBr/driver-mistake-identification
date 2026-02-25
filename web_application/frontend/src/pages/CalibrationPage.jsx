@@ -611,7 +611,7 @@ const CalibrationPage = () => {
   const handleReanalyze = async () => {
     try {
       const { job_id } = await requestReanalysis(selectedJobId);
-      navigate(`/status/${job_id}`);
+      navigate(`/job/${job_id}`);
     } catch (e) {
       alert(e.response?.data?.detail || 'Re-analysis request failed.');
     }

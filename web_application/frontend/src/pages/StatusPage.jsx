@@ -19,7 +19,7 @@ const StatusPage = () => {
 
   useEffect(() => {
     if (status === 'COMPLETED') {
-      navigate(`/results/${jobId}`, { state: location.state });
+      navigate(`/view/${jobId}`, { state: location.state, replace: true });
     }
   }, [status, jobId, navigate, location.state]);
 
@@ -69,7 +69,7 @@ const StatusPage = () => {
                 <p className="small mb-0">{error}</p>
                 <button 
                     className="btn btn-cyber btn-sm mt-3"
-                    onClick={() => navigate(`/results/${jobId}`, { state: location.state })}
+                    onClick={() => navigate(`/view/${jobId}`, { state: location.state, replace: true })}
                 >
                     Try Viewing Results Anyway
                 </button>

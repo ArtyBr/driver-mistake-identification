@@ -6,7 +6,7 @@ const UploadPage = () => {
   const navigate = useNavigate();
 
   const handleUploadSuccess = (jobId, jobData, localFiles) => {
-    navigate(`/status/${jobId}`, { state: localFiles });
+    navigate(`/job/${jobId}`, { state: localFiles });
   };
 
   return (

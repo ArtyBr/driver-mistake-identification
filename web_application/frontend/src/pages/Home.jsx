@@ -20,7 +20,7 @@ const Home = () => {
     setError(null);
     try {
       const data = await runTestAnalysis(analysisId);
-      navigate(`/status/${data.job_id}`);
+      navigate(`/job/${data.job_id}`);
     } catch (err) {
       console.error("Failed to load demo:", err);
       setError("Failed to load demo analysis.");
@@ -31,9 +31,9 @@ const Home = () => {
 
   const handleItemClick = (analysis) => {
     if (analysis.status === 'COMPLETED' || analysis.status === 'FAILED') {
-      navigate(`/results/${analysis.id}`);
+      navigate(`/view/${analysis.id}`);
     } else {
-      navigate(`/status/${analysis.id}`);
+      navigate(`/job/${analysis.id}`);
     }
   };
 

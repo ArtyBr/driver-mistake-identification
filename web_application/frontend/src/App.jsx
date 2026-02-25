@@ -28,9 +28,9 @@ function App() {
             <CalibrationPage />
           </ProtectedRoute>
         } />
-        <Route path="status/:jobId" element={<StatusPage />} />
-        <Route path="results/:jobId" element={<ResultPage />} />
-        <Route path="admin" element={
+        <Route path="job/:jobId" element={<StatusPage />} />
+        <Route path="view/:jobId" element={<ResultPage />} />
+        <Route path="dashboard" element={
           <AdminRoute>
             <AdminDashboard />
           </AdminRoute>

@@ -30,7 +30,7 @@ const MainLayout = () => {
                 )}
                 {user?.is_admin && (
                   <li className="nav-item">
-                    <Link className="nav-link" to="/admin">ADMIN</Link>
+                    <Link className="nav-link" to="/dashboard">ADMIN</Link>
                   </li>
                 )}
                 <li className="nav-item">
