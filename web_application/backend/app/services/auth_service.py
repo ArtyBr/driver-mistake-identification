@@ -6,7 +6,10 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session, select
 
-from ..core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from ..core.config import (
+    SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES,
+    EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES
+)
 from ..db.database import get_session
 from ..models.user import User, TokenData
 
@@ -29,6 +32,22 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+def create_verification_token(email: str):
+    expire = datetime.utcnow() + timedelta(minutes=EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES)
+    to_encode = {"sub": email, "exp": expire, "purpose": "email_verification"}
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def verify_email_token(token: str) -> Optional[str]:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("purpose") != "email_verification":
+            return None
+        email: str = payload.get("sub")
+        return email
+    except JWTError:
+        return None
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme), 
@@ -72,3 +91,11 @@ async def get_optional_current_user(
         return await get_current_user(token, session)
     except HTTPException:
         return None
+
+async def get_verified_user(current_user: User = Depends(get_current_user)):
+    if not current_user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email not verified. Please verify your email to access this resource.",
+        )
+    return current_user

@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import CalibrationBanner from '../components/CalibrationBanner';
+import VerificationBanner from '../components/VerificationBanner';
 
 const MainLayout = () => {
   const { user, logout } = useAuth();
@@ -62,6 +63,7 @@ const MainLayout = () => {
 
       <main className="flex-grow-1 py-4">
         <div className="container app-container">
+          <VerificationBanner />
           <CalibrationBanner />
           <Outlet />
         </div>

@@ -6,7 +6,9 @@ import StatusPage from './pages/StatusPage';
 import ResultPage from './pages/ResultPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import VerifiedRoute from './components/VerifiedRoute';
 import AdminRoute from './components/AdminRoute';
 import AdminDashboard from './pages/AdminDashboard';
 import CalibrationPage from './pages/CalibrationPage';
@@ -18,14 +20,14 @@ function App() {
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Home />} />
         <Route path="analyze" element={
-          <ProtectedRoute>
+          <VerifiedRoute>
             <UploadPage />
-          </ProtectedRoute>
+          </VerifiedRoute>
         } />
         <Route path="calibrate" element={
-          <ProtectedRoute>
+          <VerifiedRoute>
             <CalibrationPage />
-          </ProtectedRoute>
+          </VerifiedRoute>
         } />
         <Route path="job/:jobId" element={<StatusPage />} />
         <Route path="view/:jobId" element={<ResultPage />} />
@@ -36,6 +38,7 @@ function App() {
         } />
         <Route path="login" element={<LoginPage />} />
         <Route path="signup" element={<SignupPage />} />
+        <Route path="verify-email" element={<VerifyEmailPage />} />
         {/* Fallback for unknown routes */}
         <Route path="*" element={<Home />} />
       </Route>

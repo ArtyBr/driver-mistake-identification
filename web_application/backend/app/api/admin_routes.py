@@ -43,6 +43,7 @@ class AdminUserUpdate(BaseModel):
     email: Optional[str] = None
     password: Optional[str] = None
     is_admin: Optional[bool] = None
+    is_verified: Optional[bool] = None
 
 class AdminJobUpdate(BaseModel):
     name: Optional[str] = None
@@ -97,6 +98,7 @@ async def admin_list_users(
             "id": u.id,
             "email": u.email,
             "is_admin": u.is_admin,
+            "is_verified": u.is_verified,
             "job_count": job_count,
             "has_calibration": cal is not None,
             "calibration_trained": cal.is_trained if cal else False,
@@ -159,6 +161,8 @@ async def admin_update_user(
         user.hashed_password = get_password_hash(data.password)
     if data.is_admin is not None:
         user.is_admin = data.is_admin
+    if data.is_verified is not None:
+        user.is_verified = data.is_verified
     session.add(user)
     session.commit()
     session.refresh(user)
@@ -182,6 +186,11 @@ async def admin_delete_user(
         jobs = session.exec(select(Job).where(Job.owner_id == user_id)).all()
         large_base = Path("/dcs/large/safedrive_cs310_2526/uploads/")
         for job in jobs:
+            # Delete associated driving sessions
+            driving_sessions = session.exec(select(DrivingSession).where(DrivingSession.job_id == job.id)).all()
+            for ds in driving_sessions:
+                session.delete(ds)
+                
             for base in [large_base, UPLOAD_DIR]:
                 job_dir = base / job.id
                 if job_dir.exists():
@@ -281,6 +290,11 @@ async def admin_delete_job(
     job = session.get(Job, job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+
+    # Delete associated driving sessions
+    driving_sessions = session.exec(select(DrivingSession).where(DrivingSession.job_id == job_id)).all()
+    for ds in driving_sessions:
+        session.delete(ds)
 
     large_base = Path("/dcs/large/safedrive_cs310_2526/uploads/")
     for base in [large_base, UPLOAD_DIR]:

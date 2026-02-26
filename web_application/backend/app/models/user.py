@@ -11,6 +11,7 @@ class User(SQLModel, table=True):
     email: str = Field(unique=True, index=True)
     hashed_password: str
     is_admin: bool = Field(default=False)
+    is_verified: bool = Field(default=False)
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
 
 class UserCreate(BaseModel):
@@ -21,6 +22,7 @@ class UserResponse(BaseModel):
     id: str
     email: str
     is_admin: bool = False
+    is_verified: bool = False
 
 class Token(BaseModel):
     access_token: str

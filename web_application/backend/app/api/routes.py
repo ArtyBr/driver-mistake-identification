@@ -10,7 +10,7 @@ from sqlmodel import Session
 from ..core.config import UPLOAD_DIR
 from ..db.database import get_session
 from ..services.job_service import JobService
-from ..services.auth_service import get_current_user, get_optional_current_user
+from ..services.auth_service import get_current_user, get_optional_current_user, get_verified_user
 from ..models.schemas import JobCreateResponse, JobStatusResponse, AnalysisListResponse, JobUpdate
 from ..models.job import Job
 from ..models.user import User
@@ -33,7 +33,7 @@ async def upload_videos(
     keep_videos: bool = Form(False),
     name: Optional[str] = Form(None),
     calibration_id: Optional[str] = Form(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_verified_user),
     service: JobService = Depends(get_job_service)
 ):
     """
@@ -61,13 +61,18 @@ async def list_analyses(
     Authenticated users see their own + demos.
     Unauthenticated users see only demos.
     """
-    analyses = service.list_analyses(user_id=current_user.id if current_user else None)
+    # If user is logged in but not verified, they should only see demos
+    effective_user_id = None
+    if current_user and current_user.is_verified:
+        effective_user_id = current_user.id
+        
+    analyses = service.list_analyses(user_id=effective_user_id)
     return {"analyses": analyses}
 
 @router.delete("/job/{job_id}")
 async def delete_job(
     job_id: str,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_verified_user),
     service: JobService = Depends(get_job_service),
 ):
     """Deletes a job and its files from disk. Only the owner can delete their jobs."""

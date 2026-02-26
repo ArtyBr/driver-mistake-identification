@@ -13,11 +13,19 @@ const LoginPage = () => {
 
   const from = location.state?.from?.pathname || "/";
 
+  // Real-time validation
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
 
+    if (!isEmailValid) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
+    setIsLoading(true);
     try {
       await login(email, password);
       navigate(from, { replace: true });
@@ -46,7 +54,12 @@ const LoginPage = () => {
             
             <form onSubmit={handleSubmit}>
               <div className="mb-3">
-                <label htmlFor="email" className="form-label text-muted">Email Address</label>
+                <label htmlFor="email" className="form-label text-muted d-flex justify-content-between">
+                  Email Address
+                  {email && !isEmailValid && (
+                    <span className="small text-danger">Invalid format</span>
+                  )}
+                </label>
                 <div className="input-group">
                   <span className="input-group-text">
                     <i className="bi bi-envelope"></i>
@@ -54,7 +67,7 @@ const LoginPage = () => {
                   <input
                     id="email"
                     type="email"
-                    className="form-control"
+                    className={`form-control ${email && !isEmailValid ? 'border-danger' : ''}`}
                     placeholder="name@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -84,7 +97,7 @@ const LoginPage = () => {
               <button 
                 type="submit" 
                 className="btn btn-cyber-primary w-100 py-2 fw-bold" 
-                disabled={isLoading}
+                disabled={isLoading || (email && !isEmailValid)}
               >
                 {isLoading ? (
                   <>

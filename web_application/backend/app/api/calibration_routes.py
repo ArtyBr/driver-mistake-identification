@@ -9,7 +9,7 @@ from sqlmodel import Session
 from ..db.database import get_session
 from ..models.user import User
 from ..models.job import Job
-from ..services.auth_service import get_current_user
+from ..services.auth_service import get_current_user, get_verified_user
 from ..services import calibration_service
 from ..core.config import UPLOAD_DIR
 
@@ -63,7 +63,7 @@ def _get_authorized_job(job_id: str, user: User, session: Session) -> Job:
 
 @router.get("/list")
 async def list_calibrations(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_verified_user),
     session: Session = Depends(get_session),
 ):
     """Returns all calibrations for the current user."""
@@ -73,7 +73,7 @@ async def list_calibrations(
 @router.post("/create")
 async def create_calibration(
     request: CreateRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_verified_user),
     session: Session = Depends(get_session),
 ):
     """Creates a new calibration."""
@@ -84,7 +84,7 @@ async def create_calibration(
 async def rename_calibration(
     cal_id: str,
     request: RenameRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_verified_user),
     session: Session = Depends(get_session),
 ):
     """Renames a calibration."""
@@ -97,7 +97,7 @@ async def rename_calibration(
 @router.delete("/{cal_id}")
 async def delete_calibration(
     cal_id: str,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_verified_user),
     session: Session = Depends(get_session),
 ):
     """Deletes a calibration."""
@@ -110,7 +110,7 @@ async def delete_calibration(
 @router.get("/status")
 async def get_calibration_status(
     cal_id: Optional[str] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_verified_user),
     session: Session = Depends(get_session),
 ):
     """Returns calibration status. If cal_id is provided, returns per-class counts for it.
@@ -132,7 +132,7 @@ async def get_calibration_status(
 @router.post("/samples")
 async def add_calibration_samples(
     request: AddRawSamplesRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_verified_user),
     session: Session = Depends(get_session),
 ):
     """
@@ -160,7 +160,7 @@ async def add_calibration_samples(
 @router.get("/samples")
 async def get_calibration_samples(
     cal_id: str = Query(...),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_verified_user),
     session: Session = Depends(get_session),
 ):
     """Returns all stored raw training samples for a calibration."""
@@ -171,7 +171,7 @@ async def get_calibration_samples(
 @router.delete("/samples")
 async def reset_calibration_samples(
     cal_id: str = Query(...),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_verified_user),
     session: Session = Depends(get_session),
 ):
     """Clears all training samples for a calibration."""
@@ -182,7 +182,7 @@ async def reset_calibration_samples(
 @router.post("/train")
 async def train_calibration_model(
     cal_id: str = Query(...),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_verified_user),
     session: Session = Depends(get_session),
 ):
     """Trains a specific calibration model."""
@@ -195,7 +195,7 @@ async def train_calibration_model(
 @router.get("/plots")
 async def get_calibration_plots(
     cal_id: str = Query(...),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_verified_user),
 ):
     """Returns diagnostic plots for a specific calibration."""
     plots = calibration_service.get_saved_plots_b64(cal_id, current_user.id)
@@ -207,7 +207,7 @@ async def get_calibration_plots(
 @router.post("/correct")
 async def submit_correction(
     request: CorrectionRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_verified_user),
     session: Session = Depends(get_session),
 ):
     """
@@ -266,7 +266,7 @@ async def reanalyze_with_user_model(
     job_id: str,
     background_tasks: BackgroundTasks,
     cal_id: str = Query(...),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_verified_user),
     session: Session = Depends(get_session),
 ):
     """

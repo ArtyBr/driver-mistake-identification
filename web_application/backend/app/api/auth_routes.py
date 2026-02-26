@@ -9,9 +9,12 @@ from ..services.auth_service import (
     get_password_hash,
     verify_password,
     create_access_token,
+    create_verification_token,
+    verify_email_token,
     get_current_user,
     ACCESS_TOKEN_EXPIRE_MINUTES,
 )
+from ..services.mail_service import mail_service
 
 router = APIRouter()
 
@@ -28,10 +31,11 @@ async def signup(user_in: UserCreate, session: Session = Depends(get_session)):
     
     # Create new user
     hashed_pw = get_password_hash(user_in.password)
-    new_user = User(email=user_in.email, hashed_password=hashed_pw)
+    new_user = User(email=user_in.email, hashed_password=hashed_pw, is_verified=False)
     session.add(new_user)
     session.commit()
     session.refresh(new_user)
+    
     return new_user
 
 @router.post("/login", response_model=Token)
@@ -46,6 +50,13 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Sessi
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Check if verified
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account pending approval. Please contact an administrator to verify your account.",
         )
     
     # Generate token

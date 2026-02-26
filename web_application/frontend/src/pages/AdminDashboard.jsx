@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminUsers, getAdminUserJobs } from '../services/api';
+import { getAdminUsers, getAdminUserJobs, updateAdminUser, deleteAdminUser, deleteAdminJob } from '../services/api';
 import AnalysisListItem from '../components/common/AnalysisListItem';
 
 // ---------------------------------------------------------------------------
@@ -77,9 +77,55 @@ function AggregateChips({ jobs }) {
 // Per-user accordion row
 // ---------------------------------------------------------------------------
 
-function UserRow({ user, jobs }) {
+function UserRow({ user, jobs, onVerify, onDelete, onJobAction }) {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletingJobId, setDeletingJobId] = useState(null);
+
+  const handleVerify = async (e) => {
+    e.stopPropagation(); // Don't expand accordion
+    if (window.confirm(`Verify user ${user.email}?`)) {
+      setIsVerifying(true);
+      try {
+        await updateAdminUser(user.id, { is_verified: true });
+        if (onVerify) onVerify();
+      } catch (err) {
+        alert("Failed to verify user: " + err.message);
+      } finally {
+        setIsVerifying(false);
+      }
+    }
+  };
+
+  const handleDelete = async (e) => {
+    e.stopPropagation();
+    if (window.confirm(`PERMANENTLY DELETE user ${user.email} and ALL their data (videos, results, sessions)? This cannot be undone.`)) {
+      setIsDeleting(true);
+      try {
+        await deleteAdminUser(user.id, true); // true = delete jobs/data
+        if (onDelete) onDelete();
+      } catch (err) {
+        alert("Failed to delete user: " + err.message);
+        setIsDeleting(false);
+      }
+    }
+  };
+
+  const handleDeleteJob = async (jobId) => {
+    if (window.confirm("PERMANENTLY DELETE this video and all associated data? This cannot be undone.")) {
+      setDeletingJobId(jobId);
+      try {
+        await deleteAdminJob(jobId);
+        if (onJobAction) onJobAction(user.id);
+      } catch (err) {
+        alert("Failed to delete video: " + err.message);
+      } finally {
+        setDeletingJobId(null);
+      }
+    }
+  };
 
   return (
     <div
@@ -112,6 +158,11 @@ function UserRow({ user, jobs }) {
           {user.is_admin && (
             <span className="badge bg-primary" style={{ fontSize: '0.7rem' }}>Admin</span>
           )}
+          {user.is_verified ? (
+            <span className="badge bg-success" style={{ fontSize: '0.7rem' }}>Verified</span>
+          ) : (
+            <span className="badge bg-warning text-dark" style={{ fontSize: '0.7rem' }}>Unverified</span>
+          )}
           <span style={{
             fontSize: '0.72rem', color: 'var(--text-muted)',
             border: '1px solid var(--border-color)', borderRadius: 4, padding: '1px 7px',
@@ -129,6 +180,34 @@ function UserRow({ user, jobs }) {
 
         {/* Aggregate event chips */}
         <AggregateChips jobs={jobs} />
+
+        {/* User Actions 3-dot Menu */}
+        <div className="dropdown ms-2">
+          <button 
+            className="btn btn-link text-white p-0 opacity-75" 
+            type="button" 
+            data-bs-toggle="dropdown" 
+            aria-expanded="false"
+            onClick={(e) => e.stopPropagation()}
+            style={{ fontSize: '1.2rem', lineHeight: 1 }}
+          >
+            <i className="bi bi-three-dots-vertical"></i>
+          </button>
+          <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)', zIndex: 1050 }}>
+            {!user.is_verified && (
+              <li>
+                <button className="dropdown-item py-2" onClick={handleVerify} disabled={isVerifying || isDeleting}>
+                  <i className="bi bi-check-circle me-2 text-success"></i> Verify User
+                </button>
+              </li>
+            )}
+            <li>
+              <button className="dropdown-item py-2 text-white" onClick={handleDelete} disabled={isDeleting || isVerifying}>
+                <i className="bi bi-trash me-2"></i> Delete Account
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
 
       {/* Expanded body */}
@@ -144,12 +223,39 @@ function UserRow({ user, jobs }) {
             <p className="text-muted small mt-2 mb-0">No analyses yet.</p>
           )}
           {jobs && jobs.map(job => (
-            <div key={job.id} className="mt-2">
-              <AnalysisListItem
-                analysis={job}
-                events={job.events ?? null}
-                onClick={() => navigate(`/view/${job.id}`)}
-              />
+            <div key={job.id} className="mt-2 d-flex align-items-center gap-2">
+              <div className="flex-grow-1">
+                <AnalysisListItem
+                  analysis={job}
+                  events={job.events ?? null}
+                  onClick={() => navigate(`/view/${job.id}`)}
+                />
+              </div>
+              
+              {/* Video Actions 3-dot Menu */}
+              <div className="dropdown">
+                <button 
+                  className="btn btn-link text-white p-1 opacity-75" 
+                  type="button" 
+                  data-bs-toggle="dropdown" 
+                  aria-expanded="false"
+                  style={{ fontSize: '1rem', lineHeight: 1 }}
+                >
+                  <i className="bi bi-three-dots-vertical"></i>
+                </button>
+                <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                  <li>
+                    <button 
+                      className="dropdown-item py-2 text-white" 
+                      onClick={() => handleDeleteJob(job.id)}
+                      disabled={deletingJobId === job.id}
+                    >
+                      <i className="bi bi-trash me-2"></i> 
+                      {deletingJobId === job.id ? 'Deleting...' : 'Delete Video'}
+                    </button>
+                  </li>
+                </ul>
+              </div>
             </div>
           ))}
         </div>
@@ -168,7 +274,7 @@ export default function AdminDashboard() {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
+  const loadData = () => {
     getAdminUsers()
       .then((loadedUsers) => {
         setUsers(loadedUsers);
@@ -186,6 +292,20 @@ export default function AdminDashboard() {
         });
       })
       .catch(e => setError(e.message));
+  };
+
+  const refreshUserJobs = (userId) => {
+    getAdminUserJobs(userId)
+      .then(jobs => {
+        setJobsByUser(prev => ({
+          ...prev,
+          [userId]: jobs
+        }));
+      });
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   const filtered = useMemo(() => {
@@ -224,6 +344,9 @@ export default function AdminDashboard() {
           key={user.id}
           user={user}
           jobs={jobsByUser[user.id] ?? null}
+          onVerify={loadData}
+          onDelete={loadData}
+          onJobAction={refreshUserJobs}
         />
       ))}
     </div>

@@ -25,6 +25,7 @@ def init_db():
     with engine.connect() as conn:
         for stmt in [
             "ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT 0",
             "ALTER TABLE users ADD COLUMN created_at DATETIME",
             "ALTER TABLE user_calibrations ADD COLUMN name TEXT DEFAULT 'New Calibration'",
             "ALTER TABLE jobs ADD COLUMN calibration_id TEXT",
@@ -34,6 +35,15 @@ def init_db():
                 conn.commit()
             except OperationalError:
                 pass  # Column already exists
+
+        # Mark all existing users as verified if we just added the column
+        # This only runs once effectively if is_verified was just added
+        # Or we can just ensure all currently signed up users are verified as requested.
+        try:
+            conn.execute(text("UPDATE users SET is_verified = 1"))
+            conn.commit()
+        except Exception:
+            pass
 
     # Seed admin account
     admin_email = "admin@admin.com"

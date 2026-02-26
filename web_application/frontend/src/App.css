@@ -89,7 +89,6 @@ footer {
   color: var(--text-main);
   border-radius: 6px;
   position: relative;
-  overflow: hidden;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
