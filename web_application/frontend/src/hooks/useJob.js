@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { uploadVideos, getJobStatus, runTestAnalysis } from '../services/api';
+import { uploadVideos, getJobStatus } from '../services/api';
 
 export const useJobUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
@@ -35,22 +35,7 @@ export const useJobUpload = () => {
     }
   }, []);
 
-  const loadAnalysis = useCallback(async (analysisId) => {
-      setIsUploading(true);
-      setError(null);
-      try {
-          const data = await runTestAnalysis(analysisId);
-          await getJobStatus(data.job_id);
-          return data.job_id;
-      } catch(err) {
-          setError(err.response?.data?.detail || "Failed to load analysis.");
-          throw err;
-      } finally {
-          setIsUploading(false);
-      }
-  }, []);
-
-  return { upload, loadAnalysis, progress, isUploading, error };
+  return { upload, progress, isUploading, error };
 };
 
 export const useJobStatus = (jobId) => {

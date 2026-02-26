@@ -406,7 +406,7 @@ class JobService:
             status="COMPLETED",
             progress=100,
             owner_id=owner_id,
-            is_demo=is_demo,
+            is_demo=False, # Copies of demos are NOT demos themselves
             road_path=road_path_val,
             face_path=face_path_val
         )

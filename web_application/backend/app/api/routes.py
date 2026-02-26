@@ -137,9 +137,10 @@ async def get_status(
     if not job:
         return {"status": "NOT_FOUND"}
     
-    # Check authorization
+    # Check authorization: owner, admin, or demo
     is_owner = current_user and job.owner_id == current_user.id
-    if not job.is_demo and not is_owner:
+    is_admin = current_user and current_user.is_admin
+    if not job.is_demo and not is_owner and not is_admin:
          raise HTTPException(status_code=403, detail="Not authorized to view this job")
 
     # Calculate relative URLs for static serving
@@ -226,9 +227,10 @@ async def get_results(
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
-    # Check authorization
+    # Check authorization: owner, admin, or demo
     is_owner = current_user and job.owner_id == current_user.id
-    if not job.is_demo and not is_owner:
+    is_admin = current_user and current_user.is_admin
+    if not job.is_demo and not is_owner and not is_admin:
          raise HTTPException(status_code=403, detail="Not authorized to view these results")
 
     results = service.load_results(job_id)
@@ -253,7 +255,8 @@ async def get_job_events(
     if not job or job.status != "COMPLETED":
         raise HTTPException(status_code=404, detail="Job not found or not completed")
     is_owner = current_user and job.owner_id == current_user.id
-    if not job.is_demo and not is_owner:
+    is_admin = current_user and current_user.is_admin
+    if not job.is_demo and not is_owner and not is_admin:
         raise HTTPException(status_code=403, detail="Not authorized")
     large_base = Path("/dcs/large/safedrive_cs310_2526/uploads/")
     for base in [large_base, UPLOAD_DIR]:

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminUsers, getAdminUserJobs, updateAdminUser, deleteAdminUser, deleteAdminJob } from '../services/api';
+import { getAdminUsers, getAdminUserJobs, getAdminJobs, updateAdminUser, updateAdminJob, deleteAdminUser, deleteAdminJob } from '../services/api';
 import AnalysisListItem from '../components/common/AnalysisListItem';
 
 // ---------------------------------------------------------------------------
@@ -74,10 +74,161 @@ function AggregateChips({ jobs }) {
 }
 
 // ---------------------------------------------------------------------------
+// Demo Videos section
+// ---------------------------------------------------------------------------
+
+function DemoSection({ demoKey, onRefresh }) {
+  const navigate = useNavigate();
+  const [expanded, setExpanded] = useState(false);
+  const [demoJobs, setDemoJobs] = useState(null);
+  const [removingId, setRemovingId] = useState(null);
+
+  useEffect(() => {
+    getAdminJobs({ is_demo: true })
+      .then(jobs => setDemoJobs(jobs))
+      .catch(() => setDemoJobs([]));
+  }, [demoKey]);
+
+  const handleRemoveDemo = async (jobId) => {
+    if (window.confirm("Remove this video from the demo list?")) {
+      setRemovingId(jobId);
+      try {
+        await updateAdminJob(jobId, { is_demo: false });
+        setDemoJobs(prev => prev.filter(j => j.id !== jobId));
+        if (onRefresh) onRefresh();
+      } catch (err) {
+        alert("Failed to update job: " + err.message);
+      } finally {
+        setRemovingId(null);
+      }
+    }
+  };
+
+  const handleRenameDemo = async (jobId, currentName) => {
+    const newName = prompt("Enter new name for this demo video:", currentName || "");
+    if (newName && newName.trim() !== "" && newName !== currentName) {
+      try {
+        await updateAdminJob(jobId, { name: newName });
+        // Update local state to show new name immediately
+        setDemoJobs(prev => prev.map(j => j.id === jobId ? { ...j, name: newName } : j));
+        if (onRefresh) onRefresh();
+      } catch (err) {
+        alert("Failed to rename video: " + err.message);
+      }
+    }
+  };
+
+  const count = demoJobs ? demoJobs.length : null;
+
+  return (
+    <div
+      className="card card-cyber mb-3"
+      style={{
+        borderLeft: expanded ? '4px solid var(--highlight-cyan)' : '4px solid transparent',
+        transition: 'border-left-color 0.15s',
+      }}
+    >
+      {/* Header */}
+      <div
+        className="d-flex align-items-center gap-2 p-3"
+        onClick={() => setExpanded(e => !e)}
+        style={{ cursor: 'pointer', userSelect: 'none' }}
+      >
+        <span style={{
+          display: 'inline-block',
+          fontSize: '0.8rem',
+          transition: 'transform 0.2s',
+          transform: expanded ? 'rotate(90deg)' : 'none',
+          color: 'var(--text-muted)',
+          flexShrink: 0,
+          width: 14,
+        }}>▶</span>
+
+        <i className="bi bi-star-fill" style={{ color: 'var(--highlight-cyan)', fontSize: '0.9rem' }}></i>
+        <span className="fw-bold text-white me-auto">Demo Videos</span>
+
+        <span style={{
+          fontSize: '0.72rem', color: 'var(--highlight-cyan)',
+          border: '1px solid var(--highlight-cyan)', borderRadius: 4, padding: '1px 7px',
+        }}>
+          {count == null ? '…' : `${count} demo video${count !== 1 ? 's' : ''}`}
+        </span>
+      </div>
+
+      {/* Expanded body */}
+      {expanded && (
+        <div className="bg-panel-lighter px-3 pb-3 pt-1" style={{ borderTop: '1px solid var(--border-color)' }}>
+          {demoJobs == null && (
+            <div className="d-flex align-items-center gap-2 mt-2 text-muted small">
+              <div className="spinner-border spinner-border-sm" role="status" />
+              Loading…
+            </div>
+          )}
+          {demoJobs && demoJobs.length === 0 && (
+            <p className="text-muted small mt-2 mb-0">No demo videos configured.</p>
+          )}
+          {demoJobs && demoJobs.map(job => (
+            <div key={job.id} className="mt-2">
+              {job.owner_email && (
+                <div className="small text-muted mb-1" style={{ paddingLeft: 2 }}>
+                  <i className="bi bi-person me-1"></i>{job.owner_email}
+                </div>
+              )}
+              <div className="d-flex align-items-center gap-2">
+                <div className="flex-grow-1">
+                  <AnalysisListItem
+                    analysis={job}
+                    events={null}
+                    onClick={() => navigate(`/view/${job.id}`)}
+                  />
+                </div>
+
+                {/* 3-dot menu */}
+                <div className="dropdown">
+                  <button
+                    className="btn btn-link text-white p-1 opacity-75"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    style={{ fontSize: '1rem', lineHeight: 1 }}
+                  >
+                    <i className="bi bi-three-dots-vertical"></i>
+                  </button>
+                  <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                    <li>
+                      <button
+                        className="dropdown-item py-2 text-white"
+                        onClick={() => handleRemoveDemo(job.id)}
+                        disabled={removingId === job.id}
+                      >
+                        <i className="bi bi-star me-2"></i>
+                        {removingId === job.id ? 'Removing…' : 'Remove from Demo'}
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        className="dropdown-item py-2 text-white"
+                        onClick={() => handleRenameDemo(job.id, job.name)}
+                      >
+                        <i className="bi bi-pencil me-2"></i> Rename Video
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Per-user accordion row
 // ---------------------------------------------------------------------------
 
-function UserRow({ user, jobs, onVerify, onDelete, onJobAction }) {
+function UserRow({ user, jobs, onVerify, onDelete, onJobAction, onDemoChange }) {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -123,6 +274,31 @@ function UserRow({ user, jobs, onVerify, onDelete, onJobAction }) {
         alert("Failed to delete video: " + err.message);
       } finally {
         setDeletingJobId(null);
+      }
+    }
+  };
+
+  const handleSetDemo = async (jobId) => {
+    if (window.confirm("Make this video publicly visible as a demo?")) {
+      try {
+        await updateAdminJob(jobId, { is_demo: true });
+        if (onJobAction) onJobAction(user.id);
+        if (onDemoChange) onDemoChange();
+      } catch (err) {
+        alert("Failed to update job: " + err.message);
+      }
+    }
+  };
+
+  const handleRenameJob = async (jobId, currentName) => {
+    const newName = prompt("Enter new name for this video:", currentName || "");
+    if (newName && newName.trim() !== "" && newName !== currentName) {
+      try {
+        await updateAdminJob(jobId, { name: newName });
+        if (onJobAction) onJobAction(user.id);
+        if (onDemoChange) onDemoChange();
+      } catch (err) {
+        alert("Failed to rename video: " + err.message);
       }
     }
   };
@@ -183,10 +359,10 @@ function UserRow({ user, jobs, onVerify, onDelete, onJobAction }) {
 
         {/* User Actions 3-dot Menu */}
         <div className="dropdown ms-2">
-          <button 
-            className="btn btn-link text-white p-0 opacity-75" 
-            type="button" 
-            data-bs-toggle="dropdown" 
+          <button
+            className="btn btn-link text-white p-0 opacity-75"
+            type="button"
+            data-bs-toggle="dropdown"
             aria-expanded="false"
             onClick={(e) => e.stopPropagation()}
             style={{ fontSize: '1.2rem', lineHeight: 1 }}
@@ -231,13 +407,13 @@ function UserRow({ user, jobs, onVerify, onDelete, onJobAction }) {
                   onClick={() => navigate(`/view/${job.id}`)}
                 />
               </div>
-              
+
               {/* Video Actions 3-dot Menu */}
               <div className="dropdown">
-                <button 
-                  className="btn btn-link text-white p-1 opacity-75" 
-                  type="button" 
-                  data-bs-toggle="dropdown" 
+                <button
+                  className="btn btn-link text-white p-1 opacity-75"
+                  type="button"
+                  data-bs-toggle="dropdown"
                   aria-expanded="false"
                   style={{ fontSize: '1rem', lineHeight: 1 }}
                 >
@@ -245,12 +421,28 @@ function UserRow({ user, jobs, onVerify, onDelete, onJobAction }) {
                 </button>
                 <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
                   <li>
-                    <button 
-                      className="dropdown-item py-2 text-white" 
+                    <button
+                      className="dropdown-item py-2 text-white"
+                      onClick={() => handleSetDemo(job.id)}
+                    >
+                      <i className="bi bi-star me-2"></i> Set as Demo
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className="dropdown-item py-2 text-white"
+                      onClick={() => handleRenameJob(job.id, job.name)}
+                    >
+                      <i className="bi bi-pencil me-2"></i> Rename Video
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className="dropdown-item py-2 text-white"
                       onClick={() => handleDeleteJob(job.id)}
                       disabled={deletingJobId === job.id}
                     >
-                      <i className="bi bi-trash me-2"></i> 
+                      <i className="bi bi-trash me-2"></i>
                       {deletingJobId === job.id ? 'Deleting...' : 'Delete Video'}
                     </button>
                   </li>
@@ -273,6 +465,7 @@ export default function AdminDashboard() {
   const [jobsByUser, setJobsByUser] = useState({});
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
+  const [demoKey, setDemoKey] = useState(0);
 
   const loadData = () => {
     getAdminUsers()
@@ -325,6 +518,14 @@ export default function AdminDashboard() {
         <div className="alert alert-cyber-danger py-2 mb-3">{error}</div>
       )}
 
+      <DemoSection
+        demoKey={demoKey}
+        onRefresh={() => {
+          loadData();
+          setDemoKey(k => k + 1);
+        }}
+      />
+
       <div className="mb-3">
         <input
           className="form-control"
@@ -347,6 +548,7 @@ export default function AdminDashboard() {
           onVerify={loadData}
           onDelete={loadData}
           onJobAction={refreshUserJobs}
+          onDemoChange={() => setDemoKey(k => k + 1)}
         />
       ))}
     </div>

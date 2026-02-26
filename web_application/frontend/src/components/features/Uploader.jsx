@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './Uploader.css'
 import api, { updateJobName, deleteJob } from '../../services/api'
 import FileDropZone from '../common/FileDropZone'
@@ -10,6 +11,7 @@ import AnalysisListItem from '../common/AnalysisListItem'
 import { listCalibrations } from '../../services/calibrationService'
 
 function Uploader({ onUploadSuccess }) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [roadFiles, setRoadFiles] = useState([])
   const [faceFiles, setFaceFiles] = useState([])
@@ -172,13 +174,15 @@ function Uploader({ onUploadSuccess }) {
     }
   };
 
-  const handleLoadAnalysis = async () => {
-    setLocalError(null);
-    try {
-      const jobId = await loadAnalysis(selectedAnalysis);
-      onUploadSuccess(jobId, {});
-    } catch {
-      // Error handled in hook
+  const handleLoadAnalysis = () => {
+    if (!selectedAnalysis) return;
+    const analysis = analyses.find(a => a.id === selectedAnalysis);
+    if (!analysis) return;
+
+    if (analysis.status === 'COMPLETED' || analysis.status === 'FAILED') {
+      navigate(`/view/${analysis.id}`);
+    } else {
+      navigate(`/job/${analysis.id}`);
     }
   }
 

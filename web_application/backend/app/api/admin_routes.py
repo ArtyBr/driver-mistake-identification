@@ -223,6 +223,7 @@ async def admin_delete_user(
 async def admin_list_jobs(
     status: Optional[str] = Query(None),
     user_id: Optional[str] = Query(None),
+    is_demo: Optional[bool] = Query(None),
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
     session: Session = Depends(get_session),
@@ -233,6 +234,8 @@ async def admin_list_jobs(
         stmt = stmt.where(Job.status == status.upper())
     if user_id:
         stmt = stmt.where(Job.owner_id == user_id)
+    if is_demo is not None:
+        stmt = stmt.where(Job.is_demo == is_demo)
     stmt = stmt.order_by(Job.created_at.desc()).offset(offset).limit(limit)
     jobs = session.exec(stmt).all()
 

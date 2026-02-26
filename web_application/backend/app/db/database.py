@@ -29,6 +29,8 @@ def init_db():
             "ALTER TABLE users ADD COLUMN created_at DATETIME",
             "ALTER TABLE user_calibrations ADD COLUMN name TEXT DEFAULT 'New Calibration'",
             "ALTER TABLE jobs ADD COLUMN calibration_id TEXT",
+            "ALTER TABLE jobs ADD COLUMN is_demo BOOLEAN DEFAULT 0",
+            "UPDATE jobs SET is_demo = 0 WHERE is_demo IS NULL",
         ]:
             try:
                 conn.execute(text(stmt))
@@ -85,6 +87,9 @@ def init_db():
             else:
                 test_job.is_demo = True
                 test_job.name = "Pre-recorded Demo"
+                test_job.road_path = "REMOTE:test_video/road_test.mp4"
+                test_job.face_path = "REMOTE:test_video/face_test.mp4"
+                test_job.progress = 100
                 session.add(test_job)
                 print("Updated existing job to demo: test_video")
             session.commit()
@@ -109,6 +114,9 @@ def init_db():
             else:
                 gym_job.is_demo = True
                 gym_job.name = "Me to gym turn cut 2"
+                gym_job.road_path = f"REMOTE:{gym_id}/road.mp4"
+                gym_job.face_path = f"REMOTE:{gym_id}/face.mp4"
+                gym_job.progress = 100
                 session.add(gym_job)
                 print(f"Updated existing job to demo: {gym_id}")
             session.commit()

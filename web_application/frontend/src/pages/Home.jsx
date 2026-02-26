@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { runTestAnalysis } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import { useAnalysesList } from '../hooks/useAnalysesList';
 import AnalysisListItem from '../components/common/AnalysisListItem';
@@ -8,25 +7,13 @@ import AnalysisListItem from '../components/common/AnalysisListItem';
 const Home = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   const { analyses, getEtaMs } = useAnalysesList();
   const demoAnalyses = analyses.filter(a => a.is_demo);
   const myAnalyses   = analyses.filter(a => !a.is_demo);
 
-  const handleLoadDemo = async (analysisId) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await runTestAnalysis(analysisId);
-      navigate(`/job/${data.job_id}`);
-    } catch (err) {
-      console.error("Failed to load demo:", err);
-      setError("Failed to load demo analysis.");
-    } finally {
-      setIsLoading(false);
-    }
+  const handleLoadDemo = (analysisId) => {
+    navigate(`/view/${analysisId}`);
   };
 
   const handleItemClick = (analysis) => {
@@ -173,8 +160,6 @@ const Home = () => {
             <h3 className="mb-0 fw-bold text-white">Demo Analyses</h3>
           </div>
 
-          {error && <div className="alert alert-cyber-danger py-2 mb-3">{error}</div>}
-
           <div className="demo-list-container">
             {demoAnalyses.length > 0 ? (
               demoAnalyses.map(analysis => (
@@ -191,13 +176,8 @@ const Home = () => {
                   <button
                     className="btn btn-sm btn-cyber px-4 py-2 fw-bold"
                     onClick={() => handleLoadDemo(analysis.id)}
-                    disabled={isLoading}
                   >
-                    {isLoading ? (
-                      <span className="spinner-border spinner-border-sm" role="status"></span>
-                    ) : (
-                      <>VIEW <i className="bi bi-arrow-right ms-1"></i></>
-                    )}
+                    VIEW <i className="bi bi-arrow-right ms-1"></i>
                   </button>
                 </div>
               ))
