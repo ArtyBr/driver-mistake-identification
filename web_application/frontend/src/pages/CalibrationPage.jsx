@@ -131,11 +131,11 @@ function CalibrationPage() {
       minimapDragRef.current = null; 
       minimapMarkerDragRef.current = null;
     };
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleUp);
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
     return () => {
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('mouseup', handleUp);
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
     };
   }, [handleRangeChange, handleSeek]);
 
@@ -491,7 +491,7 @@ function CalibrationPage() {
 
             {/* Existing gaze reference bar — acts as minimap for panning the zoom window */}
             {gazeSegments.length > 0 && videoDuration > 0 && (
-              <div className="mb-3">
+              <div className="mb-3" style={{ touchAction: 'none' }}>
                 <p className="text-muted small mb-1" style={{ textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.72rem' }}>
                   Existing gaze analysis — click to jump or drag bracket to pan
                 </p>
@@ -559,32 +559,39 @@ function CalibrationPage() {
                 {viewEnd > viewStart && viewEnd > 0 && (
                   <div
                     title="Drag to pan timeline"
-                    style={{ position: 'relative', height: 8, marginBottom: 4, cursor: 'grab' }}
-                    onMouseDown={(e) => {
+                    style={{ position: 'relative', height: 36, marginTop: -28, marginBottom: 4, cursor: 'grab', touchAction: 'none' }}
+                    onPointerDown={(e) => {
                       e.preventDefault();
                       const rect = minimapRef.current.getBoundingClientRect();
                       const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
                       minimapDragRef.current = { offsetSecs: frac * videoDuration - viewStart };
+                      e.currentTarget.setPointerCapture(e.pointerId);
                     }}
                   >
-                    <div style={{ position: 'absolute', left: (viewStart / videoDuration) * 100 + "%", top: 0, width: 2, height: '100%', background: 'rgba(255,255,255,0.85)', borderRadius: 1 }} />
-                    <div style={{ position: 'absolute', left: (viewStart / videoDuration) * 100 + "%", width: ((viewEnd - viewStart) / videoDuration) * 100 + "%", top: '50%', height: 2, background: 'rgba(255,255,255,0.85)', transform: 'translateY(-50%)' }} />
-                    <div style={{ position: 'absolute', left: (viewEnd / videoDuration) * 100 + "%", top: 0, width: 2, height: '100%', background: 'rgba(255,255,255,0.85)', borderRadius: 1 }} />
+                    <div style={{ position: 'absolute', left: (viewStart / videoDuration) * 100 + "%", bottom: 0, width: 2, height: 8, background: 'rgba(255,255,255,0.85)', borderRadius: 1 }} />
+                    <div style={{ position: 'absolute', left: (viewStart / videoDuration) * 100 + "%", width: ((viewEnd - viewStart) / videoDuration) * 100 + "%", bottom: 3, height: 2, background: 'rgba(255,255,255,0.85)' }} />
+                    <div style={{ position: 'absolute', left: (viewEnd / videoDuration) * 100 + "%", bottom: 0, width: 2, height: 8, background: 'rgba(255,255,255,0.85)', borderRadius: 1 }} />
                   </div>
                 )}
 
                 {/* Triangle markers — show rangeStart / rangeEnd positions on the full timeline */}
                 <div style={{ position: 'relative', height: 10, marginBottom: 4 }}>
-                  <div 
-                    title={"Selection start: " + (rangeStart || 0).toFixed(2) + "s (Drag to move)"} 
-                    style={{ position: 'absolute', left: ((rangeStart || 0) / videoDuration) * 100 + "%", transform: 'translateX(-50%)', top: 0, width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderBottom: '8px solid var(--accent-primary)', cursor: 'ew-resize', zIndex: 10 }} 
-                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); minimapMarkerDragRef.current = 'start'; }}
-                  />
-                  <div 
-                    title={"Selection end: " + (rangeEnd || 0).toFixed(2) + "s (Drag to move)"} 
-                    style={{ position: 'absolute', left: ((rangeEnd || 0) / videoDuration) * 100 + "%", transform: 'translateX(-50%)', top: 0, width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderBottom: '8px solid var(--accent-primary)', cursor: 'ew-resize', zIndex: 10 }} 
-                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); minimapMarkerDragRef.current = 'end'; }}
-                  />
+                  <div
+                    data-minimap-role="start"
+                    title={"Selection start: " + (rangeStart || 0).toFixed(2) + "s (Drag to move)"}
+                    style={{ position: 'absolute', left: ((rangeStart || 0) / videoDuration) * 100 + "%", transform: 'translateX(-50%)', top: 0, width: 16, height: 16, cursor: 'ew-resize', zIndex: 10, touchAction: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); minimapMarkerDragRef.current = 'start'; e.currentTarget.setPointerCapture(e.pointerId); }}
+                  >
+                    <div style={{ width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderBottom: '8px solid var(--accent-primary)', pointerEvents: 'none' }} />
+                  </div>
+                  <div
+                    data-minimap-role="end"
+                    title={"Selection end: " + (rangeEnd || 0).toFixed(2) + "s (Drag to move)"}
+                    style={{ position: 'absolute', left: ((rangeEnd || 0) / videoDuration) * 100 + "%", transform: 'translateX(-50%)', top: 0, width: 16, height: 16, cursor: 'ew-resize', zIndex: 10, touchAction: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); minimapMarkerDragRef.current = 'end'; e.currentTarget.setPointerCapture(e.pointerId); }}
+                  >
+                    <div style={{ width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderBottom: '8px solid var(--accent-primary)', pointerEvents: 'none' }} />
+                  </div>
                 </div>
 
                 <div className="d-flex flex-wrap gap-2 mt-1 justify-content-center" style={{ fontSize: '0.65rem' }}>
@@ -883,21 +890,21 @@ function CalibrationTimeline({
     return stateRef.current.vs + frac * stateRef.current.vDur;
   };
 
-  const handleTrackMouseDown = (e) => {
-    if (e.target !== trackRef.current) return;
+  const handleTrackPointerDown = (e) => {
     e.preventDefault();
     const t = getTimeFromEvent(e);
     const { rangeStart: rs, rangeEnd: re } = stateRef.current;
-    draggingRef.current = Math.abs(t - rs) <= Math.abs(t - re) ? 'start' : 'end';
+    if (t >= rs && t <= re) {
+      dragOffsetRef.current = t - rs;
+      draggingRef.current = 'range';
+    } else {
+      draggingRef.current = Math.abs(t - rs) <= Math.abs(t - re) ? 'start' : 'end';
+    }
+    trackRef.current?.setPointerCapture(e.pointerId);
   };
-  const handleRangeZoneMouseDown = (e) => {
-    e.preventDefault(); e.stopPropagation();
-    dragOffsetRef.current = getTimeFromEvent(e) - stateRef.current.rangeStart;
-    draggingRef.current = 'range';
-  };
-  const handleStartHandleMouseDown = (e) => { e.preventDefault(); e.stopPropagation(); draggingRef.current = 'start'; };
-  const handleEndHandleMouseDown   = (e) => { e.preventDefault(); e.stopPropagation(); draggingRef.current = 'end';   };
-  
+  const handleStartHandlePointerDown = (e) => { e.preventDefault(); e.stopPropagation(); draggingRef.current = 'start'; e.currentTarget.setPointerCapture(e.pointerId); };
+  const handleEndHandlePointerDown   = (e) => { e.preventDefault(); e.stopPropagation(); draggingRef.current = 'end';   e.currentTarget.setPointerCapture(e.pointerId); };
+
   useEffect(() => {
     const handleMove = (e) => {
       if (!draggingRef.current) return;
@@ -916,9 +923,9 @@ function CalibrationTimeline({
       }
     };
     const handleUp = () => { draggingRef.current = null; };
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleUp);
-    return () => { window.removeEventListener('mousemove', handleMove); window.removeEventListener('mouseup', handleUp); };
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
+    return () => { window.removeEventListener('pointermove', handleMove); window.removeEventListener('pointerup', handleUp); };
   }, [onRangeChange, onSeek]);
 
   if (!duration) return null;
@@ -932,8 +939,8 @@ function CalibrationTimeline({
   const selStart = Math.max(rangeStart, vs);
   const selEnd   = Math.min(rangeEnd, ve);
   return (
-    <div style={{ position: 'relative', paddingBottom: 22, marginBottom: '0.5rem', userSelect: 'none' }}>
-      <div ref={trackRef} style={{ position: 'relative', height: 24, background: 'var(--bg-panel-lighter)', borderRadius: 4, border: '1px solid var(--border-color)', cursor: 'pointer', overflow: 'hidden' }} onMouseDown={handleTrackMouseDown}>
+    <div style={{ position: 'relative', paddingBottom: 8, marginBottom: '0.5rem', userSelect: 'none', touchAction: 'none' }}>
+      <div ref={trackRef} style={{ position: 'relative', height: 32, background: 'var(--bg-panel-lighter)', borderRadius: 4, border: '1px solid var(--border-color)', cursor: 'pointer', overflow: 'hidden', touchAction: 'none' }} onPointerDown={handleTrackPointerDown}>
         {segments.map((seg, i) => {
           if (seg.endTime < vs || seg.startTime > ve) return null;
           const isHovered = hoveredIndex === i;
@@ -959,11 +966,11 @@ function CalibrationTimeline({
             />
           );
         })}
-        {selEnd > selStart && <div style={{ position: 'absolute', top: 0, bottom: 0, left: ((selStart - vs) / vDur) * 100 + '%', width: ((selEnd - selStart) / vDur) * 100 + '%', background: 'rgba(255,255,255,0.15)', borderLeft: rangeStart >= vs ? '2px solid rgba(255,255,255,0.75)' : 'none', borderRight: rangeEnd <= ve ? '2px solid rgba(255,255,255,0.75)' : 'none', boxSizing: 'border-box', cursor: 'move', zIndex: 2 }} onMouseDown={handleRangeZoneMouseDown} />}
+        {selEnd > selStart && <div style={{ position: 'absolute', top: 0, bottom: 0, left: ((selStart - vs) / vDur) * 100 + '%', width: ((selEnd - selStart) / vDur) * 100 + '%', background: 'rgba(255,255,255,0.15)', borderLeft: rangeStart >= vs ? '2px solid rgba(255,255,255,0.75)' : 'none', borderRight: rangeEnd <= ve ? '2px solid rgba(255,255,255,0.75)' : 'none', boxSizing: 'border-box', cursor: 'move', zIndex: 2, pointerEvents: 'none' }} />}
         {currentTime >= vs && currentTime <= ve && <div style={{ position: 'absolute', top: -3, bottom: -3, left: toLeftPct(currentTime) + '%', width: 2, background: 'rgba(255,255,255,0.85)', borderRadius: 1, pointerEvents: 'none', zIndex: 10 }} />}
       </div>
-      {startPct >= 0 && startPct <= 100 && <div style={{ position: 'absolute', top: -6, left: startPct + '%', transform: 'translateX(-50%)', width: 8, height: 36, background: 'var(--accent-primary)', borderRadius: 2, cursor: 'ew-resize', zIndex: 11 }} onMouseDown={handleStartHandleMouseDown} />}
-      {endPct >= 0 && endPct <= 100 && <div style={{ position: 'absolute', top: -6, left: endPct + '%', transform: 'translateX(-50%)', width: 8, height: 36, background: 'var(--accent-primary)', borderRadius: 2, cursor: 'ew-resize', zIndex: 11 }} onMouseDown={handleEndHandleMouseDown} />}
+      {startPct >= 0 && startPct <= 100 && <div style={{ position: 'absolute', top: -6, left: startPct + '%', transform: 'translateX(-50%)', width: 28, height: 44, cursor: 'ew-resize', zIndex: 11, touchAction: 'none', display: 'flex', alignItems: 'stretch', justifyContent: 'center' }} onPointerDown={handleStartHandlePointerDown}><div style={{ width: 8, background: 'var(--accent-primary)', borderRadius: 2, pointerEvents: 'none' }} /></div>}
+      {endPct >= 0 && endPct <= 100 && <div style={{ position: 'absolute', top: -6, left: endPct + '%', transform: 'translateX(-50%)', width: 28, height: 44, cursor: 'ew-resize', zIndex: 11, touchAction: 'none', display: 'flex', alignItems: 'stretch', justifyContent: 'center' }} onPointerDown={handleEndHandlePointerDown}><div style={{ width: 8, background: 'var(--accent-primary)', borderRadius: 2, pointerEvents: 'none' }} /></div>}
     </div>
   );
 }
