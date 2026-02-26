@@ -34,7 +34,7 @@ function Uploader({ onUploadSuccess }) {
   const pollAttemptsRef = useRef(0)
   const MAX_POLL_ATTEMPTS = 150 // 150 × 2 s = 5 minutes
 
-  const { upload, loadAnalysis, progress, isUploading, error: uploadError } = useJobUpload();
+  const { upload, progress, isUploading, error: uploadError } = useJobUpload();
   const [localError, setLocalError] = useState(null);
 
   const { analyses, refetch: refetchAnalyses, getEtaMs } = useAnalysesList();

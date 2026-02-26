@@ -166,6 +166,7 @@ const ResultPage = () => {
               jobId={jobId}
             />
             
+            {results && hasVideos && !jobData?.is_demo && (
             <div className="card card-cyber mt-4 shadow-sm border-info-subtle">
               <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div>
@@ -193,6 +194,7 @@ const ResultPage = () => {
                 </div>
               </div>
             </div>
+            )}
           </>
        )}
 
