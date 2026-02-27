@@ -62,7 +62,12 @@ def blur_passenger_faces(face_path: Path) -> None:
         if not writer.isOpened():
             raise RuntimeError("cv2.VideoWriter failed to open")
 
-        detector = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        # Load detection only — we only need bounding boxes, not landmarks/pose/recognition.
+        # This avoids GPU memory conflicts with the FaceAnalyzer that runs after this step.
+        detector = FaceAnalysis(
+            providers=['CUDAExecutionProvider', 'CPUExecutionProvider'],
+            allowed_modules=['detection'],
+        )
         detector.prepare(ctx_id=0, det_size=(640, 640))
 
         while True:
@@ -89,6 +94,7 @@ def blur_passenger_faces(face_path: Path) -> None:
 
         cap.release()
         writer.release()
+        del detector  # free GPU sessions before the main FaceAnalyzer initialises
 
         # Merge with original audio via ffmpeg (best-effort — face videos may have no audio)
         env = os.environ.copy()
