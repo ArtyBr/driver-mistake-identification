@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { GAZE_STATES, getColorForState } from '../constants/videoConstants';
 
 export function useVideoCanvas(
-  results, 
-  roadVideoRef, 
-  faceVideoRef, 
-  canvasRef, 
-  faceCanvasRef, 
-  activePartIndex, 
-  partDurations
+  results,
+  roadVideoRef,
+  faceVideoRef,
+  canvasRef,
+  faceCanvasRef,
+  activePartIndex,
+  partDurations,
+  originalFaceDimsRef
 ) {
   const [currentFaceState, setCurrentFaceState] = useState("N/A");
 
@@ -133,8 +134,10 @@ export function useVideoCanvas(
             }
 
             if (Array.isArray(nose_2d) || (nose_2d.length === 2)) {
-              const vW = faceVideo.videoWidth || 640;
-              const vH = faceVideo.videoHeight || 480;
+              // Use original (1080p) face video dimensions so the overlay stays
+              // aligned when a lower-quality variant is playing.
+              const vW = originalFaceDimsRef?.current?.w ?? faceVideo.videoWidth ?? 640;
+              const vH = originalFaceDimsRef?.current?.h ?? faceVideo.videoHeight ?? 480;
               const scaleX = faceCanvasRef.current.width / vW;
               const scaleY = faceCanvasRef.current.height / vH;
               const startX = nose_2d[0] * scaleX;
@@ -175,7 +178,7 @@ export function useVideoCanvas(
       }
       cancelAnimationFrame(animationFrameId);
     }
-  }, [results, activePartIndex, partDurations, roadVideoRef, faceVideoRef, canvasRef, faceCanvasRef]);
+  }, [results, activePartIndex, partDurations, roadVideoRef, faceVideoRef, canvasRef, faceCanvasRef, originalFaceDimsRef]);
 
   return { currentFaceState };
 }

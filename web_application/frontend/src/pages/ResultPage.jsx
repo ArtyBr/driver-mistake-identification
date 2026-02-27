@@ -79,6 +79,22 @@ const ResultPage = () => {
       return { road: rUrls, face: fUrls };
   }, [jobData, location.state, localRoadFiles, localFaceFiles]);
 
+  // Quality-variant URL maps: { '1080p': [url], '720p': [url], '480p': [url] }
+  // Only populated when the server provides transcoded variants (REMOTE jobs).
+  const roadQualityUrls = useMemo(() => {
+      if (!jobData?.video_qualities?.road) return null;
+      return Object.fromEntries(
+          Object.entries(jobData.video_qualities.road).map(([q, url]) => [q, [getFileUrl(url)]])
+      );
+  }, [jobData]);
+
+  const faceQualityUrls = useMemo(() => {
+      if (!jobData?.video_qualities?.face) return null;
+      return Object.fromEntries(
+          Object.entries(jobData.video_qualities.face).map(([q, url]) => [q, [getFileUrl(url)]])
+      );
+  }, [jobData]);
+
   // Cleanup Blob URLs when unmounting or changing
   useEffect(() => {
       return () => {
@@ -164,6 +180,8 @@ const ResultPage = () => {
               roadUrls={videoUrls.road}
               faceUrls={videoUrls.face}
               jobId={jobId}
+              roadQualityUrls={roadQualityUrls}
+              faceQualityUrls={faceQualityUrls}
             />
             
             {results && hasVideos && !jobData?.is_demo && (

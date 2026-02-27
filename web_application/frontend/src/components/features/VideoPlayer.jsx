@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect, useMemo } from 'react'
 import VideoDisplay from './video_player/VideoDisplay'
 import Timeline from './video_player/Timeline'
 import LogViewer from './video_player/LogViewer'
@@ -7,6 +7,7 @@ import { useVideoPlayback } from '../../hooks/useVideoPlayback'
 import { useVideoAnalysisData } from '../../hooks/useVideoAnalysisData'
 import { useVideoCanvas } from '../../hooks/useVideoCanvas'
 import { getColorForState } from '../../constants/videoConstants'
+import { detectNetworkQuality } from '../../utils/networkQuality'
 
 // Icon Components
 const PlayIcon = () => (
@@ -36,12 +37,56 @@ const NextIcon = () => (
   </svg>
 );
 
-function VideoPlayer({ results, roadUrls, faceUrls }) {
+function VideoPlayer({ results, roadUrls, faceUrls, roadQualityUrls = null, faceQualityUrls = null }) {
   // DOM Refs
   const roadVideoRef = useRef(null)
   const faceVideoRef = useRef(null)
   const canvasRef = useRef(null)
   const faceCanvasRef = useRef(null)
+
+  // Quality selection state
+  const [quality, setQuality] = useState('auto')
+  const qualitySeekRef = useRef(null)
+  // Stores the original (1080p) face video dimensions so the canvas overlay
+  // scales nose_2d coordinates correctly even when a lower-quality variant is playing.
+  const originalFaceDimsRef = useRef(null)
+
+  // Available quality labels (ordered high → low)
+  const availableQualities = useMemo(() => (
+    roadQualityUrls
+      ? ['1080p', '720p', '480p'].filter(q => roadQualityUrls[q])
+      : []
+  ), [roadQualityUrls])
+
+  // Detect network quality from available options (derived, not stored in state)
+  const detectedQuality = useMemo(() => (
+    availableQualities.length ? detectNetworkQuality(availableQualities) : '1080p'
+  ), [availableQualities])
+
+  // Probe the original (1080p) face video once to get its native dimensions.
+  // These are used by useVideoCanvas to scale nose_2d coordinates correctly
+  // regardless of which quality variant is currently playing.
+  useEffect(() => {
+    const url = faceQualityUrls?.['1080p']?.[0]
+    if (!url || originalFaceDimsRef.current) return
+    const probe = document.createElement('video')
+    probe.src = url
+    probe.onloadedmetadata = () => {
+      originalFaceDimsRef.current = { w: probe.videoWidth, h: probe.videoHeight }
+      probe.src = ''
+    }
+    probe.load()
+  }, [faceQualityUrls])
+
+  const effectiveQuality = quality === 'auto' ? detectedQuality : quality
+
+  const activeRoadUrls = useMemo(() => (
+    roadQualityUrls?.[effectiveQuality] ?? roadUrls
+  ), [roadQualityUrls, effectiveQuality, roadUrls])
+
+  const activeFaceUrls = useMemo(() => (
+    faceQualityUrls?.[effectiveQuality] ?? faceUrls
+  ), [faceQualityUrls, effectiveQuality, faceUrls])
 
   // Custom Hooks for logic separation
   const {
@@ -59,7 +104,20 @@ function VideoPlayer({ results, roadUrls, faceUrls }) {
     onTimeUpdate,
     onPartEnded,
     bufferedRanges
-  } = useVideoPlayback(roadUrls, faceUrls, roadVideoRef, faceVideoRef)
+  } = useVideoPlayback(activeRoadUrls, activeFaceUrls, roadVideoRef, faceVideoRef)
+
+  // After a quality switch, restore playback position
+  useEffect(() => {
+    if (qualitySeekRef.current !== null && duration > 0 && partDurations.length > 0) {
+      handleSeek(qualitySeekRef.current)
+      qualitySeekRef.current = null
+    }
+  }, [partDurations, duration, handleSeek])
+
+  const handleQualityChange = (q) => {
+    qualitySeekRef.current = currentTime
+    setQuality(q)
+  }
 
   const { history, faceSegments } = useVideoAnalysisData(results)
 
@@ -70,7 +128,8 @@ function VideoPlayer({ results, roadUrls, faceUrls }) {
     canvasRef,
     faceCanvasRef,
     activePartIndex,
-    partDurations
+    partDurations,
+    originalFaceDimsRef
   )
 
   // Derive active log index from current time during render
@@ -131,9 +190,9 @@ function VideoPlayer({ results, roadUrls, faceUrls }) {
         )}
       </div>
 
-      <VideoDisplay 
-        roadUrl={roadUrls ? roadUrls[currentPartIndex] : ""}
-        faceUrl={faceUrls ? faceUrls[currentPartIndex] : ""}
+      <VideoDisplay
+        roadUrl={activeRoadUrls ? activeRoadUrls[currentPartIndex] : ""}
+        faceUrl={activeFaceUrls ? activeFaceUrls[currentPartIndex] : ""}
         roadVideoRef={roadVideoRef}
         faceVideoRef={faceVideoRef}
         canvasRef={canvasRef}
@@ -153,24 +212,24 @@ function VideoPlayer({ results, roadUrls, faceUrls }) {
         </button>
 
         <div className="jump-controls d-flex gap-1">
-          <button 
-            onClick={() => jumpToEvent('prev')} 
-            className="btn btn-cyber btn-sm" 
+          <button
+            onClick={() => jumpToEvent('prev')}
+            className="btn btn-cyber btn-sm"
             title="Previous Event"
             disabled={!results.timeline_events?.length}
           >
             <PrevIcon />
           </button>
-          <button 
-            onClick={() => jumpToEvent('next')} 
-            className="btn btn-cyber btn-sm" 
+          <button
+            onClick={() => jumpToEvent('next')}
+            className="btn btn-cyber btn-sm"
             title="Next Event"
             disabled={!results.timeline_events?.length}
           >
             <NextIcon />
           </button>
         </div>
-        
+
         <Timeline 
           currentTime={currentTime}
           duration={duration}
@@ -190,6 +249,23 @@ function VideoPlayer({ results, roadUrls, faceUrls }) {
 
         <span className="time-display">{currentTime.toFixed(2)} / {duration.toFixed(2)}s</span>
       </div>
+
+      {availableQualities.length >= 1 && (
+        <div className="d-flex align-items-center gap-2 px-3 py-2" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)', borderLeft: '3px solid var(--border-color)', borderRadius: '4px', marginTop: '6px' }}>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Quality</span>
+          {['auto', ...availableQualities].map(q => (
+            <button
+              key={q}
+              className={`btn btn-sm ${quality === q ? 'btn-cyber' : 'btn-outline-secondary'}`}
+              onClick={() => handleQualityChange(q)}
+              title={q === 'auto' ? 'Auto-select based on network speed' : q}
+              style={{ fontSize: '0.75rem', padding: '2px 10px' }}
+            >
+              {q === 'auto' ? `Auto (${detectedQuality})` : q}
+            </button>
+          ))}
+        </div>
+      )}
 
       <Legend />
 

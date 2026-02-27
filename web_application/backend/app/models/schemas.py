@@ -13,6 +13,7 @@ class JobStatusResponse(BaseModel):
     error: Optional[str] = None
     calibration_id: Optional[str] = None
     calibration_name: Optional[str] = None
+    video_qualities: Optional[Dict[str, Dict[str, str]]] = None
 
 class JobCreateResponse(BaseModel):
     job_id: str

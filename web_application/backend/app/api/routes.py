@@ -11,6 +11,7 @@ from ..core.config import UPLOAD_DIR
 from ..db.database import get_session
 from ..services.job_service import JobService
 from ..services.auth_service import get_current_user, get_optional_current_user, get_verified_user
+from ..services.file_service import FileService
 from ..models.schemas import JobCreateResponse, JobStatusResponse, AnalysisListResponse, JobUpdate
 from ..models.job import Job
 from ..models.user import User
@@ -21,6 +22,42 @@ logger = logging.getLogger(__name__)
 
 # Include Auth Routes
 router.include_router(auth_routes.router, tags=["auth"])
+
+# Quality file definitions: (label, road_filename, face_filename)
+_QUALITY_FILES = [
+    ("1080p", "road.mp4", "face.mp4"),
+    ("720p", "road_720p.mp4", "face_720p.mp4"),
+    ("480p", "road_480p.mp4", "face_480p.mp4"),
+]
+
+_LARGE_BASE = Path("/dcs/large/safedrive_cs310_2526/uploads")
+
+
+def _build_quality_urls(job_id: str) -> dict:
+    """Returns {"road": {quality: url, …}, "face": {quality: url, …}} for available files."""
+    road_urls: dict = {}
+    face_urls: dict = {}
+
+    # Determine which base directory holds this job's files
+    job_dir = None
+    for base in [_LARGE_BASE, UPLOAD_DIR]:
+        candidate = base / job_id
+        if candidate.is_dir():
+            job_dir = candidate
+            break
+
+    if job_dir is None:
+        return {"road": road_urls, "face": face_urls}
+
+    for label, road_file, face_file in _QUALITY_FILES:
+        road_path = job_dir / road_file
+        face_path = job_dir / face_file
+        if road_path.exists():
+            road_urls[label] = f"/video/remote/{job_id}/{road_file}"
+        if face_path.exists():
+            face_urls[label] = f"/video/remote/{job_id}/{face_file}"
+
+    return {"road": road_urls, "face": face_urls}
 
 def get_job_service(session: Session = Depends(get_session)) -> JobService:
     return JobService(session)
@@ -44,11 +81,16 @@ async def upload_videos(
         raise HTTPException(status_code=400, detail="Both road and face videos are required")
 
     job = service.create_job(video_road, video_face, background_tasks, keep_videos, owner_id=current_user.id, calibration_id=calibration_id)
-    
+
     # Update name if provided
     if name:
         service.update_job_name(job.id, name)
-        
+
+    # Kick off background transcoding for quality variants
+    road_path = UPLOAD_DIR / job.id / "road.mp4"
+    face_path = UPLOAD_DIR / job.id / "face.mp4"
+    background_tasks.add_task(FileService.transcode_job_videos, job.id, road_path, face_path)
+
     return {"job_id": job.id}
 
 @router.get("/list_analyses", response_model=AnalysisListResponse)
@@ -199,6 +241,13 @@ async def get_status(
         if cal:
             calibration_name = cal.name
 
+    # Build quality URL map for REMOTE jobs
+    video_qualities = None
+    if job.road_path and job.road_path.startswith("REMOTE:"):
+        qmap = _build_quality_urls(job_id)
+        if qmap["road"] or qmap["face"]:
+            video_qualities = qmap
+
     return {
         "status": job.status,
         "name": job.name,
@@ -210,7 +259,8 @@ async def get_status(
         "face_metadata": json.loads(job.face_metadata) if job.face_metadata else None,
         "error": job.error,
         "calibration_id": job.calibration_id,
-        "calibration_name": calibration_name
+        "calibration_name": calibration_name,
+        "video_qualities": video_qualities,
     }
 
 @router.get("/results/{job_id}")

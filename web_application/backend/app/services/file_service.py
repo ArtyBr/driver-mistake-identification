@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Tuple
 from fastapi import UploadFile
 from ..core.config import UPLOAD_DIR
-from .video_utils import splice_videos, get_video_duration
+from .video_utils import splice_videos, get_video_duration, get_video_height, transcode_to_quality
 
 logger = logging.getLogger(__name__)
 
@@ -52,3 +52,32 @@ class FileService:
         
         duration = get_video_duration(final_path)
         return final_path, filenames, sizes, duration
+
+    @staticmethod
+    def transcode_job_videos(job_id: str, road_path: Path, face_path: Path):
+        """
+        Background-transcodes road and face videos to 720p and 480p quality variants.
+        Skips upscaling and already-existing output files. Non-fatal on failure.
+        """
+        targets = [720, 480]
+        pairs = [(road_path, "road"), (face_path, "face")]
+        for path, prefix in pairs:
+            if not path.exists():
+                continue
+            try:
+                orig_height = get_video_height(path)
+                if orig_height == 0:
+                    logger.warning(f"Could not determine height for {path}, skipping transcoding")
+                    continue
+                for target in targets:
+                    if orig_height <= target:
+                        continue  # no upscaling
+                    out_path = path.parent / f"{prefix}_{target}p.mp4"
+                    if out_path.exists():
+                        continue  # idempotent
+                    logger.info(f"Transcoding {path.name} → {out_path.name} for job {job_id}")
+                    success = transcode_to_quality(path, out_path, target)
+                    if not success:
+                        logger.error(f"Transcoding failed: {out_path.name} for job {job_id}")
+            except Exception as e:
+                logger.error(f"transcode_job_videos error for {prefix} ({job_id}): {e}")

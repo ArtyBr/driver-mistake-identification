@@ -118,20 +118,20 @@ def get_video_duration(video_path: Path) -> float:
     """
     try:
         cmd = [
-            "ffprobe", 
-            "-v", "error", 
-            "-show_entries", "format=duration", 
-            "-of", "default=noprint_wrappers=1:nokey=1", 
+            "ffprobe",
+            "-v", "error",
+            "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1",
             str(video_path)
         ]
-        
+
         # Prepare environment
         env = os.environ.copy()
         if "LD_LIBRARY_PATH" in env:
             del env["LD_LIBRARY_PATH"]
 
         result = subprocess.run(cmd, capture_output=True, text=True, env=env)
-        
+
         if result.returncode == 0:
             return float(result.stdout.strip())
         else:
@@ -140,3 +140,64 @@ def get_video_duration(video_path: Path) -> float:
     except Exception as e:
         logger.error(f"Error getting duration for {video_path}: {e}")
         return 0.0
+
+
+def get_video_height(video_path: Path) -> int:
+    """Returns the height of the first video stream using ffprobe. Returns 0 on failure."""
+    try:
+        cmd = [
+            "ffprobe",
+            "-v", "error",
+            "-select_streams", "v:0",
+            "-show_entries", "stream=height",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            str(video_path)
+        ]
+        env = os.environ.copy()
+        env.pop("LD_LIBRARY_PATH", None)
+        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        if result.returncode == 0 and result.stdout.strip():
+            return int(result.stdout.strip())
+        logger.error(f"ffprobe height error: {result.stderr}")
+        return 0
+    except Exception as e:
+        logger.error(f"Error getting height for {video_path}: {e}")
+        return 0
+
+
+def _get_ffmpeg_exe() -> str:
+    """Returns the path to an ffmpeg binary with libx264 support (via imageio-ffmpeg if available)."""
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except ImportError:
+        return "ffmpeg"
+
+
+def transcode_to_quality(input_path: Path, output_path: Path, height: int) -> bool:
+    """
+    Transcodes a video to the specified height using libx264.
+    Returns True on success, False on failure.
+    """
+    try:
+        cmd = [
+            _get_ffmpeg_exe(),
+            "-i", str(input_path),
+            "-vf", f"scale=-2:{height}",
+            "-c:v", "libx264",
+            "-crf", "23",
+            "-preset", "fast",
+            "-c:a", "copy",
+            str(output_path),
+            "-y"
+        ]
+        env = os.environ.copy()
+        env.pop("LD_LIBRARY_PATH", None)
+        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        if result.returncode != 0:
+            logger.error(f"FFmpeg transcode error: {result.stderr}")
+            return False
+        return True
+    except Exception as e:
+        logger.error(f"Exception during transcoding {input_path} to {height}p: {e}")
+        return False
