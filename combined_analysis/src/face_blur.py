@@ -35,10 +35,11 @@ def _identify_driver(faces, frame_w, frame_h):
     return max(candidates, key=area)
 
 
-def blur_passenger_faces(face_path: Path) -> None:
+def blur_passenger_faces(face_path: Path, app) -> None:
     """
     Blurs all faces except the driver's in face_path in-place.
-    Uses InsightFace (RetinaFace) — the same library as the rest of the pipeline.
+    Uses the already-initialised InsightFace FaceAnalysis `app` passed in from
+    FaceAnalyzer — no second model load, no session conflicts.
     Writes blurred frames via cv2.VideoWriter, merges original audio with ffmpeg,
     then renames over the original. Non-fatal: logs errors and leaves original unchanged.
     """
@@ -50,8 +51,6 @@ def blur_passenger_faces(face_path: Path) -> None:
     face_tmp = face_path.parent / "face_tmp.mp4"
 
     try:
-        from insightface.app import FaceAnalysis
-
         cap = cv2.VideoCapture(str(face_path))
         fps = cap.get(cv2.CAP_PROP_FPS) or 30
         w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -62,20 +61,12 @@ def blur_passenger_faces(face_path: Path) -> None:
         if not writer.isOpened():
             raise RuntimeError("cv2.VideoWriter failed to open")
 
-        # Load detection only — we only need bounding boxes, not landmarks/pose/recognition.
-        # This avoids GPU memory conflicts with the FaceAnalyzer that runs after this step.
-        detector = FaceAnalysis(
-            providers=['CUDAExecutionProvider', 'CPUExecutionProvider'],
-            allowed_modules=['detection'],
-        )
-        detector.prepare(ctx_id=0, det_size=(640, 640))
-
         while True:
             ret, frame = cap.read()
             if not ret:
                 break
 
-            faces = detector.get(frame)
+            faces = app.get(frame)
 
             if len(faces) > 1:
                 driver = _identify_driver(faces, w, h)
@@ -94,7 +85,6 @@ def blur_passenger_faces(face_path: Path) -> None:
 
         cap.release()
         writer.release()
-        del detector  # free GPU sessions before the main FaceAnalyzer initialises
 
         # Merge with original audio via ffmpeg (best-effort — face videos may have no audio)
         env = os.environ.copy()
