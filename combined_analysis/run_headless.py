@@ -1,3 +1,4 @@
+import os
 import sys
 import argparse
 import json
@@ -5,6 +6,10 @@ import logging
 import traceback
 import warnings
 from pathlib import Path
+
+# Prevent ONNX Runtime from trying to set CPU affinity (fails under SLURM cgroups).
+# Must be set before any onnxruntime / torch / insightface import.
+os.environ.setdefault("OMP_NUM_THREADS", "1")
 
 # Suppress warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
