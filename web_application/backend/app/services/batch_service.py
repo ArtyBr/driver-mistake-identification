@@ -144,6 +144,9 @@ class BatchService:
 # Load environment
 source {self.venv_path}/bin/activate
 
+# Prevent ONNX Runtime from trying to pin threads to CPUs outside the SLURM cgroup
+export OMP_NUM_THREADS=1
+
 cd {self.remote_project_root}
 {cmd}
 """
