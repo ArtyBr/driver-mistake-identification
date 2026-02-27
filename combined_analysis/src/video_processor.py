@@ -465,17 +465,24 @@ class VideoProcessor:
         """Helper to run ffmpeg with web-compatible settings, optionally scaling."""
         import os
         import subprocess
+        try:
+            import imageio_ffmpeg
+            ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+        except ImportError:
+            print("Warning: imageio_ffmpeg not installed, falling back to system ffmpeg")
+            ffmpeg_exe = "ffmpeg"
 
-        cmd = ["ffmpeg", "-i", str(input_path)]
+        cmd = [ffmpeg_exe, "-i", str(input_path)]
         
         if height:
             cmd += ["-vf", f"scale=-2:{height}"]
         
-        # Web-compatible H.264
-        # We avoid -preset and -crf as they were failing on some cluster versions
+        # Web-compatible H.264 using imageio-ffmpeg's reliable binary
         cmd += [
             "-c:v", "libx264",
-            "-pix_fmt", "yuv420p", # Essential for some browsers
+            "-pix_fmt", "yuv420p",
+            "-preset", "fast",
+            "-crf", "23",
             "-c:a", "copy",
             str(output_path),
             "-y"

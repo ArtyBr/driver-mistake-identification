@@ -13,3 +13,5 @@ yapf
 albumentations==0.4.6
 mmcv==1.2.5
 pathspec
+imageio-ffmpeg
+

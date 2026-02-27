@@ -12,3 +12,4 @@ pytest-cov
 python-jose[cryptography]
 passlib[bcrypt]
 scipy
+imageio-ffmpeg
