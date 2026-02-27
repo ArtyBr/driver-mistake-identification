@@ -35,15 +35,15 @@ def _identify_driver(faces, frame_w, frame_h):
     return max(candidates, key=area)
 
 
-def blur_face_video(job_id: str, face_path: Path) -> None:
+def blur_passenger_faces(face_path: Path) -> None:
     """
     Blurs all faces except the driver's in face_path in-place.
-    Uses InsightFace (RetinaFace) — the same library as the analysis pipeline.
+    Uses InsightFace (RetinaFace) — the same library as the rest of the pipeline.
     Writes blurred frames to a temp file, merges original audio, then renames
     over the original. Non-fatal: logs errors and leaves original unchanged.
     """
     if not face_path.exists():
-        logger.warning(f"blur_face_video: {face_path} not found, skipping")
+        logger.warning(f"blur_passenger_faces: {face_path} not found, skipping")
         return
 
     video_only_tmp = face_path.parent / "face_blur_noaudio.mp4"
@@ -51,18 +51,18 @@ def blur_face_video(job_id: str, face_path: Path) -> None:
 
     try:
         from insightface.app import FaceAnalysis
-        from .video_utils import _get_ffmpeg_exe
-
-        ffmpeg = _get_ffmpeg_exe()
 
         cap = cv2.VideoCapture(str(face_path))
         fps = cap.get(cv2.CAP_PROP_FPS) or 30
         w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
+        env = os.environ.copy()
+        env.pop('LD_LIBRARY_PATH', None)
+
         # Step 1: write blurred frames into a video-only temp file via ffmpeg pipe
         pipe_cmd = [
-            ffmpeg, '-y',
+            'ffmpeg', '-y',
             '-f', 'rawvideo', '-vcodec', 'rawvideo',
             '-s', f'{w}x{h}', '-pix_fmt', 'bgr24', '-r', str(fps),
             '-i', 'pipe:0',
@@ -70,8 +70,6 @@ def blur_face_video(job_id: str, face_path: Path) -> None:
             '-c:v', 'libx264', '-crf', '23', '-preset', 'fast',
             str(video_only_tmp),
         ]
-        env = os.environ.copy()
-        env.pop('LD_LIBRARY_PATH', None)
         proc = subprocess.Popen(
             pipe_cmd, stdin=subprocess.PIPE, env=env,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -111,7 +109,7 @@ def blur_face_video(job_id: str, face_path: Path) -> None:
 
         # Step 2: merge with original audio
         merge_cmd = [
-            ffmpeg, '-y',
+            'ffmpeg', '-y',
             '-i', str(video_only_tmp),
             '-i', str(face_path),
             '-map', '0:v:0', '-map', '1:a?',
@@ -127,10 +125,10 @@ def blur_face_video(job_id: str, face_path: Path) -> None:
 
         # Step 3: atomic rename over original
         shutil.move(str(face_tmp), str(face_path))
-        logger.info(f"blur_face_video: completed for job {job_id}")
+        logger.info(f"blur_passenger_faces: completed for {face_path.name}")
 
     except Exception as e:
-        logger.error(f"blur_face_video failed for job {job_id}: {e}")
+        logger.error(f"blur_passenger_faces failed: {e}")
     finally:
         for tmp in [video_only_tmp, face_tmp]:
             if tmp.exists():

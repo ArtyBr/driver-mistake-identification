@@ -75,6 +75,13 @@ def main():
 
         logger.info(f"Starting analysis for:\nRoad: {args_cli.road}\nFace: {args_cli.face}")
 
+        # Blur passenger faces before analysis (non-fatal if it fails)
+        try:
+            from src.face_blur import blur_passenger_faces
+        except ImportError:
+            from face_blur import blur_passenger_faces
+        blur_passenger_faces(Path(args_cli.face))
+
         # Config Setup
         config_path = lanedet_pkg_dir / "configs/laneatt/resnet18_culane.py"
         weights_path = lanedet_pkg_dir / "weights/laneatt_r18_culane.pth"
