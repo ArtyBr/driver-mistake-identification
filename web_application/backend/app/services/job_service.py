@@ -16,8 +16,22 @@ from .file_service import FileService
 from .video_utils import get_video_duration
 from .analysis_service import run_analysis_process
 from .batch_service import BatchService
+from .face_blur_service import blur_face_video
 
 logger = logging.getLogger(__name__)
+
+
+def _blur_then_analyse(job_id, road_path_str, face_path_str,
+                       keep_videos, road_metadata, face_metadata, models_dir):
+    """Blur passenger faces first, then submit analysis. Runs sequentially in background."""
+    blur_face_video(job_id, Path(face_path_str))
+    run_analysis_process(
+        job_id, road_path_str, face_path_str,
+        keep_videos=keep_videos,
+        road_metadata=road_metadata,
+        face_metadata=face_metadata,
+        models_dir=models_dir,
+    )
 
 class JobService:
     def __init__(self, session: Session):
@@ -92,14 +106,14 @@ class JobService:
                     models_dir = str(cal_svc.get_user_model_dir(owner_id, calibration_id))
 
             background_tasks.add_task(
-                run_analysis_process,
+                _blur_then_analyse,
                 job_id,
                 str(road_path),
                 str(face_path),
-                keep_videos=keep_videos,
-                road_metadata=json.loads(road_meta),
-                face_metadata=json.loads(face_meta),
-                models_dir=models_dir
+                keep_videos,
+                json.loads(road_meta),
+                json.loads(face_meta),
+                models_dir,
             )
             
             return job
