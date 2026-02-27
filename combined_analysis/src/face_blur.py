@@ -39,8 +39,8 @@ def blur_passenger_faces(face_path: Path) -> None:
     """
     Blurs all faces except the driver's in face_path in-place.
     Uses InsightFace (RetinaFace) — the same library as the rest of the pipeline.
-    Writes blurred frames to a temp file, merges original audio, then renames
-    over the original. Non-fatal: logs errors and leaves original unchanged.
+    Writes blurred frames via cv2.VideoWriter, merges original audio with ffmpeg,
+    then renames over the original. Non-fatal: logs errors and leaves original unchanged.
     """
     if not face_path.exists():
         logger.warning(f"blur_passenger_faces: {face_path} not found, skipping")
@@ -57,23 +57,10 @@ def blur_passenger_faces(face_path: Path) -> None:
         w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-        env = os.environ.copy()
-        env.pop('LD_LIBRARY_PATH', None)
-
-        # Step 1: write blurred frames into a video-only temp file via ffmpeg pipe
-        pipe_cmd = [
-            'ffmpeg', '-y',
-            '-f', 'rawvideo', '-vcodec', 'rawvideo',
-            '-s', f'{w}x{h}', '-pix_fmt', 'bgr24', '-r', str(fps),
-            '-i', 'pipe:0',
-            '-an',
-            '-c:v', 'libx264', '-crf', '23', '-preset', 'fast',
-            str(video_only_tmp),
-        ]
-        proc = subprocess.Popen(
-            pipe_cmd, stdin=subprocess.PIPE, env=env,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        writer = cv2.VideoWriter(str(video_only_tmp), fourcc, fps, (w, h))
+        if not writer.isOpened():
+            raise RuntimeError("cv2.VideoWriter failed to open")
 
         detector = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         detector.prepare(ctx_id=0, det_size=(640, 640))
@@ -98,16 +85,14 @@ def blur_passenger_faces(face_path: Path) -> None:
                         ksize = max(51, (min(x2 - x1, y2 - y1) // 3) | 1)
                         frame[y1:y2, x1:x2] = cv2.GaussianBlur(roi, (ksize, ksize), 0)
 
-            proc.stdin.write(frame.tobytes())
+            writer.write(frame)
 
         cap.release()
-        proc.stdin.close()
-        proc.wait()
+        writer.release()
 
-        if proc.returncode != 0:
-            raise RuntimeError("ffmpeg pipe encoding failed")
-
-        # Step 2: merge with original audio
+        # Merge with original audio via ffmpeg (best-effort — face videos may have no audio)
+        env = os.environ.copy()
+        env.pop('LD_LIBRARY_PATH', None)
         merge_cmd = [
             'ffmpeg', '-y',
             '-i', str(video_only_tmp),
@@ -116,15 +101,15 @@ def blur_passenger_faces(face_path: Path) -> None:
             '-c:v', 'copy', '-c:a', 'copy',
             str(face_tmp),
         ]
-        r = subprocess.run(
-            merge_cmd, env=env,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
+        r = subprocess.run(merge_cmd, env=env,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if r.returncode != 0:
-            raise RuntimeError("ffmpeg audio merge failed")
+            # No audio or ffmpeg unavailable — just use the video-only file
+            logger.warning("blur_passenger_faces: audio merge failed, using video-only output")
+            shutil.move(str(video_only_tmp), str(face_path))
+        else:
+            shutil.move(str(face_tmp), str(face_path))
 
-        # Step 3: atomic rename over original
-        shutil.move(str(face_tmp), str(face_path))
         logger.info(f"blur_passenger_faces: completed for {face_path.name}")
 
     except Exception as e:
