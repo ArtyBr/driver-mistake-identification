@@ -62,22 +62,35 @@ class FileService:
         targets = [720, 480]
         pairs = [(road_path, "road"), (face_path, "face")]
         for path, prefix in pairs:
-            if not path.exists():
-                continue
-            try:
-                orig_height = get_video_height(path)
-                if orig_height == 0:
-                    logger.warning(f"Could not determine height for {path}, skipping transcoding")
-                    continue
-                for target in targets:
-                    if orig_height <= target:
-                        continue  # no upscaling
-                    out_path = path.parent / f"{prefix}_{target}p.mp4"
-                    if out_path.exists():
-                        continue  # idempotent
-                    logger.info(f"Transcoding {path.name} → {out_path.name} for job {job_id}")
-                    success = transcode_to_quality(path, out_path, target)
-                    if not success:
-                        logger.error(f"Transcoding failed: {out_path.name} for job {job_id}")
-            except Exception as e:
-                logger.error(f"transcode_job_videos error for {prefix} ({job_id}): {e}")
+            FileService._transcode_single_video(job_id, path, prefix, targets)
+
+    @staticmethod
+    def transcode_job_videos_road_only(job_id: str, road_path: Path):
+        """
+        Background-transcodes ONLY road video to 720p and 480p quality variants.
+        """
+        targets = [720, 480]
+        FileService._transcode_single_video(job_id, road_path, "road", targets)
+
+    @staticmethod
+    def _transcode_single_video(job_id: str, path: Path, prefix: str, targets: List[int]):
+        if not path.exists():
+            return
+        try:
+            orig_height = get_video_height(path)
+            if orig_height == 0:
+                logger.warning(f"Could not determine height for {path}, skipping transcoding")
+                return
+            for target in targets:
+                if orig_height <= target:
+                    continue  # no upscaling
+                out_path = path.parent / f"{prefix}_{target}p.mp4"
+                if out_path.exists():
+                    continue  # idempotent
+                logger.info(f"Transcoding {path.name} → {out_path.name} for job {job_id}")
+                success = transcode_to_quality(path, out_path, target)
+                if not success:
+                    logger.error(f"Transcoding failed: {out_path.name} for job {job_id}")
+        except Exception as e:
+            logger.error(f"transcode_job_videos error for {prefix} ({job_id}): {e}")
+

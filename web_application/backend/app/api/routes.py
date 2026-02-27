@@ -86,10 +86,10 @@ async def upload_videos(
     if name:
         service.update_job_name(job.id, name)
 
-    # Kick off background transcoding for quality variants
+    # Kick off background transcoding for quality variants (ROAD only)
+    # FACE transcoding is now handled by the analysis process after blurring
     road_path = UPLOAD_DIR / job.id / "road.mp4"
-    face_path = UPLOAD_DIR / job.id / "face.mp4"
-    background_tasks.add_task(FileService.transcode_job_videos, job.id, road_path, face_path)
+    background_tasks.add_task(FileService.transcode_job_videos_road_only, job.id, road_path)
 
     return {"job_id": job.id}
 

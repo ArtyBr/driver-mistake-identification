@@ -66,11 +66,17 @@ class VideoProcessor:
             self.vo.fps = fps
             self.vo.kf.dt = 1.0 / fps # Update KF delta time
 
-        # 2. Setup Video Writer (only if not exporting JSON or if we want both)
+        # 2. Setup Video Writer
         out_writer = None
         w, h = 0, 0
         if not export_json and self.args.savedir:
              out_writer, w, h = self._setup_video_writer(cap_road, fps)
+
+        # Setup Face Video Writer (Always, even in headless)
+        face_out_writer = None
+        face_fps = cap_face.get(cv2.CAP_PROP_FPS)
+        # Use a default if cap_face doesn't provide it
+        if not (1 < face_fps <= 120): face_fps = 30.0
 
         num_frames = end_frame - start_frame
         print(f"Processing frames {start_frame} to {end_frame} ({num_frames} frames) @ {fps} FPS...")
@@ -95,10 +101,6 @@ class VideoProcessor:
                 current_time = cap_road.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
 
                 # Advance face video to road time, handling FPS mismatches.
-                # We keep reading face frames until the face position meets or
-                # passes the current road time.  For a 60 fps phone video vs a
-                # 30 fps dashcam this skips every other face frame, keeping the
-                # overlay in sync with actual video playback.
                 if not face_exhausted:
                     while face_current_time < current_time:
                         ret_f, candidate = cap_face.read()
@@ -106,17 +108,30 @@ class VideoProcessor:
                             face_exhausted = True
                             break
                         face_current_time = cap_face.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
-                        last_good_face_frame = candidate
+                        
+                        # Apply face blurring to the face frame *before* analysis and writing
+                        candidate_blurred, _ = self.face_analyzer.process_frame(candidate)
+                        last_good_face_frame = candidate_blurred
+
+                        # Initialize face_out_writer on first frame read
+                        if face_out_writer is None and self.args.savedir:
+                            face_out_writer = self._setup_face_video_writer(last_good_face_frame, face_fps)
+                        
+                        # Write the blurred frame to the face-only video
+                        if face_out_writer:
+                            face_out_writer.write(last_good_face_frame)
+
                 frame_face = last_good_face_frame
 
                 if export_json:
                     # Headless processing
-                    frame_info = self._process_single_frame_headless(frame_road, frame_face, current_time)
+                    # Use a modified version of headless processing that doesn't re-blur
+                    frame_info = self._process_single_frame_headless_no_blur(frame_road, frame_face, current_time)
                     frame_data.append(frame_info)
                 else:
                     # 4. Process Frame (Visual)
-                    # Pass frame index for debugging
-                    vis_road = self._process_single_frame(frame_road, frame_face, current_time, frame_idx=i)
+                    # Use a modified version that doesn't re-blur
+                    vis_road = self._process_single_frame_no_blur(frame_road, frame_face, current_time, frame_idx=i)
 
                     # 5. Display & Write
                     if self.args.show:
@@ -174,6 +189,25 @@ class VideoProcessor:
             cap_road.release()
             cap_face.release()
             if out_writer: out_writer.release()
+            if face_out_writer: face_out_writer.release()
+
+            # Post-processing: Replace original face.mp4 with blurred one and generate quality variants
+            if self.args.savedir:
+                blurred_path = Path(self.args.savedir) / "face_blurred.mp4"
+                final_face_path = Path(self.args.savedir) / "face.mp4"
+                if blurred_path.exists():
+                    # Move blurred to final location
+                    if final_face_path.exists():
+                        try:
+                            final_face_path.unlink()
+                        except:
+                            pass
+                    blurred_path.rename(final_face_path)
+                    print(f"Finalized blurred face video at {final_face_path}")
+
+                    # Generate quality variants for the blurred face video
+                    self._generate_quality_variants(final_face_path)
+
             cv2.destroyAllWindows()
             gc.collect()
             if torch.cuda.is_available():
@@ -236,7 +270,32 @@ class VideoProcessor:
         
         return out_writer, w, h
 
+    def _setup_face_video_writer(self, frame, fps):
+        if not self.args.savedir:
+            return None
+
+        h, w = frame.shape[:2]
+        # Ensure divisible by 2
+        w, h = (w // 2) * 2, (h // 2) * 2
+
+        Path(self.args.savedir).mkdir(parents=True, exist_ok=True)
+        # We use 'face_blurred.mp4' as a temporary name during processing
+        out_path = str(Path(self.args.savedir) / "face_blurred.mp4")
+        
+        face_out_writer = None
+        for codec in ['mp4v', 'avc1', 'XVID']:
+            face_out_writer = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*codec), fps, (w, h))
+            if face_out_writer.isOpened():
+                print(f"Recording blurred face to {out_path} using {codec}")
+                break
+        
+        return face_out_writer
+
     def _process_single_frame(self, frame_road, frame_face, current_time, frame_idx=0):
+        # We now pre-blur in run(), so this is kept for legacy but we add a no-blur variant
+        return self._process_single_frame_no_blur(frame_road, frame_face, current_time, frame_idx)
+
+    def _process_single_frame_no_blur(self, frame_road, frame_face, current_time, frame_idx=0):
         # Debug logging for first frame
         debug = frame_idx == 0
         
@@ -249,19 +308,14 @@ class VideoProcessor:
         vo_pos = {'x': None, 'z': None}
         if self.vo:
             if debug: print("[Debug] Processing Visual Odometry...", flush=True)
-            # We pass a copy because VO might modify/crop it internally or for display
-            # Though our VO implementation creates a copy for crop, being safe is good
             _, _, _, turn_event, _ = self.vo.process_frame(external_frame=frame_road)
-            # Store current VO position
             vo_pos['x'] = float(self.vo.cur_t[0][0])
             vo_pos['z'] = float(self.vo.cur_t[2][0])
             
             if turn_event:
-                # Validate turn safety
                 result = self.safety_monitor.validate_turn(turn_event, current_time, self.state_history)
                 if result:
                     self.safety_monitor.active_alerts.append(result)
-                    # Add Turn Event to All Events for summary
                     self.all_events.append({
                         'timestamp': current_time,
                         'type': 'turn_event',
@@ -273,8 +327,9 @@ class VideoProcessor:
                     print(f"[{current_time:.2f}s] {result.message}")
 
         if debug: print("[Debug] Processing Face Analysis...", flush=True)
-        # Face Processing
-        frame_face, face_info = self.face_analyzer.process_frame(frame_face)
+        # Face Processing (Assume frame_face is already blurred)
+        # We still need the analysis data (pose, label)
+        _, face_info = self.face_analyzer.process_frame(frame_face)
         
         # Draw analysis on the face frame
         vis_face = self.visualizer.visualize_face_analysis(frame_face.copy(), face_info)
@@ -283,19 +338,15 @@ class VideoProcessor:
         self._update_history(face_info, current_time)
 
         # --- SAFETY CHECKS ---
-        # 1. Prune old alerts
         self.safety_monitor.prune_alerts(current_time)
         
-        # 2. Check for new events
         if cross_events:
             for event in cross_events:
-                # event is a dict: {'track_id': ..., 'direction': ..., 'age': ..., 'confidence': ...}
                 direction = event.get('direction')
                 if direction:
                     result = self.safety_monitor.validate_lane_change(direction, current_time, self.state_history)
                     if result:
                         self.safety_monitor.active_alerts.append(result)
-                        # Store as dictionary for consistency
                         self.all_events.append({
                             'timestamp': current_time,
                             'type': 'safety_alert',
@@ -307,20 +358,128 @@ class VideoProcessor:
                         print(f"[{current_time:.2f}s] {result.message}")
 
         if debug: print("[Debug] Visualizing...", flush=True)
-        # Visualization Composition
-        # 1. Overlay Face Video
         self.visualizer.draw_face_overlay(vis_road, vis_face)
-        
-        # 2. Draw Status Panel
         self.visualizer.draw_status_panel(vis_road, face_info)
-        
-        # 3. Draw History Panel
         self.visualizer.draw_history_panel(vis_road, self.state_history, current_time)
-        
-        # 4. Draw Safety Alerts
         self.visualizer.draw_safety_alerts(vis_road, self.safety_monitor.active_alerts)
         
         return vis_road
+
+    def _process_single_frame_headless_no_blur(self, frame_road, frame_face, current_time):
+        # Lane Processing
+        vis_road, lane_data, cross_events = self.lane_wrapper.process_frame(frame_road)
+
+        # VO Processing Headless
+        turn_event = None
+        vo_pos = {'x': None, 'z': None}
+        if self.vo:
+            _, _, _, turn_event, _ = self.vo.process_frame(external_frame=frame_road)
+            vo_pos['x'] = float(self.vo.cur_t[0][0])
+            vo_pos['z'] = float(self.vo.cur_t[2][0])
+            
+            if turn_event:
+                result = self.safety_monitor.validate_turn(turn_event, current_time, self.state_history)
+                if result:
+                    self.safety_monitor.active_alerts.append(result)
+                    self.all_events.append({
+                        'timestamp': current_time,
+                        'type': 'turn_event',
+                        'message': result.message,
+                        'severity': result.severity,
+                        'vo_x': vo_pos['x'],
+                        'vo_z': vo_pos['z']
+                    })
+
+        # Face Processing (Assume frame_face is already blurred)
+        _, face_info = self.face_analyzer.process_frame(frame_face)
+        
+        # Update History
+        self._update_history(face_info, current_time)
+
+        # --- SAFETY CHECKS ---
+        self.safety_monitor.prune_alerts(current_time)
+        
+        if cross_events:
+            for event in cross_events:
+                direction = event.get('direction')
+                if direction:
+                    result = self.safety_monitor.validate_lane_change(direction, current_time, self.state_history)
+                    if result:
+                        self.safety_monitor.active_alerts.append(result)
+                        self.all_events.append({
+                            'timestamp': current_time,
+                            'type': 'safety_alert',
+                            'message': result.message,
+                            'severity': result.severity,
+                            'vo_x': vo_pos['x'],
+                            'vo_z': vo_pos['z']
+                        })
+        
+        # Serialize Lane Data
+        serialized_lanes = []
+        if lane_data:
+            scaled_lanes = scale_lane_coeffs(
+                lane_data, 
+                src_w=config.MODEL_WIDTH, src_h=config.MODEL_HEIGHT,
+                dst_w=config.TARGET_WIDTH, dst_h=config.TARGET_HEIGHT
+            )
+            for track in scaled_lanes:
+                coeffs, t_id, conf, age, events = track
+                serialized_lanes.append([round(float(x), 6) for x in coeffs])
+
+        # Serialize Face Info
+        serialized_face = {}
+        if face_info:
+            serialized_face = {
+                'yaw': round(float(face_info.get('yaw', 0)), 2),
+                'pitch': round(float(face_info.get('pitch', 0)), 2),
+                'roll': round(float(face_info.get('roll', 0)), 2),
+                'label': face_info.get('label', 'N/A'),
+                'nose_2d': [int(x) for x in face_info.get('nose_2d')] if face_info.get('nose_2d') else None
+            }
+
+        return {
+            "time": round(float(current_time), 3),
+            "lane_lines": serialized_lanes,
+            "face_info": serialized_face,
+            "current_state": self.last_state
+        }
+
+    def _generate_quality_variants(self, input_path: Path):
+        """
+        Generates 720p and 480p versions of the blurred face video.
+        """
+        targets = [720, 480]
+        # We use a subprocess call to ffmpeg
+        import os
+        import subprocess
+
+        for target in targets:
+            out_path = input_path.parent / f"face_{target}p.mp4"
+            print(f"Generating quality variant: {out_path}")
+            
+            cmd = [
+                "ffmpeg",
+                "-i", str(input_path),
+                "-vf", f"scale=-2:{target}",
+                "-c:v", "libx264",
+                "-crf", "23",
+                "-preset", "fast",
+                "-c:a", "copy",
+                str(out_path),
+                "-y"
+            ]
+            
+            env = os.environ.copy()
+            if "LD_LIBRARY_PATH" in env:
+                del env["LD_LIBRARY_PATH"]
+
+            try:
+                subprocess.run(cmd, capture_output=True, text=True, env=env, check=True)
+            except subprocess.CalledProcessError as e:
+                print(f"Error generating {target}p variant: {e.stderr}")
+            except Exception as e:
+                print(f"Exception generating {target}p variant: {e}")
 
     def _update_history(self, face_info, current_time):
         if face_info and face_info['label'] not in ["N/A", "Unknown"]:
