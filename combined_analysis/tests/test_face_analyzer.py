@@ -69,27 +69,32 @@ class TestFaceAnalyzer(unittest.TestCase):
         self.assertEqual(driver, face_large)
 
     def test_apply_blurring(self):
-        frame = np.zeros((100, 100, 3), dtype=np.uint8)
-        # Draw some white squares to see blur
-        frame[10:30, 10:30] = 255
-        frame[60:80, 60:80] = 255
+        # Create a frame with some noise/pattern to detect blur better
+        frame = np.zeros((200, 200, 3), dtype=np.uint8)
+        # Checkerboard pattern in ROIs
+        for i in range(200):
+            for j in range(200):
+                if (i + j) % 2 == 0:
+                    frame[i, j] = 255
         
         face1 = MagicMock()
-        face1.bbox = np.array([10, 10, 30, 30])
+        face1.bbox = np.array([10, 10, 60, 60]) # 50x50
         
         face2 = MagicMock()
-        face2.bbox = np.array([60, 60, 80, 80])
+        face2.bbox = np.array([100, 100, 160, 160]) # 60x60
         
         # Case: face1 is driver, face2 should be blurred
-        blurred = self.analyzer._apply_blurring(frame, [face1, face2], face1)
+        # Mock faces must be in a list
+        faces = [face1, face2]
+        blurred = self.analyzer._apply_blurring(frame, faces, face1)
         
-        # Area of face1 should remain mostly unchanged (original was solid 255)
-        # Well, copy() might have slight differences if we are not careful, 
-        # but here it should be exactly same.
-        self.assertTrue(np.array_equal(frame[10:30, 10:30], blurred[10:30, 10:30]))
+        # Area of face1 should remain exactly same
+        self.assertTrue(np.array_equal(frame[10:60, 10:60], blurred[10:60, 10:60]))
         
-        # Area of face2 should be different
-        self.assertFalse(np.array_equal(frame[60:80, 60:80], blurred[60:80, 60:80]))
+        # Area of face2 should be different (blurred)
+        # We use a checkerboard pattern which is very sensitive to blurring
+        is_equal = np.array_equal(frame[100:160, 100:160], blurred[100:160, 100:160])
+        self.assertFalse(is_equal, "Face 2 area should have been blurred but remained equal")
 
 if __name__ == '__main__':
     unittest.main()

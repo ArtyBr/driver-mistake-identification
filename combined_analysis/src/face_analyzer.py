@@ -131,7 +131,8 @@ class FaceAnalyzer:
                 # Apply strong blur proportional to face size
                 ksize = int(max(x2-x1, y2-y1) / 3) | 1
                 if ksize < 3: ksize = 3
-                roi = cv2.GaussianBlur(roi, (ksize, ksize), 30)
-                blurred_frame[y1:y2, x1:x2] = roi
+                # print(f"DEBUG: Applying blur at {x1, y1, x2, y2}, ksize={ksize}")
+                roi_blurred = cv2.GaussianBlur(roi, (ksize, ksize), 30)
+                blurred_frame[y1:y2, x1:x2] = roi_blurred
 
         return blurred_frame
