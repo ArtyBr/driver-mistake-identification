@@ -195,18 +195,18 @@ class VideoProcessor:
             if self.args.savedir:
                 blurred_path = Path(self.args.savedir) / "face_blurred.mp4"
                 final_face_path = Path(self.args.savedir) / "face.mp4"
+                
                 if blurred_path.exists():
-                    # Move blurred to final location
-                    if final_face_path.exists():
-                        try:
-                            final_face_path.unlink()
-                        except:
-                            pass
-                    blurred_path.rename(final_face_path)
-                    print(f"Finalized blurred face video at {final_face_path}")
-
-                    # Generate quality variants for the blurred face video
-                    self._generate_quality_variants(final_face_path)
+                    print(f"Finalizing blurred face video variants for {final_face_path}...")
+                    # Generate all quality variants including the 'original' one (as face.mp4)
+                    # using web-compatible settings
+                    self._generate_all_face_variants(blurred_path, final_face_path)
+                    
+                    # Cleanup temporary blurred file
+                    try:
+                        blurred_path.unlink()
+                    except:
+                        pass
 
             cv2.destroyAllWindows()
             gc.collect()
@@ -445,41 +445,56 @@ class VideoProcessor:
             "current_state": self.last_state
         }
 
-    def _generate_quality_variants(self, input_path: Path):
+    def _generate_all_face_variants(self, temp_blurred_path: Path, final_face_path: Path):
         """
-        Generates 720p and 480p versions of the blurred face video.
+        Transcodes the temporary blurred video into web-compatible face.mp4 (original res),
+        face_720p.mp4 and face_480p.mp4.
         """
+        # 1. Generate main face.mp4 (Full resolution, web-compatible)
+        print(f"Transcoding main blurred video: {final_face_path}")
+        self._ffmpeg_transcode(temp_blurred_path, final_face_path)
+
+        # 2. Generate quality variants
         targets = [720, 480]
-        # We use a subprocess call to ffmpeg
+        for target in targets:
+            out_path = final_face_path.parent / f"face_{target}p.mp4"
+            print(f"Generating quality variant: {out_path}")
+            self._ffmpeg_transcode(temp_blurred_path, out_path, height=target)
+
+    def _ffmpeg_transcode(self, input_path: Path, output_path: Path, height: int = None):
+        """Helper to run ffmpeg with web-compatible settings, optionally scaling."""
         import os
         import subprocess
 
-        for target in targets:
-            out_path = input_path.parent / f"face_{target}p.mp4"
-            print(f"Generating quality variant: {out_path}")
-            
-            cmd = [
-                "ffmpeg",
-                "-i", str(input_path),
-                "-vf", f"scale=-2:{target}",
-                "-c:v", "libx264",
-                "-crf", "23",
-                "-preset", "fast",
-                "-c:a", "copy",
-                str(out_path),
-                "-y"
-            ]
-            
-            env = os.environ.copy()
-            if "LD_LIBRARY_PATH" in env:
-                del env["LD_LIBRARY_PATH"]
+        cmd = ["ffmpeg", "-i", str(input_path)]
+        
+        if height:
+            cmd += ["-vf", f"scale=-2:{height}"]
+        
+        # Web-compatible H.264
+        # We avoid -preset and -crf as they were failing on some cluster versions
+        cmd += [
+            "-c:v", "libx264",
+            "-pix_fmt", "yuv420p", # Essential for some browsers
+            "-c:a", "copy",
+            str(output_path),
+            "-y"
+        ]
+        
+        env = os.environ.copy()
+        if "LD_LIBRARY_PATH" in env:
+            del env["LD_LIBRARY_PATH"]
 
-            try:
-                subprocess.run(cmd, capture_output=True, text=True, env=env, check=True)
-            except subprocess.CalledProcessError as e:
-                print(f"Error generating {target}p variant: {e.stderr}")
-            except Exception as e:
-                print(f"Exception generating {target}p variant: {e}")
+        try:
+            subprocess.run(cmd, capture_output=True, text=True, env=env, check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"FFmpeg error for {output_path}: {e.stderr}")
+        except Exception as e:
+            print(f"FFmpeg exception for {output_path}: {e}")
+
+    def _generate_quality_variants(self, input_path: Path):
+        # This is now handled by _generate_all_face_variants
+        pass
 
     def _update_history(self, face_info, current_time):
         if face_info and face_info['label'] not in ["N/A", "Unknown"]:
