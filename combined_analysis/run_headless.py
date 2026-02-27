@@ -97,12 +97,12 @@ def main():
             face_model_path = project_root / 'face_analysis' / 'models'
         face_analyzer = FaceAnalyzer(str(face_model_path))
 
-        # Blur passenger faces using the already-loaded InsightFace app (no second model load)
+        # Blur passenger faces in an isolated subprocess (non-fatal, preserves original on failure)
         try:
             from src.face_blur import blur_passenger_faces
         except ImportError:
             from face_blur import blur_passenger_faces
-        blur_passenger_faces(Path(args_cli.face), face_analyzer.app)
+        blur_passenger_faces(Path(args_cli.face))
 
         logger.info("Initializing LaneDetectorWrapper...")
         lane_wrapper = LaneDetectorWrapper(cfg)

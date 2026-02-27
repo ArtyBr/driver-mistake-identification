@@ -1,3 +1,4 @@
+import sys
 import cv2
 import subprocess
 import logging
@@ -35,17 +36,12 @@ def _identify_driver(faces, frame_w, frame_h):
     return max(candidates, key=area)
 
 
-def blur_passenger_faces(face_path: Path, app) -> None:
+def _run_blur(face_path: Path) -> None:
     """
-    Blurs all faces except the driver's in face_path in-place.
-    Uses the already-initialised InsightFace FaceAnalysis `app` passed in from
-    FaceAnalyzer — no second model load, no session conflicts.
-    Writes blurred frames via cv2.VideoWriter, merges original audio with ffmpeg,
-    then renames over the original. Non-fatal: logs errors and leaves original unchanged.
+    Core blur logic. Runs inside an isolated subprocess so that OpenCV/ONNX
+    cleanup cannot corrupt the main analysis process's heap.
     """
-    if not face_path.exists():
-        logger.warning(f"blur_passenger_faces: {face_path} not found, skipping")
-        return
+    from insightface.app import FaceAnalysis
 
     video_only_tmp = face_path.parent / "face_blur_noaudio.mp4"
     face_tmp = face_path.parent / "face_tmp.mp4"
@@ -61,12 +57,19 @@ def blur_passenger_faces(face_path: Path, app) -> None:
         if not writer.isOpened():
             raise RuntimeError("cv2.VideoWriter failed to open")
 
+        # Detection-only: we only need bounding boxes, not landmarks/pose/recognition.
+        detector = FaceAnalysis(
+            providers=['CUDAExecutionProvider', 'CPUExecutionProvider'],
+            allowed_modules=['detection'],
+        )
+        detector.prepare(ctx_id=0, det_size=(640, 640))
+
         while True:
             ret, frame = cap.read()
             if not ret:
                 break
 
-            faces = app.get(frame)
+            faces = detector.get(frame)
 
             if len(faces) > 1:
                 driver = _identify_driver(faces, w, h)
@@ -100,16 +103,15 @@ def blur_passenger_faces(face_path: Path, app) -> None:
         r = subprocess.run(merge_cmd, env=env,
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if r.returncode != 0:
-            # No audio or ffmpeg unavailable — just use the video-only file
-            logger.warning("blur_passenger_faces: audio merge failed, using video-only output")
+            logger.warning("blur: audio merge failed, using video-only output")
             shutil.move(str(video_only_tmp), str(face_path))
         else:
             shutil.move(str(face_tmp), str(face_path))
 
-        logger.info(f"blur_passenger_faces: completed for {face_path.name}")
+        print(f"blur_passenger_faces: completed for {face_path.name}", flush=True)
 
     except Exception as e:
-        logger.error(f"blur_passenger_faces failed: {e}")
+        print(f"blur_passenger_faces failed: {e}", flush=True)
     finally:
         for tmp in [video_only_tmp, face_tmp]:
             if tmp.exists():
@@ -117,3 +119,31 @@ def blur_passenger_faces(face_path: Path, app) -> None:
                     tmp.unlink()
                 except OSError:
                     pass
+
+
+def blur_passenger_faces(face_path: Path) -> None:
+    """
+    Spawns an isolated subprocess to blur passenger faces in face_path.
+    Running in a subprocess ensures OpenCV/ONNX destructor crashes cannot
+    corrupt the main analysis process's heap.
+    Non-fatal: if the subprocess fails the original file is left unchanged.
+    """
+    try:
+        result = subprocess.run(
+            [sys.executable, __file__, str(face_path)],
+            timeout=600,
+        )
+        if result.returncode != 0:
+            print(f"blur subprocess exited with code {result.returncode} — continuing with original video", flush=True)
+    except subprocess.TimeoutExpired:
+        print("blur subprocess timed out — continuing with original video", flush=True)
+    except Exception as e:
+        print(f"blur subprocess error: {e} — continuing with original video", flush=True)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: face_blur.py <face_path>")
+        sys.exit(1)
+    logging.basicConfig(level=logging.INFO)
+    _run_blur(Path(sys.argv[1]))
