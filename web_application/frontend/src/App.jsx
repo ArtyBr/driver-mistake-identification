@@ -12,6 +12,7 @@ import VerifiedRoute from './components/VerifiedRoute';
 import AdminRoute from './components/AdminRoute';
 import AdminDashboard from './pages/AdminDashboard';
 import CalibrationPage from './pages/CalibrationPage';
+import GuidePage from './pages/GuidePage';
 import './App.css'; // Global styles (VideoPlayer styles etc)
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
             <AdminDashboard />
           </AdminRoute>
         } />
+        <Route path="guide" element={<GuidePage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="signup" element={<SignupPage />} />
         <Route path="verify-email" element={<VerifyEmailPage />} />

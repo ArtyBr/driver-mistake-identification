@@ -98,8 +98,15 @@ const Home = () => {
           </div>
 
           {myAnalyses.length === 0 ? (
-            <div className="text-center py-4 border border-color rounded bg-panel-lighter">
-              <p className="text-muted small mb-2">No analyses yet.</p>
+            <div className="p-4 rounded" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+              <p className="text-muted small mb-1">You haven't uploaded any analyses yet.</p>
+              <p className="text-muted small mb-3">
+                Not sure where to start?{' '}
+                <Link to="/guide" className="text-decoration-none" style={{ color: 'var(--accent-primary)' }}>
+                  Read the Getting Started Guide
+                </Link>{' '}
+                to learn how to set up your cameras and record your first session.
+              </p>
               <Link to="/analyze" className="btn btn-sm btn-cyber">Upload your first video</Link>
             </div>
           ) : (
