@@ -211,42 +211,29 @@ function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = nul
       />
 
       <div className="controls d-flex align-items-center" style={{ gap: '20px' }}>
-        <div className="d-flex flex-column gap-2" style={{ flexShrink: 0 }}>
-          <div className="d-flex align-items-center gap-2">
-            <button onClick={togglePlay} className="play-button" aria-label={isPlaying ? "Pause" : "Play"}>
-              {isPlaying ? <PauseIcon /> : <PlayIcon />}
-            </button>
-
-            <div className="jump-controls d-flex gap-1">
-              <button
-                onClick={() => jumpToEvent('prev')}
-                className="btn btn-cyber btn-sm"
-                title="Previous Event"
-                disabled={!results.timeline_events?.length}
-              >
-                <PrevIcon />
-              </button>
-              <button
-                onClick={() => jumpToEvent('next')}
-                className="btn btn-cyber btn-sm"
-                title="Next Event"
-                disabled={!results.timeline_events?.length}
-              >
-                <NextIcon />
-              </button>
-            </div>
-          </div>
-          <button 
-            className="btn btn-outline-warning btn-sm d-flex align-items-center justify-content-center gap-2 shadow-sm w-100"
-            style={{ fontSize: '0.75rem', padding: '4px 0' }}
-            onClick={() => {
-              if (!showReportForm && isPlaying) togglePlay();
-              setShowReportForm(prev => !prev);
-            }}
-            title="Report an error in detection or classification"
-          >
-            <i className="bi bi-flag-fill"></i> <span className="d-none d-md-inline">{showReportForm ? 'Hide Report Form' : 'Report Model/Detection Error'}</span>
+        <div className="d-flex align-items-center gap-2" style={{ flexShrink: 0 }}>
+          <button onClick={togglePlay} className="play-button" aria-label={isPlaying ? "Pause" : "Play"}>
+            {isPlaying ? <PauseIcon /> : <PlayIcon />}
           </button>
+
+          <div className="jump-controls d-flex gap-1">
+            <button
+              onClick={() => jumpToEvent('prev')}
+              className="btn btn-cyber btn-sm"
+              title="Previous Event"
+              disabled={!results.timeline_events?.length}
+            >
+              <PrevIcon />
+            </button>
+            <button
+              onClick={() => jumpToEvent('next')}
+              className="btn btn-cyber btn-sm"
+              title="Next Event"
+              disabled={!results.timeline_events?.length}
+            >
+              <NextIcon />
+            </button>
+          </div>
         </div>
 
         <div className="d-flex align-items-center flex-grow-1 gap-3 h-100">
@@ -282,22 +269,36 @@ function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = nul
         />
       )}
 
-      {availableQualities.length >= 1 && (
-        <div className="d-flex align-items-center gap-2 px-3 py-2" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)', borderLeft: '3px solid var(--border-color)', borderRadius: '4px', marginTop: '6px' }}>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Quality</span>
-          {['auto', ...availableQualities].map(q => (
-            <button
-              key={q}
-              className={`btn btn-sm ${quality === q ? 'btn-cyber' : 'btn-outline-secondary'}`}
-              onClick={() => handleQualityChange(q)}
-              title={q === 'auto' ? 'Auto-select based on network speed' : q}
-              style={{ fontSize: '0.75rem', padding: '2px 10px' }}
-            >
-              {q === 'auto' ? `Auto (${detectedQuality})` : q}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="d-flex align-items-center justify-content-between gap-2 px-3 py-2" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)', borderLeft: '3px solid var(--border-color)', borderRadius: '4px', marginTop: '6px' }}>
+        {availableQualities.length >= 1 ? (
+          <div className="d-flex align-items-center gap-2">
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Quality</span>
+            {['auto', ...availableQualities].map(q => (
+              <button
+                key={q}
+                className={`btn btn-sm ${quality === q ? 'btn-cyber' : 'btn-outline-secondary'}`}
+                onClick={() => handleQualityChange(q)}
+                title={q === 'auto' ? 'Auto-select based on network speed' : q}
+                style={{ fontSize: '0.75rem', padding: '2px 10px' }}
+              >
+                {q === 'auto' ? `Auto (${detectedQuality})` : q}
+              </button>
+            ))}
+          </div>
+        ) : <div />}
+
+        <button 
+          className="btn btn-outline-warning btn-sm d-flex align-items-center justify-content-center gap-2 shadow-sm"
+          style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+          onClick={() => {
+            if (!showReportForm && isPlaying) togglePlay();
+            setShowReportForm(prev => !prev);
+          }}
+          title="Report an error in detection or classification"
+        >
+          <i className="bi bi-flag-fill"></i> <span className="d-none d-md-inline">{showReportForm ? 'Hide Report Form' : 'Report Model/Detection Error'}</span>
+        </button>
+      </div>
 
       <Legend />
 
