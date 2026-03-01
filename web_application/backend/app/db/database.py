@@ -16,6 +16,7 @@ def init_db():
     from ..models.job import Job
     from ..models.calibration import UserCalibration  # ensures table is created
     from ..models.user import User
+    from ..models.report import Report
     from ..services.auth_service import get_password_hash
     from sqlmodel import select
 

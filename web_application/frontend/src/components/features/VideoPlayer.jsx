@@ -3,6 +3,7 @@ import VideoDisplay from './video_player/VideoDisplay'
 import Timeline from './video_player/Timeline'
 import LogViewer from './video_player/LogViewer'
 import Legend from './video_player/Legend'
+import ReportErrorModal from './ReportErrorModal'
 import { useVideoPlayback } from '../../hooks/useVideoPlayback'
 import { useVideoAnalysisData } from '../../hooks/useVideoAnalysisData'
 import { useVideoCanvas } from '../../hooks/useVideoCanvas'
@@ -37,12 +38,15 @@ const NextIcon = () => (
   </svg>
 );
 
-function VideoPlayer({ results, roadUrls, faceUrls, roadQualityUrls = null, faceQualityUrls = null }) {
+function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = null, faceQualityUrls = null }) {
   // DOM Refs
   const roadVideoRef = useRef(null)
   const faceVideoRef = useRef(null)
   const canvasRef = useRef(null)
   const faceCanvasRef = useRef(null)
+
+  // Report Modal state
+  const [showReportModal, setShowReportModal] = useState(false)
 
   // Quality selection state
   const [quality, setQuality] = useState('auto')
@@ -248,6 +252,18 @@ function VideoPlayer({ results, roadUrls, faceUrls, roadQualityUrls = null, face
         />
 
         <span className="time-display">{currentTime.toFixed(2)} / {duration.toFixed(2)}s</span>
+        
+        <button 
+          className="btn btn-outline-warning btn-sm ms-auto d-flex align-items-center gap-1"
+          style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+          onClick={() => {
+            if (isPlaying) togglePlay();
+            setShowReportModal(true);
+          }}
+          title="Report an error at this timestamp"
+        >
+          <i className="bi bi-flag-fill"></i> <span className="d-none d-md-inline">Report Error</span>
+        </button>
       </div>
 
       {availableQualities.length >= 1 && (
@@ -284,6 +300,18 @@ function VideoPlayer({ results, roadUrls, faceUrls, roadQualityUrls = null, face
         getLogIndexForSegment={getLogIndexForSegment}
         faceSegments={faceSegments}
       />
+
+      {showReportModal && (
+        <ReportErrorModal
+          jobId={jobId}
+          timestamp={currentTime}
+          onClose={() => setShowReportModal(false)}
+          onSuccess={() => {
+            setShowReportModal(false);
+            alert("Report submitted successfully. Thank you!");
+          }}
+        />
+      )}
     </div>
   )
 }

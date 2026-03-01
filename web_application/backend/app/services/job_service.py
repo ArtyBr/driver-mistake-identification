@@ -416,7 +416,7 @@ class JobService:
         self.session.refresh(job)
         return job
 
-    def create_reanalysis_job(self, source_job: Job, owner_id: str, models_dir: str) -> Job:
+    def create_reanalysis_job(self, source_job: Job, owner_id: str, models_dir: Optional[str] = None) -> Job:
         """
         Creates a new analysis job from the same videos as source_job, using a
         custom models_dir (the user's personal calibration model).

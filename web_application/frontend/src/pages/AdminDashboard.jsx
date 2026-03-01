@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminUsers, getAdminUserJobs, getAdminJobs, updateAdminUser, updateAdminJob, deleteAdminUser, deleteAdminJob } from '../services/api';
+import { 
+  getAdminUsers, getAdminUserJobs, getAdminJobs, 
+  updateAdminUser, updateAdminJob, deleteAdminUser, deleteAdminJob,
+  getAdminReports, getAdminReportStats, adminReanalyzeJob, getFileUrl
+} from '../services/api';
 import AnalysisListItem from '../components/common/AnalysisListItem';
 
 // ---------------------------------------------------------------------------
@@ -457,6 +461,180 @@ function UserRow({ user, jobs, onVerify, onDelete, onJobAction, onDemoChange }) 
 }
 
 // ---------------------------------------------------------------------------
+// Reports Section
+// ---------------------------------------------------------------------------
+
+function ReportsSection({ onRefresh }) {
+  const navigate = useNavigate();
+  const [expanded, setExpanded] = useState(false);
+  const [reports, setReports] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [loadingAction, setLoadingAction] = useState(null);
+
+  useEffect(() => {
+    if (expanded && reports === null) {
+      loadReports();
+    }
+  }, [expanded, reports]);
+
+  const loadReports = async () => {
+    try {
+      const [reps, s] = await Promise.all([
+        getAdminReports(),
+        getAdminReportStats()
+      ]);
+      setReports(reps);
+      setStats(s);
+    } catch (err) {
+      alert("Failed to load reports: " + err.message);
+    }
+  };
+
+  const handleReanalyze = async (jobId) => {
+    if (window.confirm("Start re-analysis for this job? This will queue a new background task.")) {
+      setLoadingAction(jobId);
+      try {
+        const result = await adminReanalyzeJob(jobId);
+        alert("Re-analysis started. New Job ID: " + result.job_id);
+        if (onRefresh) onRefresh();
+      } catch (err) {
+        alert("Failed to start re-analysis: " + err.message);
+      } finally {
+        setLoadingAction(null);
+      }
+    }
+  };
+
+  const count = stats ? stats.total : (reports ? reports.length : null);
+
+  return (
+    <div
+      className="card card-cyber mb-4 border-warning"
+      style={{
+        borderLeft: expanded ? '4px solid var(--bs-warning)' : '4px solid transparent',
+        transition: 'border-left-color 0.15s',
+      }}
+    >
+      <div
+        className="d-flex align-items-center gap-2 p-3"
+        onClick={() => setExpanded(e => !e)}
+        style={{ cursor: 'pointer', userSelect: 'none' }}
+      >
+        <span style={{
+          display: 'inline-block',
+          fontSize: '0.8rem',
+          transition: 'transform 0.2s',
+          transform: expanded ? 'rotate(90deg)' : 'none',
+          color: 'var(--text-muted)',
+          flexShrink: 0,
+          width: 14,
+        }}>▶</span>
+
+        <i className="bi bi-flag-fill text-warning" style={{ fontSize: '0.9rem' }}></i>
+        <span className="fw-bold text-white me-auto">User Error Reports</span>
+
+        <span style={{
+          fontSize: '0.72rem', color: 'var(--bs-warning)',
+          border: '1px solid var(--bs-warning)', borderRadius: 4, padding: '1px 7px',
+        }}>
+          {count == null ? '…' : `${count} report${count !== 1 ? 's' : ''}`}
+        </span>
+      </div>
+
+      {expanded && (
+        <div className="bg-panel-lighter px-3 pb-3 pt-1" style={{ borderTop: '1px solid var(--border-color)' }}>
+          {!reports && (
+            <div className="d-flex align-items-center gap-2 mt-2 text-muted small">
+              <div className="spinner-border spinner-border-sm" role="status" />
+              Loading…
+            </div>
+          )}
+          
+          {stats && (
+            <div className="d-flex flex-wrap gap-3 mb-3 mt-2 pb-3 border-bottom border-secondary">
+              <div className="small">
+                <span className="text-muted d-block">Error Types</span>
+                <span className="badge bg-warning text-dark me-1">FP: {stats.by_type.false_positive || 0}</span>
+                <span className="badge bg-info text-dark">FN: {stats.by_type.false_negative || 0}</span>
+              </div>
+              <div className="small">
+                <span className="text-muted d-block">Event Types</span>
+                {Object.entries(stats.by_event).map(([k, v]) => (
+                  <span key={k} className="badge bg-secondary me-1">{k.replace(/_/g, ' ')}: {v}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {reports && reports.length === 0 && (
+            <p className="text-muted small mt-2 mb-0">No error reports submitted yet.</p>
+          )}
+
+          {reports && reports.map(r => (
+            <div key={r.id} className="card bg-dark border-secondary mb-2 p-3">
+              <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                <div>
+                  <div className="d-flex align-items-center gap-2 mb-1">
+                    <span className="fw-bold text-white" style={{ fontSize: '0.9rem' }}>{r.user_email}</span>
+                    <span className="text-muted small">reported on {new Date(r.created_at).toLocaleString()}</span>
+                  </div>
+                  <div className="small mb-2">
+                    <span className="text-muted me-1">Job:</span> 
+                    <span className="text-info cursor-pointer text-decoration-underline" onClick={() => navigate(`/view/${r.job_id}`)}>
+                      {r.job_name}
+                    </span>
+                    <span className="text-muted ms-3 me-1">Time:</span> 
+                    <span className="text-white">{r.timestamp.toFixed(2)}s</span>
+                  </div>
+                  <div className="d-flex gap-2 mb-2">
+                    <span className={`badge ${r.report_type === 'false_positive' ? 'bg-warning text-dark' : 'bg-info text-dark'}`}>
+                      {r.report_type === 'false_positive' ? 'False Positive' : 'False Negative'}
+                    </span>
+                    <span className="badge border border-secondary text-light">
+                      {r.event_type.replace(/_/g, ' ').toUpperCase()}
+                    </span>
+                  </div>
+                  {r.description && (
+                    <p className="small text-muted mb-0 fst-italic">"{r.description}"</p>
+                  )}
+                </div>
+                
+                <div className="d-flex flex-column gap-2 align-items-end">
+                  <div className="dropdown">
+                     <button className="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i className="bi bi-download me-1"></i> Video
+                     </button>
+                     <ul className="dropdown-menu dropdown-menu-dark shadow">
+                        <li>
+                          <a className="dropdown-item" href={getFileUrl(`REMOTE:${r.job_id}/road.mp4`)} target="_blank" rel="noopener noreferrer" download>
+                            Road Video
+                          </a>
+                        </li>
+                        <li>
+                          <a className="dropdown-item" href={getFileUrl(`REMOTE:${r.job_id}/face.mp4`)} target="_blank" rel="noopener noreferrer" download>
+                            Face Video
+                          </a>
+                        </li>
+                     </ul>
+                  </div>
+                  <button 
+                    className="btn btn-sm btn-outline-info"
+                    onClick={() => handleReanalyze(r.job_id)}
+                    disabled={loadingAction === r.job_id}
+                  >
+                    {loadingAction === r.job_id ? 'Starting...' : 'Re-analyze Job'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 
@@ -525,6 +703,8 @@ export default function AdminDashboard() {
           setDemoKey(k => k + 1);
         }}
       />
+
+      <ReportsSection onRefresh={loadData} />
 
       <div className="mb-3">
         <input

@@ -143,4 +143,14 @@ export const deleteAdminSession = (sessionId) => api.delete(`/admin/sessions/${s
 export const getAdminCalibrations = () => api.get('/admin/calibrations').then(r => r.data);
 export const deleteAdminCalibration = (userId) => api.delete(`/admin/calibrations/${userId}`).then(r => r.data);
 
+// ---------------------------------------------------------------------------
+// Error Reporting API
+// ---------------------------------------------------------------------------
+
+export const submitErrorReport = (jobId, reportData) => api.post(`/jobs/${jobId}/report`, reportData).then(r => r.data);
+
+export const getAdminReports = (params = {}) => api.get('/admin/reports', { params }).then(r => r.data);
+export const getAdminReportStats = () => api.get('/admin/reports/stats').then(r => r.data);
+export const adminReanalyzeJob = (jobId) => api.post(`/admin/jobs/${jobId}/reanalyze`).then(r => r.data);
+
 export default api;

@@ -17,8 +17,10 @@ from ..models.user import User, UserResponse
 from ..models.job import Job
 from ..models.calibration import UserCalibration
 from ..models.session import DrivingSession
+from ..models.report import Report
 from ..services.auth_service import get_current_user
 from ..services.auth_service import get_password_hash
+from ..services.job_service import JobService
 from ..services.event_stats import read_event_stats
 from ..core.config import UPLOAD_DIR
 
@@ -413,3 +415,99 @@ async def admin_delete_calibration(
     session.delete(cal)
     session.commit()
     return {"message": f"Calibration for user {user_id} deleted"}
+
+# ---------------------------------------------------------------------------
+# Reports
+# ---------------------------------------------------------------------------
+
+@router.get("/reports")
+async def admin_list_reports(
+    user_id: Optional[str] = Query(None),
+    event_type: Optional[str] = Query(None),
+    session: Session = Depends(get_session),
+    _: User = Depends(get_admin_user),
+):
+    stmt = select(Report)
+    if user_id:
+        stmt = stmt.where(Report.user_id == user_id)
+    if event_type:
+        stmt = stmt.where(Report.event_type == event_type)
+    
+    stmt = stmt.order_by(Report.created_at.desc())
+    reports = session.exec(stmt).all()
+
+    # Pre-fetch users and jobs
+    u_ids = {r.user_id for r in reports if r.user_id}
+    j_ids = {r.job_id for r in reports if r.job_id}
+    
+    users_map = {}
+    if u_ids:
+        users = session.exec(select(User).where(User.id.in_(list(u_ids)))).all()
+        users_map = {u.id: u.email for u in users}
+        
+    jobs_map = {}
+    if j_ids:
+        jobs = session.exec(select(Job).where(Job.id.in_(list(j_ids)))).all()
+        jobs_map = {j.id: j for j in jobs}
+
+    result = []
+    for r in reports:
+        job = jobs_map.get(r.job_id)
+        result.append({
+            "id": r.id,
+            "job_id": r.job_id,
+            "job_name": job.name if job else r.job_id,
+            "road_path": job.road_path if job else None,
+            "user_id": r.user_id,
+            "user_email": users_map.get(r.user_id, "Unknown"),
+            "timestamp": r.timestamp,
+            "event_type": r.event_type,
+            "report_type": r.report_type,
+            "description": r.description,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        })
+    return result
+
+@router.get("/reports/stats")
+async def admin_report_stats(
+    session: Session = Depends(get_session),
+    _: User = Depends(get_admin_user),
+):
+    reports = session.exec(select(Report)).all()
+    
+    total = len(reports)
+    by_event = {}
+    by_type = {"false_positive": 0, "false_negative": 0}
+    
+    for r in reports:
+        by_event[r.event_type] = by_event.get(r.event_type, 0) + 1
+        if r.report_type in by_type:
+            by_type[r.report_type] += 1
+            
+    return {
+        "total": total,
+        "by_event": by_event,
+        "by_type": by_type
+    }
+
+@router.post("/jobs/{job_id}/reanalyze")
+async def admin_reanalyze_job(
+    job_id: str,
+    session: Session = Depends(get_session),
+    current_admin: User = Depends(get_admin_user),
+):
+    job_service = JobService(session)
+    source_job = job_service.get_job(job_id)
+    
+    if not source_job:
+        raise HTTPException(status_code=404, detail="Job not found")
+        
+    try:
+        # Create reanalysis job with no specific models_dir (uses general model)
+        new_job = job_service.create_reanalysis_job(source_job, owner_id=current_admin.id, models_dir=None)
+        return {"message": "Re-analysis started", "job_id": new_job.id}
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error re-analyzing job {job_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to start re-analysis")

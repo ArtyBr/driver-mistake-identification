@@ -15,6 +15,7 @@ from ..services.file_service import FileService
 from ..models.schemas import JobCreateResponse, JobStatusResponse, AnalysisListResponse, JobUpdate
 from ..models.job import Job
 from ..models.user import User
+from ..models.report import Report, ReportCreate
 from . import auth_routes
 
 router = APIRouter()
@@ -410,3 +411,28 @@ async def stream_remote_video(
         headers=headers,
         media_type="video/mp4"
     )
+
+@router.post("/jobs/{job_id}/report")
+async def create_report(
+    job_id: str,
+    report_data: ReportCreate,
+    current_user: User = Depends(get_verified_user),
+    service: JobService = Depends(get_job_service)
+):
+    """Submits an error report for a specific job."""
+    job = service.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+        
+    report = Report(
+        job_id=job_id,
+        user_id=current_user.id,
+        timestamp=report_data.timestamp,
+        event_type=report_data.event_type,
+        report_type=report_data.report_type,
+        description=report_data.description
+    )
+    service.session.add(report)
+    service.session.commit()
+    service.session.refresh(report)
+    return {"message": "Report submitted successfully", "id": report.id}
