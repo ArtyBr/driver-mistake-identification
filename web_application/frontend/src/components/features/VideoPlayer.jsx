@@ -210,62 +210,64 @@ function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = nul
         currentEvent={currentEvent}
       />
 
-      <div className="controls">
-        <button onClick={togglePlay} className="play-button" aria-label={isPlaying ? "Pause" : "Play"}>
-          {isPlaying ? <PauseIcon /> : <PlayIcon />}
-        </button>
+      <div className="controls d-flex align-items-center" style={{ gap: '20px' }}>
+        <div className="d-flex flex-column gap-2" style={{ flexShrink: 0 }}>
+          <div className="d-flex align-items-center gap-2">
+            <button onClick={togglePlay} className="play-button" aria-label={isPlaying ? "Pause" : "Play"}>
+              {isPlaying ? <PauseIcon /> : <PlayIcon />}
+            </button>
 
-        <div className="jump-controls d-flex gap-1">
-          <button
-            onClick={() => jumpToEvent('prev')}
-            className="btn btn-cyber btn-sm"
-            title="Previous Event"
-            disabled={!results.timeline_events?.length}
+            <div className="jump-controls d-flex gap-1">
+              <button
+                onClick={() => jumpToEvent('prev')}
+                className="btn btn-cyber btn-sm"
+                title="Previous Event"
+                disabled={!results.timeline_events?.length}
+              >
+                <PrevIcon />
+              </button>
+              <button
+                onClick={() => jumpToEvent('next')}
+                className="btn btn-cyber btn-sm"
+                title="Next Event"
+                disabled={!results.timeline_events?.length}
+              >
+                <NextIcon />
+              </button>
+            </div>
+          </div>
+          <button 
+            className="btn btn-outline-warning btn-sm d-flex align-items-center justify-content-center gap-2 shadow-sm w-100"
+            style={{ fontSize: '0.75rem', padding: '4px 0' }}
+            onClick={() => {
+              if (!showReportForm && isPlaying) togglePlay();
+              setShowReportForm(prev => !prev);
+            }}
+            title="Report an error in detection or classification"
           >
-            <PrevIcon />
-          </button>
-          <button
-            onClick={() => jumpToEvent('next')}
-            className="btn btn-cyber btn-sm"
-            title="Next Event"
-            disabled={!results.timeline_events?.length}
-          >
-            <NextIcon />
+            <i className="bi bi-flag-fill"></i> <span className="d-none d-md-inline">{showReportForm ? 'Hide Report Form' : 'Report Model/Detection Error'}</span>
           </button>
         </div>
 
-        <Timeline 
-          currentTime={currentTime}
-          duration={duration}
-          events={results.timeline_events}
-          faceSegments={faceSegments}
-          history={history}
-          hoveredEventIndex={hoveredEventIndex}
-          setHoveredEventIndex={setHoveredEventIndex}
-          hoveredFaceSegmentIndex={hoveredFaceSegmentIndex}
-          setHoveredFaceSegmentIndex={setHoveredFaceSegmentIndex}
-          hoveredLogIndex={hoveredLogIndex}
-          onSeek={handleSeek}
-          getColorForState={getColorForState}
-          getLogIndexForSegment={getLogIndexForSegment}
-          bufferedRanges={bufferedRanges}
-        />
-
-        <span className="time-display">{currentTime.toFixed(2)} / {duration.toFixed(2)}s</span>
-      </div>
-
-      <div className="d-flex justify-content-end mt-2 px-1">
-        <button 
-          className="btn btn-outline-warning btn-sm d-flex align-items-center gap-2 shadow-sm"
-          style={{ fontSize: '0.8rem', padding: '4px 10px' }}
-          onClick={() => {
-            if (!showReportForm && isPlaying) togglePlay();
-            setShowReportForm(prev => !prev);
-          }}
-          title="Report an error in detection or classification"
-        >
-          <i className="bi bi-flag-fill"></i> <span className="d-none d-md-inline">{showReportForm ? 'Hide Report Form' : 'Report Model/Detection Error'}</span>
-        </button>
+        <div className="d-flex align-items-center flex-grow-1 gap-3 h-100">
+          <Timeline 
+            currentTime={currentTime}
+            duration={duration}
+            events={results.timeline_events}
+            faceSegments={faceSegments}
+            history={history}
+            hoveredEventIndex={hoveredEventIndex}
+            setHoveredEventIndex={setHoveredEventIndex}
+            hoveredFaceSegmentIndex={hoveredFaceSegmentIndex}
+            setHoveredFaceSegmentIndex={setHoveredFaceSegmentIndex}
+            hoveredLogIndex={hoveredLogIndex}
+            onSeek={handleSeek}
+            getColorForState={getColorForState}
+            getLogIndexForSegment={getLogIndexForSegment}
+            bufferedRanges={bufferedRanges}
+          />
+          <span className="time-display" style={{ flexShrink: 0 }}>{currentTime.toFixed(2)} / {duration.toFixed(2)}s</span>
+        </div>
       </div>
 
       {showReportForm && (
