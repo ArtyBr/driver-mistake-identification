@@ -210,51 +210,48 @@ function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = nul
         currentEvent={currentEvent}
       />
 
-      <div className="controls d-flex align-items-center" style={{ gap: '20px' }}>
-        <div className="d-flex align-items-center gap-2" style={{ flexShrink: 0 }}>
-          <button onClick={togglePlay} className="play-button" aria-label={isPlaying ? "Pause" : "Play"}>
-            {isPlaying ? <PauseIcon /> : <PlayIcon />}
+      <div className="controls">
+        <button onClick={togglePlay} className="play-button" aria-label={isPlaying ? "Pause" : "Play"}>
+          {isPlaying ? <PauseIcon /> : <PlayIcon />}
+        </button>
+
+        <div className="jump-controls d-flex gap-1">
+          <button
+            onClick={() => jumpToEvent('prev')}
+            className="btn btn-cyber btn-sm"
+            title="Previous Event"
+            disabled={!results.timeline_events?.length}
+          >
+            <PrevIcon />
           </button>
-
-          <div className="jump-controls d-flex gap-1">
-            <button
-              onClick={() => jumpToEvent('prev')}
-              className="btn btn-cyber btn-sm"
-              title="Previous Event"
-              disabled={!results.timeline_events?.length}
-            >
-              <PrevIcon />
-            </button>
-            <button
-              onClick={() => jumpToEvent('next')}
-              className="btn btn-cyber btn-sm"
-              title="Next Event"
-              disabled={!results.timeline_events?.length}
-            >
-              <NextIcon />
-            </button>
-          </div>
+          <button
+            onClick={() => jumpToEvent('next')}
+            className="btn btn-cyber btn-sm"
+            title="Next Event"
+            disabled={!results.timeline_events?.length}
+          >
+            <NextIcon />
+          </button>
         </div>
 
-        <div className="d-flex align-items-center flex-grow-1 gap-3 h-100">
-          <Timeline 
-            currentTime={currentTime}
-            duration={duration}
-            events={results.timeline_events}
-            faceSegments={faceSegments}
-            history={history}
-            hoveredEventIndex={hoveredEventIndex}
-            setHoveredEventIndex={setHoveredEventIndex}
-            hoveredFaceSegmentIndex={hoveredFaceSegmentIndex}
-            setHoveredFaceSegmentIndex={setHoveredFaceSegmentIndex}
-            hoveredLogIndex={hoveredLogIndex}
-            onSeek={handleSeek}
-            getColorForState={getColorForState}
-            getLogIndexForSegment={getLogIndexForSegment}
-            bufferedRanges={bufferedRanges}
-          />
-          <span className="time-display" style={{ flexShrink: 0 }}>{currentTime.toFixed(2)} / {duration.toFixed(2)}s</span>
-        </div>
+        <Timeline 
+          currentTime={currentTime}
+          duration={duration}
+          events={results.timeline_events}
+          faceSegments={faceSegments}
+          history={history}
+          hoveredEventIndex={hoveredEventIndex}
+          setHoveredEventIndex={setHoveredEventIndex}
+          hoveredFaceSegmentIndex={hoveredFaceSegmentIndex}
+          setHoveredFaceSegmentIndex={setHoveredFaceSegmentIndex}
+          hoveredLogIndex={hoveredLogIndex}
+          onSeek={handleSeek}
+          getColorForState={getColorForState}
+          getLogIndexForSegment={getLogIndexForSegment}
+          bufferedRanges={bufferedRanges}
+        />
+
+        <span className="time-display">{currentTime.toFixed(2)} / {duration.toFixed(2)}s</span>
       </div>
 
       {showReportForm && (
@@ -269,7 +266,7 @@ function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = nul
         />
       )}
 
-      <div className="d-flex align-items-center justify-content-between gap-2 px-3 py-2" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)', borderLeft: '3px solid var(--border-color)', borderRadius: '4px', marginTop: '6px' }}>
+      <div className="d-flex flex-column flex-md-row align-items-stretch align-items-md-center justify-content-between gap-2 px-3 py-2" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)', borderLeft: '3px solid var(--border-color)', borderRadius: '4px', marginTop: '6px' }}>
         {availableQualities.length >= 1 ? (
           <div className="d-flex align-items-center gap-2">
             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Quality</span>
@@ -285,7 +282,7 @@ function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = nul
               </button>
             ))}
           </div>
-        ) : <div />}
+        ) : <div className="d-none d-md-block" />}
 
         <button 
           className="btn btn-outline-warning btn-sm d-flex align-items-center justify-content-center gap-2 shadow-sm"
@@ -296,7 +293,7 @@ function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = nul
           }}
           title="Report an error in detection or classification"
         >
-          <i className="bi bi-flag-fill"></i> <span className="d-none d-md-inline">{showReportForm ? 'Hide Report Form' : 'Report Model/Detection Error'}</span>
+          <i className="bi bi-flag-fill"></i> <span>{showReportForm ? 'Hide Report Form' : 'Report Model/Detection Error'}</span>
         </button>
       </div>
 
