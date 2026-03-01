@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAnalysesList } from '../hooks/useAnalysesList';
 import Uploader from '../components/features/Uploader';
@@ -6,6 +6,10 @@ import Uploader from '../components/features/Uploader';
 const UploadPage = () => {
   const navigate = useNavigate();
   const { analyses, loading } = useAnalysesList();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const hasAnalyses = !loading && analyses.some(a => !a.is_demo);
 
   const handleUploadSuccess = (jobId, jobData, localFiles) => {

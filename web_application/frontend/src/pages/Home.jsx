@@ -3,12 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useAnalysesList } from '../hooks/useAnalysesList';
 import AnalysisListItem from '../components/common/AnalysisListItem';
+import { updateJobName, deleteJob } from '../services/api';
 
 const Home = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const { analyses, getEtaMs } = useAnalysesList();
+  const { analyses, getEtaMs, refetch: refetchAnalyses } = useAnalysesList();
   const demoAnalyses = analyses.filter(a => a.is_demo);
   const myAnalyses   = analyses.filter(a => !a.is_demo);
 
@@ -24,11 +25,22 @@ const Home = () => {
     }
   };
 
-  const formatDuration = (seconds) => {
-    if (!seconds) return "Unknown duration";
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}m ${remainingSeconds}s`;
+  const handleRename = async (analysis) => {
+    const newName = window.prompt('Enter new name:', analysis.name || '');
+    if (newName && newName.trim()) {
+      try {
+        await updateJobName(analysis.id, newName.trim());
+        refetchAnalyses();
+      } catch {}
+    }
+  };
+
+  const handleDelete = async (analysis) => {
+    if (!window.confirm(`Delete "${analysis.name || 'this analysis'}"? This cannot be undone.`)) return;
+    try {
+      await deleteJob(analysis.id);
+      refetchAnalyses();
+    } catch {}
   };
 
   const features = [
@@ -116,6 +128,9 @@ const Home = () => {
                   key={analysis.id}
                   analysis={analysis}
                   onClick={() => handleItemClick(analysis)}
+                  onView={() => handleItemClick(analysis)}
+                  onRename={() => handleRename(analysis)}
+                  onDelete={() => handleDelete(analysis)}
                   etaMs={getEtaMs(analysis.id, analysis.progress || 0)}
                 />
               ))}
@@ -170,23 +185,12 @@ const Home = () => {
           <div className="demo-list-container">
             {demoAnalyses.length > 0 ? (
               demoAnalyses.map(analysis => (
-                <div key={analysis.id} className="analysis-item-modern mb-2 d-flex justify-content-between align-items-center p-3 rounded">
-                  <div className="d-flex align-items-center">
-                    <div>
-                      <div className="fw-bold text-white mb-0" style={{ lineHeight: '1.2' }}>{analysis.name}</div>
-                      <div className="d-flex gap-3 small text-muted mt-1">
-                        <span>{analysis.video_count} files</span>
-                        <span>{formatDuration(analysis.duration_seconds)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    className="btn btn-sm btn-cyber px-4 py-2 fw-bold"
-                    onClick={() => handleLoadDemo(analysis.id)}
-                  >
-                    VIEW <i className="bi bi-arrow-right ms-1"></i>
-                  </button>
-                </div>
+                <AnalysisListItem
+                  key={analysis.id}
+                  analysis={analysis}
+                  onClick={() => handleLoadDemo(analysis.id)}
+                  onView={() => handleLoadDemo(analysis.id)}
+                />
               ))
             ) : (
               <div className="text-center py-5 border border-color rounded bg-panel-lighter">

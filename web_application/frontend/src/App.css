@@ -128,7 +128,6 @@ footer {
   border: 1px solid var(--border-color);
   transition: all 0.2s ease;
   position: relative;
-  overflow: hidden;
 }
 
 .analysis-item-modern:hover {

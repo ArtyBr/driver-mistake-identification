@@ -18,7 +18,6 @@ function Uploader({ onUploadSuccess }) {
   const [keepVideos, setKeepVideos] = useState(false)
   const [alreadySynced, setAlreadySynced] = useState(false)
   const [uploadName, setUploadName] = useState("")
-  const [selectedAnalysis, setSelectedAnalysis] = useState("")
   const [calibrations, setCalibrations] = useState([])
   const [selectedCalId, setSelectedCalId] = useState("")
 
@@ -174,45 +173,35 @@ function Uploader({ onUploadSuccess }) {
     }
   };
 
-  const handleLoadAnalysis = () => {
-    if (!selectedAnalysis) return;
-    const analysis = analyses.find(a => a.id === selectedAnalysis);
-    if (!analysis) return;
-
+  const handleView = (analysis) => {
     if (analysis.status === 'COMPLETED' || analysis.status === 'FAILED') {
       navigate(`/view/${analysis.id}`);
     } else {
       navigate(`/job/${analysis.id}`);
     }
-  }
+  };
 
-  const handleDelete = async () => {
-    if (!selectedAnalysis) return;
-    const current = analyses.find(a => a.id === selectedAnalysis);
-    if (!window.confirm(`Delete "${current?.name || selectedAnalysis}" and all its files? This cannot be undone.`)) return;
+  const handleDeleteItem = async (analysis) => {
+    if (!window.confirm(`Delete "${analysis.name || analysis.id}" and all its files? This cannot be undone.`)) return;
     try {
-      await deleteJob(selectedAnalysis);
-      setSelectedAnalysis('');
+      await deleteJob(analysis.id);
       await refetchAnalyses();
     } catch (e) {
       setLocalError(e.response?.data?.detail || 'Failed to delete analysis.');
     }
   };
 
-  const handleRename = async () => {
-    if (!selectedAnalysis) return;
-    const currentAnalysis = analyses.find(a => a.id === selectedAnalysis);
-    const newName = prompt("Enter new name for this analysis:", currentAnalysis?.name || "");
-    if (newName && newName.trim() !== "") {
+  const handleRenameItem = async (analysis) => {
+    const newName = window.prompt('Enter new name:', analysis.name || '');
+    if (newName && newName.trim()) {
       try {
-        await updateJobName(selectedAnalysis, newName);
+        await updateJobName(analysis.id, newName.trim());
         await refetchAnalyses();
-      } catch (e) {
-        console.error("Failed to rename:", e);
-        setLocalError("Failed to update name.");
+      } catch {
+        setLocalError('Failed to update name.');
       }
     }
-  }
+  };
 
   const displayError = localError || uploadError;
 
@@ -390,8 +379,10 @@ function Uploader({ onUploadSuccess }) {
                 <AnalysisListItem
                   key={analysis.id}
                   analysis={analysis}
-                  selected={selectedAnalysis === analysis.id}
-                  onClick={() => setSelectedAnalysis(analysis.id)}
+                  onClick={() => handleView(analysis)}
+                  onView={() => handleView(analysis)}
+                  onRename={() => handleRenameItem(analysis)}
+                  onDelete={() => handleDeleteItem(analysis)}
                   etaMs={getEtaMs(analysis.id, analysis.progress || 0)}
                 />
               ))}
@@ -409,54 +400,6 @@ function Uploader({ onUploadSuccess }) {
           </div>
         )}
 
-        <div className="row g-2">
-          {user && (
-            <>
-              <div className="col-md-4">
-                <button
-                  className="btn btn-outline-cyber w-100"
-                  onClick={handleRename}
-                  disabled={!selectedAnalysis || analyses.find(a => a.id === selectedAnalysis)?.is_demo}
-                  title="Rename Analysis"
-                >
-                  RENAME
-                </button>
-              </div>
-              <div className="col-md-4">
-                <button
-                  className="btn btn-cyber w-100"
-                  style={{ borderColor: 'var(--accent-danger)', color: 'var(--accent-danger)' }}
-                  onClick={handleDelete}
-                  disabled={!selectedAnalysis || analyses.find(a => a.id === selectedAnalysis)?.is_demo}
-                  title="Delete Analysis and Files"
-                >
-                  DELETE
-                </button>
-              </div>
-              <div className="col-md-4">
-                <button
-                  className="btn btn-cyber w-100"
-                  onClick={handleLoadAnalysis}
-                  disabled={isUploading || !selectedAnalysis || analyses.find(a => a.id === selectedAnalysis)?.status !== 'COMPLETED'}
-                  title={selectedAnalysis && analyses.find(a => a.id === selectedAnalysis)?.status !== 'COMPLETED' ? 'Analysis must be completed before loading' : ''}
-                >
-                  LOAD
-                </button>
-              </div>
-            </>
-          )}
-          {!user && (
-            <div className="col-md-12">
-              <button
-                className="btn btn-cyber w-100"
-                onClick={handleLoadAnalysis}
-                disabled={isUploading || !selectedAnalysis}
-              >
-                LOAD ANALYSIS
-              </button>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   )

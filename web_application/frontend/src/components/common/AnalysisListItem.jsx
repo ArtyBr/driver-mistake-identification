@@ -146,7 +146,7 @@ function EventDisplay({ events }) {
  *               If omitted, auto-fetched for COMPLETED jobs.
  *               Pass null to suppress the fetch entirely.
  */
-const AnalysisListItem = ({ analysis, selected, onClick, etaMs, events: propEvents }) => {
+const AnalysisListItem = ({ analysis, selected, onClick, etaMs, events: propEvents, onView, onRename, onDelete }) => {
   const isActive = ACTIVE_STATUSES.has(analysis.status);
   const { cls, label } = STATUS_MAP[analysis.status] || { cls: 'bg-secondary', label: analysis.status };
   const eta = isActive ? formatEta(etaMs) : null;
@@ -174,21 +174,55 @@ const AnalysisListItem = ({ analysis, selected, onClick, etaMs, events: propEven
       onClick={onClick}
       style={{ cursor: onClick ? 'pointer' : 'default' }}
     >
-      {/* Row 1: name + badge + optional checkmark */}
-      <div className="d-flex justify-content-between align-items-start">
+      {/* Row 1: name + badge + action buttons */}
+      <div className="d-flex justify-content-between align-items-start gap-2">
         <div className="d-flex align-items-center flex-wrap gap-1">
           <span className="fw-bold text-white">{analysis.name}</span>
-          {analysis.status && (
-            <span className={`badge ${cls} ms-1`} style={{ fontSize: '0.7rem' }}>{label}</span>
+        </div>
+        <div className="d-flex align-items-center gap-1 flex-shrink-0">
+          {selected && <i className="bi bi-check-circle-fill text-accent-primary" />}
+          {onView && (
+            <button
+              className="btn btn-sm btn-cyber px-3 py-1 fw-bold"
+              onClick={(e) => { e.stopPropagation(); onView(); }}
+              style={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+            >
+              VIEW <i className="bi bi-arrow-right ms-1"></i>
+            </button>
           )}
-          {analysis.calibration_id && (
-            <span className="badge bg-info-subtle text-info border border-info ms-1" style={{ fontSize: '0.65rem' }}>
-              <i className="bi bi-eye-fill me-1"></i>
-              Calibrated
-            </span>
+          {(onRename || onDelete) && (
+            <div className="dropdown" onClick={e => e.stopPropagation()}>
+              <button
+                className="btn btn-sm btn-outline-secondary border-secondary py-1 px-2"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                style={{ lineHeight: 1 }}
+              >
+                <i className="bi bi-three-dots-vertical"></i>
+              </button>
+              <ul className="dropdown-menu dropdown-menu-end dropdown-menu-dark">
+                {onRename && (
+                  <li>
+                    <button className="dropdown-item" onClick={(e) => { e.stopPropagation(); onRename(); }}>
+                      <i className="bi bi-pencil me-2"></i>Rename
+                    </button>
+                  </li>
+                )}
+                {onDelete && (
+                  <>
+                    {onRename && <li><hr className="dropdown-divider" /></li>}
+                    <li>
+                      <button className="dropdown-item text-danger" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
+                        <i className="bi bi-trash me-2"></i>Delete
+                      </button>
+                    </li>
+                  </>
+                )}
+              </ul>
+            </div>
           )}
         </div>
-        {selected && <i className="bi bi-check-circle-fill text-accent-primary" />}
       </div>
 
       {/* Row 2: metadata */}
