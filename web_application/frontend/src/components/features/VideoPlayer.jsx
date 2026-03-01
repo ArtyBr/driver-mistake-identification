@@ -3,7 +3,7 @@ import VideoDisplay from './video_player/VideoDisplay'
 import Timeline from './video_player/Timeline'
 import LogViewer from './video_player/LogViewer'
 import Legend from './video_player/Legend'
-import ReportErrorModal from './ReportErrorModal'
+import ReportErrorForm from './ReportErrorForm'
 import { useVideoPlayback } from '../../hooks/useVideoPlayback'
 import { useVideoAnalysisData } from '../../hooks/useVideoAnalysisData'
 import { useVideoCanvas } from '../../hooks/useVideoCanvas'
@@ -45,8 +45,8 @@ function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = nul
   const canvasRef = useRef(null)
   const faceCanvasRef = useRef(null)
 
-  // Report Modal state
-  const [showReportModal, setShowReportModal] = useState(false)
+  // Report Form state
+  const [showReportForm, setShowReportForm] = useState(false)
 
   // Quality selection state
   const [quality, setQuality] = useState('auto')
@@ -252,19 +252,33 @@ function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = nul
         />
 
         <span className="time-display">{currentTime.toFixed(2)} / {duration.toFixed(2)}s</span>
-        
+      </div>
+
+      <div className="d-flex justify-content-end mt-2 px-1">
         <button 
-          className="btn btn-outline-warning btn-sm ms-auto d-flex align-items-center gap-1"
-          style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+          className="btn btn-outline-warning btn-sm d-flex align-items-center gap-2 shadow-sm"
+          style={{ fontSize: '0.8rem', padding: '4px 10px' }}
           onClick={() => {
-            if (isPlaying) togglePlay();
-            setShowReportModal(true);
+            if (!showReportForm && isPlaying) togglePlay();
+            setShowReportForm(prev => !prev);
           }}
-          title="Report an error at this timestamp"
+          title="Report an error in detection or classification"
         >
-          <i className="bi bi-flag-fill"></i> <span className="d-none d-md-inline">Report Error</span>
+          <i className="bi bi-flag-fill"></i> <span className="d-none d-md-inline">{showReportForm ? 'Hide Report Form' : 'Report Model/Detection Error'}</span>
         </button>
       </div>
+
+      {showReportForm && (
+        <ReportErrorForm
+          jobId={jobId}
+          currentTime={currentTime}
+          onClose={() => setShowReportForm(false)}
+          onSuccess={() => {
+            setShowReportForm(false);
+            alert("Report submitted successfully. Thank you!");
+          }}
+        />
+      )}
 
       {availableQualities.length >= 1 && (
         <div className="d-flex align-items-center gap-2 px-3 py-2" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)', borderLeft: '3px solid var(--border-color)', borderRadius: '4px', marginTop: '6px' }}>
@@ -300,18 +314,6 @@ function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = nul
         getLogIndexForSegment={getLogIndexForSegment}
         faceSegments={faceSegments}
       />
-
-      {showReportModal && (
-        <ReportErrorModal
-          jobId={jobId}
-          timestamp={currentTime}
-          onClose={() => setShowReportModal(false)}
-          onSuccess={() => {
-            setShowReportModal(false);
-            alert("Report submitted successfully. Thank you!");
-          }}
-        />
-      )}
     </div>
   )
 }
