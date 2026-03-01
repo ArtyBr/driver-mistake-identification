@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { submitErrorReport } from '../../services/api';
 
 const ReportErrorForm = ({ jobId, currentTime, onClose, onSuccess }) => {
@@ -6,12 +6,15 @@ const ReportErrorForm = ({ jobId, currentTime, onClose, onSuccess }) => {
   const [reportType, setReportType] = useState('');
   const [description, setDescription] = useState('');
   const [reportTime, setReportTime] = useState(currentTime.toFixed(2));
+  const [autoSync, setAutoSync] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  // Allow the form to track current time until the user manually changes it
-  // or syncs it. Actually, a static initial time + "Sync" button is usually better
-  // so we don't overwrite their typed value if the video plays.
+  useEffect(() => {
+    if (autoSync) {
+      setReportTime(currentTime.toFixed(2));
+    }
+  }, [currentTime, autoSync]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -64,28 +67,38 @@ const ReportErrorForm = ({ jobId, currentTime, onClose, onSuccess }) => {
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="form-label fw-bold">1. Error Timestamp</label>
-            <div className="d-flex align-items-center gap-2">
-              <input 
-                type="number" 
-                step="0.1" 
-                className="form-control bg-dark text-white border-secondary w-auto" 
-                value={reportTime}
-                onChange={(e) => setReportTime(e.target.value)}
-                style={{ maxWidth: '100px' }}
-                required
-              />
-              <span className="text-muted small">seconds</span>
-              <button 
-                type="button" 
-                className="btn btn-sm btn-outline-info ms-2"
-                onClick={() => setReportTime(currentTime.toFixed(2))}
-                title="Update to current video timestamp"
-              >
-                Sync with Video
-              </button>
+            <div className="d-flex align-items-center gap-3">
+              <div className="d-flex align-items-center gap-2">
+                <input 
+                  type="number" 
+                  step="0.1" 
+                  className="form-control bg-dark text-white border-secondary w-auto" 
+                  value={reportTime}
+                  onChange={(e) => {
+                    setReportTime(e.target.value);
+                    setAutoSync(false);
+                  }}
+                  disabled={autoSync}
+                  style={{ maxWidth: '100px' }}
+                  required
+                />
+                <span className="text-muted small">seconds</span>
+              </div>
+              <div className="form-check form-switch mb-0">
+                <input 
+                  className="form-check-input" 
+                  type="checkbox" 
+                  id="autoSyncSwitch" 
+                  checked={autoSync}
+                  onChange={(e) => setAutoSync(e.target.checked)}
+                />
+                <label className="form-check-label text-muted small" htmlFor="autoSyncSwitch">
+                  Auto-sync with video
+                </label>
+              </div>
             </div>
             <div className="form-text text-muted small mt-1">
-              You can play or scrub through the video above to find the exact moment, then click "Sync".
+              Keep auto-sync enabled to automatically track the current video time, or disable it to enter a custom timestamp.
             </div>
           </div>
 
@@ -133,7 +146,7 @@ const ReportErrorForm = ({ jobId, currentTime, onClose, onSuccess }) => {
               </div>
 
               <div 
-                className={`p-2 rounded border ${reportType === 'false_negative' ? 'border-info bg-info bg-opacity-10' : 'border-secondary'}`}
+                className={`p-2 rounded border ${reportType === 'false_negative' ? 'border-warning bg-warning bg-opacity-10' : 'border-secondary'}`}
                 style={{ cursor: 'pointer' }}
                 onClick={() => setReportType('false_negative')}
               >

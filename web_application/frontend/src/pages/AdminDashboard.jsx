@@ -470,6 +470,11 @@ function ReportsSection({ onRefresh }) {
   const [reports, setReports] = useState(null);
   const [stats, setStats] = useState(null);
   const [loadingAction, setLoadingAction] = useState(null);
+  
+  // Filter states
+  const [filterType, setFilterType] = useState('all');
+  const [filterEvent, setFilterEvent] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (expanded && reports === null) {
@@ -505,7 +510,25 @@ function ReportsSection({ onRefresh }) {
     }
   };
 
+  const filteredReports = useMemo(() => {
+    if (!reports) return null;
+    return reports.filter(r => {
+      if (filterType !== 'all' && r.report_type !== filterType) return false;
+      if (filterEvent !== 'all' && r.event_type !== filterEvent) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!r.user_email?.toLowerCase().includes(q) && 
+            !r.job_name?.toLowerCase().includes(q) && 
+            !(r.description && r.description.toLowerCase().includes(q))) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [reports, filterType, filterEvent, searchQuery]);
+
   const count = stats ? stats.total : (reports ? reports.length : null);
+  const eventTypes = stats ? Object.keys(stats.by_event) : [];
 
   return (
     <div
@@ -555,7 +578,7 @@ function ReportsSection({ onRefresh }) {
               <div className="small">
                 <span className="text-muted d-block">Error Types</span>
                 <span className="badge bg-warning text-dark me-1">FP: {stats.by_type.false_positive || 0}</span>
-                <span className="badge bg-info text-dark">FN: {stats.by_type.false_negative || 0}</span>
+                <span className="badge bg-warning text-dark">FN: {stats.by_type.false_negative || 0}</span>
               </div>
               <div className="small">
                 <span className="text-muted d-block">Event Types</span>
@@ -566,11 +589,47 @@ function ReportsSection({ onRefresh }) {
             </div>
           )}
 
+          {reports && reports.length > 0 && (
+            <div className="mb-3 d-flex flex-wrap gap-2 align-items-center">
+              <input
+                type="text"
+                className="form-control form-control-sm bg-dark text-white border-secondary"
+                placeholder="Search email, job, or description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ maxWidth: '250px' }}
+              />
+              <select 
+                className="form-select form-select-sm bg-dark text-white border-secondary w-auto"
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+              >
+                <option value="all">All Types</option>
+                <option value="false_positive">False Positive</option>
+                <option value="false_negative">False Negative</option>
+              </select>
+              <select 
+                className="form-select form-select-sm bg-dark text-white border-secondary w-auto"
+                value={filterEvent}
+                onChange={(e) => setFilterEvent(e.target.value)}
+              >
+                <option value="all">All Events</option>
+                {eventTypes.map(k => (
+                  <option key={k} value={k}>{k.replace(/_/g, ' ').toUpperCase()}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {reports && reports.length === 0 && (
             <p className="text-muted small mt-2 mb-0">No error reports submitted yet.</p>
           )}
+          
+          {filteredReports && filteredReports.length === 0 && reports.length > 0 && (
+            <p className="text-muted small mt-2 mb-0">No reports match the current filters.</p>
+          )}
 
-          {reports && reports.map(r => (
+          {filteredReports && filteredReports.map(r => (
             <div key={r.id} className="card bg-dark border-secondary mb-2 p-3">
               <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
                 <div>
@@ -587,7 +646,7 @@ function ReportsSection({ onRefresh }) {
                     <span className="text-white">{r.timestamp.toFixed(2)}s</span>
                   </div>
                   <div className="d-flex gap-2 mb-2">
-                    <span className={`badge ${r.report_type === 'false_positive' ? 'bg-warning text-dark' : 'bg-info text-dark'}`}>
+                    <span className={`badge bg-warning text-dark`}>
                       {r.report_type === 'false_positive' ? 'False Positive' : 'False Negative'}
                     </span>
                     <span className="badge border border-secondary text-light">
