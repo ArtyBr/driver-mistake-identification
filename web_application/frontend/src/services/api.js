@@ -150,6 +150,7 @@ export const deleteAdminCalibration = (userId) => api.delete(`/admin/calibration
 export const submitErrorReport = (jobId, reportData) => api.post(`/jobs/${jobId}/report`, reportData).then(r => r.data);
 
 export const getAdminReports = (params = {}) => api.get('/admin/reports', { params }).then(r => r.data);
+export const getAdminJobReports = (jobId) => api.get('/admin/reports', { params: { job_id: jobId } }).then(r => r.data);
 export const getAdminReportStats = () => api.get('/admin/reports/stats').then(r => r.data);
 export const adminReanalyzeJob = (jobId) => api.post(`/admin/jobs/${jobId}/reanalyze`).then(r => r.data);
 

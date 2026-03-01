@@ -423,6 +423,7 @@ async def admin_delete_calibration(
 @router.get("/reports")
 async def admin_list_reports(
     user_id: Optional[str] = Query(None),
+    job_id: Optional[str] = Query(None),
     event_type: Optional[str] = Query(None),
     session: Session = Depends(get_session),
     _: User = Depends(get_admin_user),
@@ -430,6 +431,8 @@ async def admin_list_reports(
     stmt = select(Report)
     if user_id:
         stmt = stmt.where(Report.user_id == user_id)
+    if job_id:
+        stmt = stmt.where(Report.job_id == job_id)
     if event_type:
         stmt = stmt.where(Report.event_type == event_type)
     

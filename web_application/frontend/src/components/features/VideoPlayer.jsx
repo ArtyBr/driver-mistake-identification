@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useMemo } from 'react'
+import { useRef, useState, useEffect, useMemo, useCallback } from 'react'
 import VideoDisplay from './video_player/VideoDisplay'
 import Timeline from './video_player/Timeline'
 import LogViewer from './video_player/LogViewer'
@@ -9,6 +9,167 @@ import { useVideoAnalysisData } from '../../hooks/useVideoAnalysisData'
 import { useVideoCanvas } from '../../hooks/useVideoCanvas'
 import { getColorForState } from '../../constants/videoConstants'
 import { detectNetworkQuality } from '../../utils/networkQuality'
+import { getAdminJobReports, adminReanalyzeJob } from '../../services/api'
+
+// ---------------------------------------------------------------------------
+// Admin: inline reports panel (shown between timeline and quality bar)
+// ---------------------------------------------------------------------------
+
+const REPORT_TYPE_LABELS = {
+  false_positive: 'False Positive',
+  false_negative: 'False Negative',
+}
+
+const EVENT_TYPE_LABELS = {
+  left_lane_change: 'Left Lane Change',
+  right_lane_change: 'Right Lane Change',
+  left_turn: 'Left Turn',
+  right_turn: 'Right Turn',
+  other: 'Other',
+}
+
+function AdminReportsPanel({ jobId, onSeekTo }) {
+  const [reports, setReports] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [reanalyzing, setReanalyzing] = useState(false)
+  const [reanalyzed, setReanalyzed] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      setReports(await getAdminJobReports(jobId))
+    } catch {
+      setError('Failed to load reports.')
+    } finally {
+      setLoading(false)
+    }
+  }, [jobId])
+
+  useEffect(() => { load() }, [load])
+
+  const handleReanalyze = async () => {
+    if (!window.confirm('Queue a fresh re-analysis of this job?')) return
+    setReanalyzing(true)
+    try {
+      await adminReanalyzeJob(jobId)
+      setReanalyzed(true)
+    } catch (err) {
+      alert('Failed to start re-analysis: ' + (err.response?.data?.detail || err.message))
+    } finally {
+      setReanalyzing(false)
+    }
+  }
+
+  return (
+    <div
+      style={{
+        borderTop: '1px solid var(--border-color)',
+        borderBottom: '1px solid var(--border-color)',
+        background: 'var(--bg-panel)',
+        marginTop: '6px',
+      }}
+    >
+      {/* Header */}
+      <div
+        className="d-flex align-items-center justify-content-between gap-2 px-3 py-2"
+        style={{ borderBottom: reports?.length ? '1px solid var(--border-color)' : 'none' }}
+      >
+        <span className="d-flex align-items-center gap-2" style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          <i className="bi bi-flag-fill text-warning" />
+          User Reports
+          {reports != null && (
+            <span
+              className="badge rounded-pill"
+              style={{
+                background: reports.length > 0 ? 'var(--bs-warning)' : 'var(--border-color)',
+                color: reports.length > 0 ? '#000' : 'var(--text-muted)',
+                fontSize: '0.68rem',
+                fontWeight: 700,
+              }}
+            >
+              {reports.length}
+            </span>
+          )}
+        </span>
+        <button
+          className="btn btn-sm btn-outline-warning"
+          style={{ fontSize: '0.72rem', padding: '2px 8px' }}
+          onClick={handleReanalyze}
+          disabled={reanalyzing || reanalyzed}
+          title="Queue a fresh re-analysis of this job"
+        >
+          {reanalyzing
+            ? <><span className="spinner-border spinner-border-sm me-1" role="status" />Starting…</>
+            : reanalyzed
+              ? <><i className="bi bi-check2 me-1" />Queued</>
+              : <><i className="bi bi-arrow-repeat me-1" />Re-analyze</>}
+        </button>
+      </div>
+
+      {/* Body */}
+      {loading && (
+        <div className="d-flex align-items-center gap-2 px-3 py-2 text-muted" style={{ fontSize: '0.82rem' }}>
+          <div className="spinner-border spinner-border-sm" role="status" />
+          Loading reports…
+        </div>
+      )}
+      {error && (
+        <div className="px-3 py-2 text-danger d-flex align-items-center gap-2" style={{ fontSize: '0.82rem' }}>
+          <i className="bi bi-exclamation-circle" /> {error}
+          <button className="btn btn-link btn-sm p-0 text-danger" onClick={load}>Retry</button>
+        </div>
+      )}
+      {reports && reports.length === 0 && (
+        <p className="px-3 py-2 text-muted mb-0" style={{ fontSize: '0.82rem' }}>No error reports submitted for this job.</p>
+      )}
+      {reports && reports.length > 0 && (
+        <div className="d-flex flex-wrap gap-0" style={{ fontSize: '0.82rem' }}>
+          {reports.map((r, i) => (
+            <div
+              key={r.id}
+              className="px-3 py-2"
+              style={{
+                borderRight: '1px solid var(--border-color)',
+                borderBottom: '1px solid var(--border-color)',
+                minWidth: 220,
+                flex: '1 1 220px',
+              }}
+            >
+              {/* Badges */}
+              <div className="d-flex flex-wrap gap-1 mb-1">
+                <span className="badge bg-warning text-dark" style={{ fontSize: '0.67rem' }}>
+                  {REPORT_TYPE_LABELS[r.report_type] || r.report_type}
+                </span>
+                <span className="badge border border-secondary text-light" style={{ fontSize: '0.67rem' }}>
+                  {EVENT_TYPE_LABELS[r.event_type] || r.event_type.replace(/_/g, ' ')}
+                </span>
+                <button
+                  className="badge bg-secondary border-0 d-flex align-items-center gap-1"
+                  style={{ fontSize: '0.67rem', cursor: 'pointer' }}
+                  onClick={() => onSeekTo(r.timestamp)}
+                  title={`Jump to ${r.timestamp.toFixed(2)}s`}
+                >
+                  <i className="bi bi-skip-forward-fill" />
+                  {r.timestamp.toFixed(2)}s
+                </button>
+              </div>
+              {/* Description */}
+              {r.description && (
+                <p className="mb-1 fst-italic text-muted" style={{ fontSize: '0.75rem' }}>"{r.description}"</p>
+              )}
+              {/* Reporter + date */}
+              <div className="text-muted" style={{ fontSize: '0.7rem' }}>
+                <i className="bi bi-person me-1" />{r.user_email}&ensp;·&ensp;{new Date(r.created_at).toLocaleString()}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // Icon Components
 const PlayIcon = () => (
@@ -38,7 +199,7 @@ const NextIcon = () => (
   </svg>
 );
 
-function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = null, faceQualityUrls = null }) {
+function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = null, faceQualityUrls = null, isAdmin = false }) {
   // DOM Refs
   const roadVideoRef = useRef(null)
   const faceVideoRef = useRef(null)
@@ -77,7 +238,8 @@ function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = nul
     probe.src = url
     probe.onloadedmetadata = () => {
       originalFaceDimsRef.current = { w: probe.videoWidth, h: probe.videoHeight }
-      probe.src = ''
+      probe.removeAttribute('src')
+      probe.load()
     }
     probe.load()
   }, [faceQualityUrls])
@@ -264,6 +426,10 @@ function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = nul
             alert("Report submitted successfully. Thank you!");
           }}
         />
+      )}
+
+      {isAdmin && (
+        <AdminReportsPanel jobId={jobId} onSeekTo={handleSeek} />
       )}
 
       <div className="d-flex flex-column flex-md-row align-items-stretch align-items-md-center justify-content-between gap-2 px-3 py-2" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)', borderLeft: '3px solid var(--border-color)', borderRadius: '4px', marginTop: '6px' }}>

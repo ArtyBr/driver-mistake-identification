@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  getAdminUsers, getAdminUserJobs, getAdminJobs, 
+import {
+  getAdminUsers, getAdminUserJobs, getAdminJobs,
   updateAdminUser, updateAdminJob, deleteAdminUser, deleteAdminJob,
   getAdminReports, getAdminReportStats, adminReanalyzeJob, getFileUrl
 } from '../services/api';

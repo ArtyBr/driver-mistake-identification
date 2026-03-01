@@ -4,11 +4,14 @@ import VideoPlayer from '../components/features/VideoPlayer';
 import MissingVideosUploader from '../components/features/MissingVideosUploader';
 import GazeCorrectionModal from '../components/GazeCorrectionModal';
 import { getJobStatus, getJobResults, getFileUrl } from '../services/api';
+import { useAuth } from '../hooks/useAuth';
 import '../App.css'; // Import the custom styles for VideoPlayer
 
 const ResultPage = () => {
   const { jobId } = useParams();
   const location = useLocation();
+  const { user } = useAuth();
+  const isAdmin = !!user?.is_admin;
   const [results, setResults] = useState(null);
   const [jobData, setJobData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -142,49 +145,51 @@ const ResultPage = () => {
 
   return (
     <div className="container-fluid">
-       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-          <div className="d-flex align-items-center gap-3">
-            <h2 className="mb-0 page-title">Analysis Results</h2>
-            <div className="d-flex align-items-center gap-2 bg-panel-lighter px-3 py-1 border border-secondary rounded">
-               <small className="text-muted text-uppercase fw-bold" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>Job ID: {jobId}</small>
-               <button 
-                  className={`btn btn-sm p-0 border-0 ${copied ? 'text-success' : 'text-muted'}`}
-                  onClick={copyToClipboard}
-                  title="Copy Job ID"
-                  style={{ background: 'transparent' }}
-                >
-                  {copied ? (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  ) : (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                  )}
-                </button>
-            </div>
+      {/* Page header */}
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div className="d-flex align-items-center gap-3">
+          <h2 className="mb-0 page-title">Analysis Results</h2>
+          <div className="d-flex align-items-center gap-2 bg-panel-lighter px-3 py-1 border border-secondary rounded">
+            <small className="text-muted text-uppercase fw-bold" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>Job ID: {jobId}</small>
+            <button
+              className={`btn btn-sm p-0 border-0 ${copied ? 'text-success' : 'text-muted'}`}
+              onClick={copyToClipboard}
+              title="Copy Job ID"
+              style={{ background: 'transparent' }}
+            >
+              {copied ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              )}
+            </button>
           </div>
-          <Link to="/analyze" className="btn btn-cyber">New Analysis</Link>
-       </div>
+        </div>
+        <Link to="/analyze" className="btn btn-cyber">New Analysis</Link>
+      </div>
 
-       {results && !hasVideos && jobData && (
-         <MissingVideosUploader 
-            roadMeta={jobData.road_metadata}
-            faceMeta={jobData.face_metadata}
+      {results && !hasVideos && jobData && (
+        <MissingVideosUploader
+          roadMeta={jobData.road_metadata}
+          faceMeta={jobData.face_metadata}
+          results={results}
+          onFilesUploaded={handleMissingFiles}
+        />
+      )}
+
+      {results && hasVideos && (
+        <>
+          <VideoPlayer
             results={results}
-            onFilesUploaded={handleMissingFiles}
-         />
-       )}
+            roadUrls={videoUrls.road}
+            faceUrls={videoUrls.face}
+            jobId={jobId}
+            roadQualityUrls={roadQualityUrls}
+            faceQualityUrls={faceQualityUrls}
+            isAdmin={isAdmin}
+          />
 
-       {results && hasVideos && (
-          <>
-            <VideoPlayer
-              results={results}
-              roadUrls={videoUrls.road}
-              faceUrls={videoUrls.face}
-              jobId={jobId}
-              roadQualityUrls={roadQualityUrls}
-              faceQualityUrls={faceQualityUrls}
-            />
-            
-            {results && hasVideos && !jobData?.is_demo && (
+          {!jobData?.is_demo && (
             <div className="card card-cyber mt-4 shadow-sm border-info-subtle">
               <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div>
@@ -202,8 +207,8 @@ const ResultPage = () => {
                 </div>
                 <div className="d-flex align-items-center gap-3">
                   <span className="text-muted small d-none d-md-inline">Gaze classifications incorrect?</span>
-                  <Link 
-                    to="/calibrate" 
+                  <Link
+                    to="/calibrate"
                     state={{ jobId, calibrationId: jobData?.calibration_id }}
                     className="btn btn-outline-cyber btn-sm"
                   >
@@ -212,24 +217,24 @@ const ResultPage = () => {
                 </div>
               </div>
             </div>
-            )}
-          </>
-       )}
+          )}
+        </>
+      )}
 
-       {correctionModal && (
-         <GazeCorrectionModal
-           jobId={jobId}
-           detectedLabel={correctionModal.detectedLabel}
-           startTime={correctionModal.startTime}
-           endTime={correctionModal.endTime}
-           calibrationId={jobData?.calibration_id}
-           onClose={() => setCorrectionModal(null)}
-           onSuccess={() => {
-             setCorrectionModal(null);
-             fetchData();
-           }}
-         />
-       )}
+      {correctionModal && (
+        <GazeCorrectionModal
+          jobId={jobId}
+          detectedLabel={correctionModal.detectedLabel}
+          startTime={correctionModal.startTime}
+          endTime={correctionModal.endTime}
+          calibrationId={jobData?.calibration_id}
+          onClose={() => setCorrectionModal(null)}
+          onSuccess={() => {
+            setCorrectionModal(null);
+            fetchData();
+          }}
+        />
+      )}
     </div>
   );
 };
