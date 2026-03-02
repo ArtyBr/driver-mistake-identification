@@ -8,7 +8,7 @@ import { useJobUpload } from '../../hooks/useJob'
 import { useAuth } from '../../hooks/useAuth'
 import { useAnalysesList } from '../../hooks/useAnalysesList'
 import AnalysisListItem from '../common/AnalysisListItem'
-import { listCalibrations } from '../../services/calibrationService'
+import { listCalibrations, renameCalibration } from '../../services/calibrationService'
 
 function Uploader({ onUploadSuccess }) {
   const navigate = useNavigate();
@@ -245,16 +245,39 @@ function Uploader({ onUploadSuccess }) {
               </div>
               <div className="col-md-6 mb-3">
                 <label className="form-label text-white">Gaze Calibration (Optional)</label>
-                <select
-                  className="form-select form-control-cyber"
-                  value={selectedCalId}
-                  onChange={(e) => setSelectedCalId(e.target.value)}
-                >
-                  <option value="">-- Use Default Model --</option>
-                  {calibrations.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                <div className="d-flex gap-2 align-items-center">
+                  <select
+                    className="form-select form-control-cyber flex-grow-1"
+                    value={selectedCalId}
+                    onChange={(e) => setSelectedCalId(e.target.value)}
+                  >
+                    <option value="">-- Use Default Model --</option>
+                    {calibrations.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  {selectedCalId && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary"
+                      title="Rename calibration"
+                      onClick={async () => {
+                        const cal = calibrations.find(c => c.id === selectedCalId);
+                        const newName = window.prompt('Rename calibration:', cal?.name || '');
+                        if (!newName || !newName.trim()) return;
+                        try {
+                          await renameCalibration(selectedCalId, newName.trim());
+                          const updated = (await listCalibrations()).filter(c => c.is_trained);
+                          setCalibrations(updated);
+                        } catch {
+                          setLocalError('Failed to rename calibration.');
+                        }
+                      }}
+                    >
+                      <i className="bi bi-pencil"></i>
+                    </button>
+                  )}
+                </div>
                 {calibrations.length === 0 && (
                   <div className="form-text text-muted small" style={{ fontSize: '0.7rem' }}>
                     No trained calibrations found. <a href="/calibrate" className="text-info">Calibrate here</a> to improve results.

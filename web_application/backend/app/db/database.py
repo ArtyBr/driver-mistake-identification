@@ -39,6 +39,15 @@ def init_db():
             except OperationalError:
                 pass  # Column already exists
 
+        # Migrate: replace unique index on user_calibrations.user_id with a non-unique one
+        # (the original table was created with a unique constraint, but we now allow multiple calibrations per user)
+        try:
+            conn.execute(text("DROP INDEX IF EXISTS ix_user_calibrations_user_id"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_user_calibrations_user_id ON user_calibrations (user_id)"))
+            conn.commit()
+        except OperationalError:
+            pass
+
         # Mark all existing users as verified if we just added the column
         # This only runs once effectively if is_verified was just added
         # Or we can just ensure all currently signed up users are verified as requested.

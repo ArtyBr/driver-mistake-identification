@@ -31,6 +31,17 @@ export const renameCalibration = async (calId, name) => {
 };
 
 /**
+ * Duplicates a calibration under a new name (Save As).
+ * @param {string} calId
+ * @param {string} name
+ * @returns {Promise<Object>}
+ */
+export const duplicateCalibration = async (calId, name) => {
+  const response = await api.post(`/calibration/${calId}/duplicate`, { name });
+  return response.data;
+};
+
+/**
  * Deletes a calibration.
  * @param {string} calId
  * @returns {Promise<Object>}

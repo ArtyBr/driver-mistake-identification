@@ -39,6 +39,10 @@ class CorrectionRequest(BaseModel):
     cal_id: Optional[str] = None
 
 
+class DuplicateRequest(BaseModel):
+    name: str
+
+
 class RenameRequest(BaseModel):
     name: str
 
@@ -89,6 +93,20 @@ async def rename_calibration(
 ):
     """Renames a calibration."""
     cal = calibration_service.rename_calibration(cal_id, current_user.id, request.name, session)
+    if not cal:
+        raise HTTPException(status_code=404, detail="Calibration not found")
+    return cal
+
+
+@router.post("/{cal_id}/duplicate")
+async def duplicate_calibration(
+    cal_id: str,
+    request: DuplicateRequest,
+    current_user: User = Depends(get_verified_user),
+    session: Session = Depends(get_session),
+):
+    """Duplicates a calibration under a new name (Save As)."""
+    cal = calibration_service.duplicate_calibration(cal_id, current_user.id, request.name, session)
     if not cal:
         raise HTTPException(status_code=404, detail="Calibration not found")
     return cal

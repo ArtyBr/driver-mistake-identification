@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import VideoPlayer from '../components/features/VideoPlayer';
 import MissingVideosUploader from '../components/features/MissingVideosUploader';
 import GazeCorrectionModal from '../components/GazeCorrectionModal';
 import { getJobStatus, getJobResults, getFileUrl } from '../services/api';
+import { listCalibrations, requestReanalysis } from '../services/calibrationService';
 import { useAuth } from '../hooks/useAuth';
 import '../App.css'; // Import the custom styles for VideoPlayer
 
 const ResultPage = () => {
   const { jobId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const isAdmin = !!user?.is_admin;
   const [results, setResults] = useState(null);
@@ -18,6 +20,11 @@ const ResultPage = () => {
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
   const [correctionModal, setCorrectionModal] = useState(null);
+
+  // Re-analyze with calibration
+  const [calibrations, setCalibrations] = useState([]);
+  const [reanalyzeCalId, setReanalyzeCalId] = useState('');
+  const [reanalyzing, setReanalyzing] = useState(false);
 
   // Locally provided files if server files are missing
   const [localRoadFiles, setLocalRoadFiles] = useState([]);
@@ -53,6 +60,14 @@ const ResultPage = () => {
       fetchData();
     }
   }, [jobId, fetchData]);
+
+  useEffect(() => {
+    if (user) {
+      listCalibrations()
+        .then(data => setCalibrations(data.filter(c => c.is_trained)))
+        .catch(() => {});
+    }
+  }, [user]);
 
   const videoUrls = useMemo(() => {
       let rUrls = [];
@@ -205,8 +220,40 @@ const ResultPage = () => {
                     )}
                   </p>
                 </div>
-                <div className="d-flex align-items-center gap-3">
-                  <span className="text-muted small d-none d-md-inline">Gaze classifications incorrect?</span>
+                <div className="d-flex align-items-center gap-2 flex-wrap">
+                  {calibrations.length > 0 && (
+                    <>
+                      <select
+                        className="form-select form-select-sm form-control-cyber"
+                        style={{ width: 'auto', minWidth: '160px' }}
+                        value={reanalyzeCalId}
+                        onChange={(e) => setReanalyzeCalId(e.target.value)}
+                      >
+                        <option value="">-- Select Calibration --</option>
+                        {calibrations.map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        className="btn btn-info btn-sm"
+                        disabled={!reanalyzeCalId || reanalyzing}
+                        onClick={async () => {
+                          setReanalyzing(true);
+                          try {
+                            const res = await requestReanalysis(jobId, reanalyzeCalId);
+                            navigate(`/job/${res.job_id}`);
+                          } catch (e) {
+                            setError(e.response?.data?.detail || 'Re-analysis failed.');
+                            setReanalyzing(false);
+                          }
+                        }}
+                      >
+                        {reanalyzing ? (
+                          <><span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />Starting...</>
+                        ) : 'RE-ANALYZE'}
+                      </button>
+                    </>
+                  )}
                   <Link
                     to="/calibrate"
                     state={{ jobId, calibrationId: jobData?.calibration_id }}

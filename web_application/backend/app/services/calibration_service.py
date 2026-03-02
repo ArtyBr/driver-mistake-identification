@@ -68,6 +68,31 @@ def create_calibration(user_id: str, session: Session, name: Optional[str] = Non
     return cal
 
 
+def duplicate_calibration(cal_id: str, user_id: str, new_name: str, session: Session) -> Optional[UserCalibration]:
+    """Duplicates an existing calibration under a new name, copying DB data and on-disk model files."""
+    source = get_calibration(cal_id, user_id, session)
+    if not source:
+        return None
+
+    new_cal = UserCalibration(
+        user_id=user_id,
+        name=new_name,
+        training_data=source.training_data,
+        is_trained=source.is_trained,
+    )
+    session.add(new_cal)
+    session.commit()
+    session.refresh(new_cal)
+
+    # Copy on-disk model files (pkl, plots, training_data.json)
+    src_dir = get_user_model_dir(user_id, cal_id)
+    dst_dir = get_user_model_dir(user_id, new_cal.id)
+    if src_dir.exists():
+        shutil.copytree(src_dir, dst_dir)
+
+    return new_cal
+
+
 def delete_calibration(cal_id: str, user_id: str, session: Session) -> bool:
     """Deletes a calibration and its associated files."""
     cal = get_calibration(cal_id, user_id, session)

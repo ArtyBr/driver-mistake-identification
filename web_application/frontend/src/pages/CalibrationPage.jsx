@@ -6,6 +6,7 @@ import {
   createCalibration,
   renameCalibration,
   deleteCalibration,
+  duplicateCalibration,
   getCalibrationStatus,
   submitSamples,
   resetSamples,
@@ -1070,6 +1071,20 @@ function CalibrationPage() {
                 )}
                 <div className="d-flex gap-2 justify-content-center">
                   <button className="btn btn-cyber" onClick={() => setStep(0)}>FINISH</button>
+                  {trainResult?.success && (
+                    <button className="btn btn-outline-info" onClick={async () => {
+                      const newName = window.prompt('Save calibration as:', '');
+                      if (!newName || !newName.trim()) return;
+                      try {
+                        await duplicateCalibration(selectedCalId, newName.trim());
+                        const updated = await listCalibrations();
+                        setCalibrations(updated);
+                        alert(`Calibration saved as "${newName.trim()}".`);
+                      } catch (e) {
+                        alert(e.response?.data?.detail || 'Failed to duplicate calibration.');
+                      }
+                    }}>SAVE AS</button>
+                  )}
                   {trainResult?.success && <button className="btn btn-cyber-primary fw-bold" onClick={handleReanalyze}>APPLY TO VIDEO</button>}
                 </div>
               </>
