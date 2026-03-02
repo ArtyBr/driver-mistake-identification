@@ -148,7 +148,7 @@ function EventDisplay({ events }) {
  */
 const AnalysisListItem = ({ analysis, selected, onClick, etaMs, events: propEvents, onView, onRename, onDelete }) => {
   const isActive = ACTIVE_STATUSES.has(analysis.status);
-  const { cls, label } = STATUS_MAP[analysis.status] || { cls: 'bg-secondary', label: analysis.status };
+  const { cls: _cls, label: _label } = STATUS_MAP[analysis.status] || { cls: 'bg-secondary', label: analysis.status };
   const eta = isActive ? formatEta(etaMs) : null;
 
   // If propEvents is explicitly provided (including null), use it.

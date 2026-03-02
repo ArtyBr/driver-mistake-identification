@@ -126,7 +126,7 @@ function AdminReportsPanel({ jobId, onSeekTo }) {
       )}
       {reports && reports.length > 0 && (
         <div className="d-flex flex-wrap gap-0" style={{ fontSize: '0.82rem' }}>
-          {reports.map((r, i) => (
+          {reports.map((r) => (
             <div
               key={r.id}
               className="px-3 py-2"

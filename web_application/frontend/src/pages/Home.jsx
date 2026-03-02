@@ -31,7 +31,7 @@ const Home = () => {
       try {
         await updateJobName(analysis.id, newName.trim());
         refetchAnalyses();
-      } catch {}
+      } catch { /* ignore */ }
     }
   };
 
@@ -40,7 +40,7 @@ const Home = () => {
     try {
       await deleteJob(analysis.id);
       refetchAnalyses();
-    } catch {}
+    } catch { /* ignore */ }
   };
 
   const features = [
