@@ -17,12 +17,11 @@ import { GAZE_STATES } from '../constants/videoConstants';
 
 const GAZE_CLASS_NAMES = ['Looking Ahead', 'Left Mirror', 'Right Mirror', 'Rear Mirror'];
 const MANDATORY_CLASS_NAMES = ['Looking Ahead', 'Left Mirror', 'Right Mirror'];
-const MIN_SECONDS_PER_CLASS = 0.5;
-const MIN_SAMPLES = 3; 
+const MIN_SAMPLES = 3;
 const ZOOM_PRESETS = [1, 5, 15, 30, 60, 120, 300, 600];
 
 // Scatter plot constants for point editor
-const SCATTER_W = 460, SCATTER_H = 340;
+const SCATTER_W = 600, SCATTER_H = 420;
 const SCATTER_PAD = { top: 15, right: 15, bottom: 35, left: 45 };
 const PLOT_W = SCATTER_W - SCATTER_PAD.left - SCATTER_PAD.right;
 const PLOT_H = SCATTER_H - SCATTER_PAD.top - SCATTER_PAD.bottom;
@@ -73,8 +72,11 @@ function CalibrationPage() {
   const [trainResult, setTrainResult] = useState(null);
   const [trainPlots, setTrainPlots] = useState(null);
 
-  // Point Editor mode (Step 2 alternative)
-  const [editMode, setEditMode] = useState('clips');
+  // Section visibility (both open by default)
+  const [showClipEditor, setShowClipEditor] = useState(true);
+  const [showPointEditor, setShowPointEditor] = useState(true);
+
+  // Point Editor state
   const [videoPoints, setVideoPoints] = useState([]);
   const [selectedPointIds, setSelectedPointIds] = useState(new Set());
   const [pointLabelOverrides, setPointLabelOverrides] = useState({});
@@ -347,10 +349,14 @@ function CalibrationPage() {
     setCapturedSegments(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmitSamples = async () => {
+  const handleSubmitUnified = async () => {
     setSubmittingSamples(true); setSampleError(null);
     try {
-      await submitSamples(selectedCalId, currentSessionPoints);
+      const pointEditorSamples = editablePoints
+        .filter(p => p.effectiveLabel && p.effectiveLabel !== 'Unknown' && p.effectiveLabel !== 'N/A')
+        .map(p => ({ yaw: p.yaw, pitch: p.pitch, roll: p.roll, label: p.effectiveLabel }));
+      const allSamples = [...pointEditorSamples, ...currentSessionPoints];
+      await submitSamples(selectedCalId, allSamples);
       setCalStatus(await getCalibrationStatus(selectedCalId));
       setCapturedSegments([]); setStep(3);
     } catch (e) { setSampleError(e.response?.data?.detail || 'Submission failed.'); }
@@ -399,8 +405,6 @@ function CalibrationPage() {
     }
     return counts;
   }, [editablePoints]);
-
-  const editClassesMet = MANDATORY_CLASS_NAMES.every(cls => (editPointCounts[cls] || 0) >= MIN_SAMPLES);
 
   const getSvgCoords = useCallback((e) => {
     const svg = scatterSvgRef.current;
@@ -487,22 +491,7 @@ function CalibrationPage() {
     setSelectedPointIds(new Set());
   }, [selectedPointIds]);
 
-  const handleSubmitPoints = async () => {
-    setSubmittingSamples(true);
-    setSampleError(null);
-    try {
-      const samples = editablePoints
-        .filter(p => p.effectiveLabel && p.effectiveLabel !== 'Unknown' && p.effectiveLabel !== 'N/A')
-        .map(p => ({ yaw: p.yaw, pitch: p.pitch, roll: p.roll, label: p.effectiveLabel }));
-      await submitSamples(selectedCalId, samples);
-      setCalStatus(await getCalibrationStatus(selectedCalId));
-      setStep(3);
-    } catch (e) {
-      setSampleError(e.response?.data?.detail || 'Submission failed.');
-    } finally {
-      setSubmittingSamples(false);
-    }
-  };
+
 
   const handleResetPointEditor = useCallback(() => {
     setSelectedPointIds(new Set());
@@ -510,12 +499,20 @@ function CalibrationPage() {
     setExcludedPointIds(new Set());
   }, []);
 
-  const secondsByClass = Object.fromEntries(GAZE_CLASS_NAMES.map(cls => [cls, capturedSegments.filter(s => s.label === cls).reduce((sum, s) => sum + (s.endTime - s.startTime), 0)]));
-  const allClassesReady = MANDATORY_CLASS_NAMES.every(cls => (secondsByClass[cls] || 0) >= MIN_SECONDS_PER_CLASS);
-  const hasCurrentPoints = currentSessionPoints.length > 0;
   const sampleCounts = calStatus?.sample_counts || {};
   const allClassesMeetMinimum = MANDATORY_CLASS_NAMES.every(cls => (sampleCounts[cls] || 0) >= MIN_SAMPLES);
   const faceVideoUrl = jobStatus?.face_url ? getFileUrl(jobStatus.face_url) : null;
+
+  const combinedCounts = useMemo(() => {
+    const counts = { ...editPointCounts };
+    for (const p of currentSessionPoints) {
+      if (p.label && p.label !== 'Unknown' && p.label !== 'N/A')
+        counts[p.label] = (counts[p.label] || 0) + 1;
+    }
+    return counts;
+  }, [editPointCounts, currentSessionPoints]);
+
+  const allReady = MANDATORY_CLASS_NAMES.every(cls => (combinedCounts[cls] || 0) >= MIN_SAMPLES);
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
@@ -612,60 +609,26 @@ function CalibrationPage() {
       {step === 2 && faceVideoUrl && (
         <div className="card card-cyber shadow-lg">
           <div className="card-header">
-            <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
-              <div>
-                <h4 className="mb-1">{editMode === 'clips' ? 'Step 3: Label Gaze Clips' : 'Step 3: Edit Calibration Points'}</h4>
-                <p className="small text-muted mb-0">
-                  {editMode === 'clips'
-                    ? 'Find moments where you are looking at a mirror, select the range, and click the label.'
-                    : 'Select points on the graph to view, relabel, or remove them.'}
-                </p>
-              </div>
-              <div className="btn-group btn-group-sm" role="group">
-                <button className={'btn ' + (editMode === 'clips' ? 'btn-cyber-primary' : 'btn-cyber')} onClick={() => setEditMode('clips')}>Clip Mode</button>
-                <button className={'btn ' + (editMode === 'points' ? 'btn-cyber-primary' : 'btn-cyber')} onClick={() => setEditMode('points')}>Point Editor</button>
-              </div>
-            </div>
+            <h4 className="mb-1">Step 3: Label &amp; Edit Calibration Data</h4>
+            <p className="small text-muted mb-0">
+              Add clips from the video and edit existing analysis points — both contribute to your calibration.
+            </p>
           </div>
           <div className="card-body">
-            {editMode === 'clips' && (
             <div className="guiding-section p-3 mb-3 rounded bg-panel-lighter border border-secondary">
-              <h6 className="text-white small fw-bold mb-2">How to Label:</h6>
+              <h6 className="text-white small fw-bold mb-2">How It Works:</h6>
               <ol className="small text-muted ps-3 mb-0">
                 <li className="mb-2">
-                  <strong>Use the Minimap:</strong> The thin top bar shows the full video. The <strong>white bracket</strong> below it indicates the section visible in the main labeling timeline.
+                  <strong>Add Clips:</strong> Use the minimap and timeline to find moments where you check a mirror. Drag the blue handles to select a range, then click a label button (e.g. "Left Mirror") to tag it.
                 </li>
                 <li className="mb-2">
-                  <strong>Zoom for Precision:</strong> Use the ＋ and － buttons to narrow or widen the visible section. Zooming in lets you find the exact frame where you check a mirror.
-                </li>
-                <li className="mb-2">
-                  <strong>Select & Tag:</strong> Use the blue handles on the large timeline to highlight a steady moment. Click a mirror button (e.g. "Left Mirror") to "tag" that clip.
+                  <strong>Edit Points:</strong> On the scatter plot below, click or drag-select dots to relabel or remove them. Clicking a dot jumps the video to that frame so you can verify.
                 </li>
                 <li>
-                  <strong>Check the Graph:</strong> Try to capture a wide variety of head positions for each mirror to build a robust model.
+                  <strong>Submit:</strong> Both clip-derived points and edited analysis points are combined for training. Aim for variety in each class.
                 </li>
               </ol>
             </div>
-            )}
-            {editMode === 'points' && (
-            <div className="guiding-section p-3 mb-3 rounded bg-panel-lighter border border-secondary">
-              <h6 className="text-white small fw-bold mb-2">How to Edit Points:</h6>
-              <ol className="small text-muted ps-3 mb-0">
-                <li className="mb-2">
-                  <strong>Click a Point:</strong> Click any dot on the scatter plot to select it. The video will jump to the frame where that head pose was recorded, so you can verify what you were looking at.
-                </li>
-                <li className="mb-2">
-                  <strong>Drag to Select Multiple:</strong> Click and drag on the graph to draw a selection box. All points inside the box will be selected (highlighted with a white border).
-                </li>
-                <li className="mb-2">
-                  <strong>Relabel or Remove:</strong> With points selected, click a gaze label button (e.g. "Left Mirror") to change their label, or click <strong>Remove Selected</strong> to exclude them from training.
-                </li>
-                <li>
-                  <strong>Deselect:</strong> Click an empty area of the graph or press <strong>Deselect All</strong> to clear your selection.
-                </li>
-              </ol>
-            </div>
-            )}
 
             <div className="bg-panel-darker p-3 mb-3 rounded border border-secondary text-center">
               <div style={{ position: 'relative', maxWidth: 480, margin: '0 auto' }}>
@@ -683,8 +646,18 @@ function CalibrationPage() {
               )}
             </div>
 
-            {/* ── Clip Mode UI ──────────────────────────────────────────── */}
-            {editMode === 'clips' && (<>
+            {/* ── Clip Editor (collapsible) ────────────────────────────── */}
+            <div className="mb-3 rounded border border-secondary" style={{ overflow: 'hidden' }}>
+              <button
+                className="btn w-100 d-flex justify-content-between align-items-center px-3 py-2"
+                style={{ background: 'var(--bg-panel-lighter)', border: 'none', color: 'var(--text-main)' }}
+                onClick={() => setShowClipEditor(prev => !prev)}
+              >
+                <span className="small fw-bold">Clip Editor{capturedSegments.length > 0 ? ' (' + capturedSegments.length + ' clips)' : ''}</span>
+                <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>{showClipEditor ? '▲ Hide' : '▼ Show'}</span>
+              </button>
+              {showClipEditor && (
+                <div className="p-3 pt-2">
             {/* Existing gaze reference bar — acts as minimap for panning the zoom window */}
             {gazeSegments.length > 0 && videoDuration > 0 && (
               <div className="mb-3" style={{ touchAction: 'none' }}>
@@ -802,19 +775,19 @@ function CalibrationPage() {
 
             <div className="d-flex gap-2 mb-2 align-items-center">
               <span className="small text-muted">Zoom:</span>
-              <button 
-                className="btn btn-sm btn-cyber" 
-                style={{ width: 24, height: 24, padding: 0, fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+              <button
+                className="btn btn-sm btn-cyber"
+                style={{ width: 24, height: 24, padding: 0, fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 onClick={() => handleZoom(0.5)}
               >＋</button>
-              <button 
-                className="btn btn-sm btn-cyber" 
-                style={{ width: 24, height: 24, padding: 0, fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+              <button
+                className="btn btn-sm btn-cyber"
+                style={{ width: 24, height: 24, padding: 0, fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 onClick={() => handleZoom(2)}
               >－</button>
-              <button 
-                className="btn btn-sm btn-cyber" 
-                style={{ padding: '0 8px', height: 24, fontSize: '0.7rem' }} 
+              <button
+                className="btn btn-sm btn-cyber"
+                style={{ padding: '0 8px', height: 24, fontSize: '0.7rem' }}
                 onClick={() => { setViewStart(0); setViewEnd(videoDuration); }}
               >RESET</button>
             </div>
@@ -824,70 +797,9 @@ function CalibrationPage() {
               viewStart={viewEnd > 0 ? viewStart : undefined} viewEnd={viewEnd > 0 ? viewEnd : undefined}
               hoveredIndex={hoveredSegmentIndex} onHover={setHoveredSegmentIndex} onLeave={() => setHoveredSegmentIndex(null)} />
 
-            <div className="text-center mb-4">
-              <div className="d-flex flex-wrap gap-2 justify-content-center mt-3">
-                {GAZE_CLASS_NAMES.map(cls => (
-                  <button key={cls} className="btn btn-cyber" style={{ borderColor: GAZE_STATES[cls]?.color, color: GAZE_STATES[cls]?.color, minWidth: 120 }} onClick={() => handleAddSegment(cls)}>
-                    {GAZE_STATES[cls]?.icon} {cls}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="row g-2 mb-4">
-              {MANDATORY_CLASS_NAMES.map(cls => {
-                const s = secondsByClass[cls] || 0;
-                const ok = s >= MIN_SECONDS_PER_CLASS;
-                return (
-                  <div key={cls} className="col-4">
-                    <div className={"p-2 rounded text-center border " + (ok ? 'border-success' : 'border-secondary')} style={{ backgroundColor: 'var(--bg-panel-lighter)' }}>
-                      <div className="small text-muted">{cls}</div>
-                      <div className={"fw-bold " + (ok ? 'text-success' : 'text-white')}>{(s || 0).toFixed(1) + "s / " + MIN_SECONDS_PER_CLASS + "s"}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Live scatter plot of current session samples */}
-            {(() => {
-              const points = currentSessionPoints;
-              if (points.length === 0) return null;
-              const xMin = -60, xMax = 60, yMin = -40, yMax = 40;
-              const w = 300, h = 200;
-              const toX = (v) => ((v - xMin) / (xMax - xMin)) * w;
-              const toY = (v) => h - ((v - yMin) / (yMax - yMin)) * h;
-              return (
-                <div className="mb-4 text-center">
-                  <p className="text-muted small mb-2" style={{ textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.72rem' }}>
-                    Live Distribution (Yaw vs Pitch) — Try to get a wide spread of dots
-                  </p>
-                  <svg width="100%" viewBox={"0 0 " + w + " " + h} className="rounded border border-secondary bg-panel-darker" style={{ maxWidth: 400 }}>
-                    {/* Grid lines */}
-                    <line x1={0} y1={h/2} x2={w} y2={h/2} stroke="#374151" strokeWidth={1} strokeDasharray="4 4" />
-                    <line x1={w/2} y1={0} x2={w/2} y2={h} stroke="#374151" strokeWidth={1} strokeDasharray="4 4" />
-                    {/* Data points */}
-                    {points.map((p, i) => (
-                      <circle
-                        key={i}
-                        cx={toX(p.yaw)}
-                        cy={toY(p.pitch)}
-                        r={2.5}
-                        fill={GAZE_STATES[p.label]?.color || '#888'}
-                        opacity={0.8}
-                      />
-                    ))}
-                    {/* Labels */}
-                    <text x={w/2} y={h - 5} fill="#9ca3af" fontSize={8} textAnchor="middle">Yaw (Horizontal)</text>
-                    <text x={5} y={h/2} fill="#9ca3af" fontSize={8} textAnchor="start" transform={"rotate(-90, 5, " + (h/2) + ")"}>Pitch (Vertical)</text>
-                  </svg>
-                </div>
-              );
-            })()}
-
             {/* List of currently tagged clips in this session */}
             {capturedSegments.length > 0 && (
-              <div className="mb-4">
+              <div className="mb-0 mt-3">
                 <p className="text-muted small mb-2" style={{ textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.72rem' }}>
                   Tagged Clips ({capturedSegments.length}) — Remove any incorrect ones
                 </p>
@@ -897,12 +809,12 @@ function CalibrationPage() {
                       const isHovered = hoveredSegmentIndex === i;
                       const color = GAZE_STATES[seg.label]?.color || '#888';
                       return (
-                        <div 
-                          key={i} 
+                        <div
+                          key={i}
                           className={"list-group-item d-flex justify-content-between align-items-center py-2 px-3 " + (isHovered ? 'hover-active' : 'bg-transparent')}
                           onMouseEnter={() => setHoveredSegmentIndex(i)}
                           onMouseLeave={() => setHoveredSegmentIndex(null)}
-                          style={{ 
+                          style={{
                             transition: 'all 0.2s',
                             borderLeft: '3px solid ' + (isHovered ? color : 'transparent'),
                             backgroundColor: isHovered ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
@@ -917,8 +829,8 @@ function CalibrationPage() {
                               {(seg.startTime || 0).toFixed(1)}s – {(seg.endTime || 0).toFixed(1)}s
                             </span>
                           </div>
-                          <button 
-                            className="btn btn-sm btn-outline-danger border-0 py-0 px-2" 
+                          <button
+                            className="btn btn-sm btn-outline-danger border-0 py-0 px-2"
                             style={{ fontSize: '0.65rem', fontWeight: 700 }}
                             onClick={(e) => { e.stopPropagation(); handleDeleteSegment(i); }}
                             title="Remove clip"
@@ -932,13 +844,23 @@ function CalibrationPage() {
                 </div>
               </div>
             )}
+                </div>
+              )}
+            </div>
 
-            </>)}
-            {/* ── End Clip Mode UI ────────────────────────────────────────── */}
-
-            {/* ── Point Editor UI ─────────────────────────────────────────── */}
-            {editMode === 'points' && (<>
-            <div className="mb-3 text-center">
+            {/* ── Point Editor (collapsible) ───────────────────────────── */}
+            <div className="mb-3 rounded border border-secondary" style={{ overflow: 'hidden' }}>
+              <button
+                className="btn w-100 d-flex justify-content-between align-items-center px-3 py-2"
+                style={{ background: 'var(--bg-panel-lighter)', border: 'none', color: 'var(--text-main)' }}
+                onClick={() => setShowPointEditor(prev => !prev)}
+              >
+                <span className="small fw-bold">Point Editor — {editablePoints.length} points{excludedPointIds.size > 0 ? ' (' + excludedPointIds.size + ' removed)' : ''}</span>
+                <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>{showPointEditor ? '▲ Hide' : '▼ Show'}</span>
+              </button>
+              {showPointEditor && (
+                <div className="p-3 pt-2">
+            <div className="mb-0 text-center">
               <p className="text-muted small mb-2" style={{ textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.72rem' }}>
                 Yaw vs Pitch — {editablePoints.length} points ({selectedPointIds.size} selected)
                 {excludedPointIds.size > 0 && <span className="text-warning ms-2">({excludedPointIds.size} removed)</span>}
@@ -948,6 +870,7 @@ function CalibrationPage() {
                 points={editablePoints}
                 selectedIds={selectedPointIds}
                 dragRect={dragRect}
+                overlayPoints={currentSessionPoints}
                 onPointerDown={handleScatterPointerDown}
                 onPointerMove={handleScatterPointerMove}
                 onPointerUp={handleScatterPointerUp}
@@ -958,35 +881,50 @@ function CalibrationPage() {
                 {GAZE_CLASS_NAMES.map(cls => (
                   <span key={cls} style={{ color: GAZE_STATES[cls]?.color }}>
                     {GAZE_STATES[cls]?.icon} {cls}
+                    <span className="text-muted ms-1">({combinedCounts[cls] || 0})</span>
                   </span>
                 ))}
               </div>
             </div>
 
-            {/* Selection actions */}
-            {selectedPointIds.size > 0 && (
-              <div className="mb-3 p-3 rounded bg-panel-lighter border border-secondary">
-                <p className="small text-muted mb-2 fw-bold">
-                  {selectedPointIds.size} point{selectedPointIds.size !== 1 ? 's' : ''} selected — assign a label or remove:
-                </p>
-                <div className="d-flex flex-wrap gap-2 mb-2">
-                  {GAZE_CLASS_NAMES.map(cls => (
-                    <button key={cls} className="btn btn-sm btn-cyber" style={{ borderColor: GAZE_STATES[cls]?.color, color: GAZE_STATES[cls]?.color }} onClick={() => handleLabelSelected(cls)}>
-                      {GAZE_STATES[cls]?.icon} {cls}
-                    </button>
-                  ))}
+            {excludedPointIds.size > 0 && (
+              <div className="text-center mt-2">
+                <button className="btn btn-sm btn-cyber text-warning border-warning" onClick={handleResetPointEditor}>
+                  Undo All Changes (Restore {excludedPointIds.size} removed points)
+                </button>
+              </div>
+            )}
                 </div>
-                <div className="d-flex gap-2">
+              )}
+            </div>
+
+            {/* ── Shared Label Buttons ─────────────────────────────────── */}
+            <div className="text-center mb-3">
+              <p className="text-muted small mb-2" style={{ textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.72rem' }}>
+                {selectedPointIds.size > 0
+                  ? selectedPointIds.size + ' point' + (selectedPointIds.size !== 1 ? 's' : '') + ' selected — click a label to relabel'
+                  : 'Tag a clip from the timeline, or select points on the graph, then click a label'}
+              </p>
+              <div className="d-flex flex-wrap gap-2 justify-content-center">
+                {GAZE_CLASS_NAMES.map(cls => (
+                  <button key={cls} className="btn btn-cyber" style={{ borderColor: GAZE_STATES[cls]?.color, color: GAZE_STATES[cls]?.color, minWidth: 120 }}
+                    onClick={() => { if (selectedPointIds.size > 0) handleLabelSelected(cls); else handleAddSegment(cls); }}>
+                    {GAZE_STATES[cls]?.icon} {cls}
+                  </button>
+                ))}
+              </div>
+              {selectedPointIds.size > 0 && (
+                <div className="d-flex gap-2 justify-content-center mt-2">
                   <button className="btn btn-sm btn-outline-danger" onClick={handleDeleteSelected}>Remove Selected</button>
                   <button className="btn btn-sm btn-cyber" onClick={() => setSelectedPointIds(new Set())}>Deselect All</button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* Per-class summary */}
+            {/* Unified per-class summary */}
             <div className="row g-2 mb-3">
               {MANDATORY_CLASS_NAMES.map(cls => {
-                const count = editPointCounts[cls] || 0;
+                const count = combinedCounts[cls] || 0;
                 const ok = count >= MIN_SAMPLES;
                 return (
                   <div key={cls} className="col-4">
@@ -999,29 +937,15 @@ function CalibrationPage() {
               })}
             </div>
 
-            {excludedPointIds.size > 0 && (
-              <button className="btn btn-sm btn-cyber text-warning border-warning mb-3" onClick={handleResetPointEditor}>
-                Undo All Changes (Restore {excludedPointIds.size} removed points)
-              </button>
-            )}
-            </>)}
-            {/* ── End Point Editor UI ─────────────────────────────────────── */}
-
             {sampleError && (
               <div className="alert alert-cyber-danger py-2 mb-3">{sampleError}</div>
             )}
 
             <div className="d-flex gap-2">
               <button className="btn btn-cyber" onClick={() => setStep(1)}>BACK</button>
-              {editMode === 'clips' ? (
-                <button className="btn btn-cyber-primary fw-bold ms-auto" disabled={!allClassesReady || !hasCurrentPoints || submittingSamples} onClick={handleSubmitSamples}>
-                  {submittingSamples ? 'SUBMITTING…' : 'SUBMIT SAMPLES'}
-                </button>
-              ) : (
-                <button className="btn btn-cyber-primary fw-bold ms-auto" disabled={!editClassesMet || submittingSamples} onClick={handleSubmitPoints}>
-                  {submittingSamples ? 'SUBMITTING…' : 'SUBMIT & CONTINUE'}
-                </button>
-              )}
+              <button className="btn btn-cyber-primary fw-bold ms-auto" disabled={!allReady || submittingSamples} onClick={handleSubmitUnified}>
+                {submittingSamples ? 'SUBMITTING…' : 'SUBMIT & CONTINUE'}
+              </button>
             </div>
           </div>
         </div>
@@ -1159,7 +1083,7 @@ function StepIndicator({ current, onStepClick }) {
 }
 
 const InteractiveScatterPlot = React.forwardRef(function InteractiveScatterPlot({
-  points, selectedIds, dragRect,
+  points, selectedIds, dragRect, overlayPoints,
   onPointerDown, onPointerMove, onPointerUp,
 }, ref) {
   const toX = (yaw) => SCATTER_PAD.left + ((yaw - YAW_RANGE[0]) / (YAW_RANGE[1] - YAW_RANGE[0])) * PLOT_W;
@@ -1170,7 +1094,7 @@ const InteractiveScatterPlot = React.forwardRef(function InteractiveScatterPlot(
       ref={ref}
       width="100%"
       viewBox={'0 0 ' + SCATTER_W + ' ' + SCATTER_H}
-      style={{ maxWidth: 560, cursor: 'crosshair', touchAction: 'none', userSelect: 'none' }}
+      style={{ maxWidth: '100%', cursor: 'crosshair', touchAction: 'none', userSelect: 'none' }}
       className="rounded border border-secondary bg-panel-darker"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -1231,6 +1155,19 @@ const InteractiveScatterPlot = React.forwardRef(function InteractiveScatterPlot(
             style={{ pointerEvents: 'none' }} />
         ))}
       </g>
+
+      {/* Overlay points from clips (non-interactive, rendered as squares) */}
+      {overlayPoints && overlayPoints.length > 0 && (
+        <g clipPath="url(#plot-clip)">
+          {overlayPoints.map((p, i) => (
+            <rect key={'ov' + i}
+              x={toX(p.yaw) - 3} y={toY(p.pitch) - 3} width={6} height={6}
+              fill={GAZE_STATES[p.label]?.color || '#888'} opacity={0.7}
+              stroke="#fff" strokeWidth={0.5} strokeDasharray="2 1"
+              style={{ pointerEvents: 'none' }} />
+          ))}
+        </g>
+      )}
 
       {/* Drag selection rectangle */}
       {dragRect && (() => {

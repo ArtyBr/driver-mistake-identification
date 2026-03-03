@@ -3,12 +3,12 @@
  */
 
 export const GAZE_STATES = {
-  'Looking Ahead': { color: '#20c997', icon: '↑' },
-  'Left Mirror':   { color: '#6f42c1', icon: '←' },
-  'Right Mirror':  { color: '#0ffc10', icon: '→' },
-  'Rear Mirror':   { color: '#ffc107', icon: '↓' },
-  'N/A':           { color: '#00d2df', icon: '·' },
-  'Unknown':       { color: '#ffc107', icon: '·' },
+  'Looking Ahead': { color: '#00FF88', icon: '↑' },
+  'Left Mirror':   { color: '#FF00FF', icon: '←' },
+  'Right Mirror':  { color: '#FFFF00', icon: '→' },
+  'Rear Mirror':   { color: '#FFFFFF', icon: '↓' },
+  'N/A':           { color: '#B0B0B0', icon: '·' },
+  'Unknown':       { color: '#B0B0B0', icon: '·' },
   'Start':         { color: '#adb5bd', icon: '◦' }
 };
 
