@@ -283,21 +283,26 @@ async def submit_correction(
 async def reanalyze_with_user_model(
     job_id: str,
     background_tasks: BackgroundTasks,
-    cal_id: str = Query(...),
+    cal_id: Optional[str] = Query(None),
     current_user: User = Depends(get_verified_user),
     session: Session = Depends(get_session),
 ):
     """
-    Re-analyzes a job with a specific calibration model.
+    Re-analyzes a job with a specific calibration model, or the default model if cal_id is omitted.
     """
-    if not calibration_service.has_trained_model(current_user.id, cal_id):
-        raise HTTPException(
-            status_code=400,
-            detail="Calibration model not found or not trained.",
-        )
+    DEFAULT_MODELS_DIR = "face_analysis/models"
+
+    if cal_id:
+        if not calibration_service.has_trained_model(current_user.id, cal_id):
+            raise HTTPException(
+                status_code=400,
+                detail="Calibration model not found or not trained.",
+            )
+        models_dir = str(calibration_service.get_user_model_dir(current_user.id, cal_id))
+    else:
+        models_dir = DEFAULT_MODELS_DIR
 
     job = _get_authorized_job(job_id, current_user, session)
-    models_dir = str(calibration_service.get_user_model_dir(current_user.id, cal_id))
 
     # Resolve source results.json
     source_results = None

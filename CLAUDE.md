@@ -46,6 +46,12 @@ python main.py <config_path> \
 ```
 Production: backend on port 7728, frontend on port 7727. Upload storage at `/dcs/large/safedrive_cs310_2526/uploads`. SSL certs (`key.pem`, `cert.pem`) required in backend directory.
 
+### SLURM Cluster Access
+```bash
+ssh -J u2204449@remote-49 u2204449@kudu-taught  # Jump via remote-49 to kudu cluster
+```
+The analysis pipeline runs on the `kudu` cluster. The remote project root is `~/cs310/driver-mistake-identification`.
+
 ## Architecture
 
 ### Request Flow

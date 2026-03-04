@@ -119,7 +119,8 @@ export const getCalibrationPlots = async (calId) => {
  * @returns {Promise<Object>}
  */
 export const requestReanalysis = async (jobId, calId) => {
-  const response = await api.post(`/calibration/reanalyze/${jobId}`, null, { params: { cal_id: calId } });
+  const params = calId ? { cal_id: calId } : {};
+  const response = await api.post(`/calibration/reanalyze/${jobId}`, null, { params });
   return response.data;
 };
 

@@ -4,7 +4,7 @@ import VideoPlayer from '../components/features/VideoPlayer';
 import MissingVideosUploader from '../components/features/MissingVideosUploader';
 import GazeCorrectionModal from '../components/GazeCorrectionModal';
 import { getJobStatus, getJobResults, getFileUrl } from '../services/api';
-import { listCalibrations, requestReanalysis } from '../services/calibrationService';
+import { listCalibrations, deleteCalibration, requestReanalysis } from '../services/calibrationService';
 import { useAuth } from '../hooks/useAuth';
 import '../App.css'; // Import the custom styles for VideoPlayer
 
@@ -205,63 +205,87 @@ const ResultPage = () => {
           />
 
           {!jobData?.is_demo && (
-            <div className="card card-cyber mt-4 shadow-sm border-info-subtle">
-              <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
-                <div>
-                  <h6 className="mb-1 text-white fw-bold">
-                    <i className="bi bi-eye me-2"></i>
-                    Gaze Accuracy
-                  </h6>
-                  <p className="text-muted small mb-0">
-                    {jobData?.calibration_id ? (
-                      <>Analyzed using calibration: <strong className="text-info">{jobData.calibration_name || 'Personal Model'}</strong></>
-                    ) : (
-                      <>Using default gaze model. Results might be less accurate for some camera angles.</>
-                    )}
-                  </p>
-                </div>
-                <div className="d-flex align-items-center gap-2 flex-wrap">
-                  {calibrations.length > 0 && (
-                    <>
+            <div className="card card-cyber mt-4 shadow-sm">
+              <div className="card-header d-flex justify-content-between align-items-center">
+                <h6 className="mb-0 text-white fw-bold">
+                  <i className="bi bi-eye me-2"></i>Gaze Calibration
+                </h6>
+                <Link
+                  to="/calibrate"
+                  state={{ jobId, calibrationId: jobData?.calibration_id }}
+                  className="btn btn-outline-cyber btn-sm"
+                >
+                  <i className="bi bi-sliders me-1"></i>CALIBRATE
+                </Link>
+              </div>
+              <div className="card-body">
+                <p className="text-muted small mb-3">
+                  {jobData?.calibration_id ? (
+                    <>This analysis used calibration: <strong className="text-info">{jobData.calibration_name || 'Personal Model'}</strong>. You can re-run it with a different one.</>
+                  ) : (
+                    <>This analysis used the default gaze model. Re-analyze with a personal calibration for better accuracy.</>
+                  )}
+                </p>
+
+                {calibrations.length > 0 ? (
+                  <div className="d-flex align-items-end gap-2 flex-wrap">
+                    <div style={{ flex: '1 1 200px', minWidth: 160 }}>
+                      <label className="form-label text-muted small mb-1">Calibration</label>
                       <select
                         className="form-select form-select-sm form-control-cyber"
-                        style={{ width: 'auto', minWidth: '160px' }}
                         value={reanalyzeCalId}
                         onChange={(e) => setReanalyzeCalId(e.target.value)}
                       >
-                        <option value="">-- Select Calibration --</option>
+                        <option value="">Default (no calibration)</option>
                         {calibrations.map(c => (
                           <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
                       </select>
+                    </div>
+                    <button
+                      className="btn btn-cyber-primary btn-sm fw-bold"
+                      disabled={reanalyzing}
+                      onClick={async () => {
+                        setReanalyzing(true);
+                        try {
+                          const res = await requestReanalysis(jobId, reanalyzeCalId || undefined);
+                          navigate(`/job/${res.job_id}`);
+                        } catch (e) {
+                          setError(e.response?.data?.detail || 'Re-analysis failed.');
+                          setReanalyzing(false);
+                        }
+                      }}
+                    >
+                      {reanalyzing ? (
+                        <><span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />Starting...</>
+                      ) : (<><i className="bi bi-arrow-repeat me-1"></i>RE-ANALYZE</>)}
+                    </button>
+                    {reanalyzeCalId && (
                       <button
-                        className="btn btn-info btn-sm"
-                        disabled={!reanalyzeCalId || reanalyzing}
+                        className="btn btn-sm btn-outline-danger border-0"
+                        title="Delete this calibration"
                         onClick={async () => {
-                          setReanalyzing(true);
+                          const cal = calibrations.find(c => c.id === reanalyzeCalId);
+                          if (!window.confirm('Delete calibration "' + (cal?.name || reanalyzeCalId) + '"? This cannot be undone.')) return;
                           try {
-                            const res = await requestReanalysis(jobId, reanalyzeCalId);
-                            navigate(`/job/${res.job_id}`);
+                            await deleteCalibration(reanalyzeCalId);
+                            setReanalyzeCalId('');
+                            const updated = await listCalibrations();
+                            setCalibrations(updated.filter(c => c.is_trained));
                           } catch (e) {
-                            setError(e.response?.data?.detail || 'Re-analysis failed.');
-                            setReanalyzing(false);
+                            alert(e.response?.data?.detail || 'Delete failed.');
                           }
                         }}
                       >
-                        {reanalyzing ? (
-                          <><span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />Starting...</>
-                        ) : 'RE-ANALYZE'}
+                        <i className="bi bi-trash"></i>
                       </button>
-                    </>
-                  )}
-                  <Link
-                    to="/calibrate"
-                    state={{ jobId, calibrationId: jobData?.calibration_id }}
-                    className="btn btn-outline-cyber btn-sm"
-                  >
-                    CALIBRATE GAZE
-                  </Link>
-                </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-muted small mb-0 fst-italic">
+                    No trained calibrations yet. <Link to="/calibrate" state={{ jobId }} className="text-info">Create one</Link> to improve accuracy.
+                  </p>
+                )}
               </div>
             </div>
           )}
