@@ -9,7 +9,7 @@ import { useVideoAnalysisData } from '../../hooks/useVideoAnalysisData'
 import { useVideoCanvas } from '../../hooks/useVideoCanvas'
 import { getColorForState } from '../../constants/videoConstants'
 import { detectNetworkQuality } from '../../utils/networkQuality'
-import { getAdminJobReports, adminReanalyzeJob } from '../../services/api'
+import { getAdminJobReports, adminReanalyzeJob, downloadClip } from '../../services/api'
 
 // ---------------------------------------------------------------------------
 // Admin: inline reports panel (shown between timeline and quality bar)
@@ -208,6 +208,8 @@ function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = nul
 
   // Report Form state
   const [showReportForm, setShowReportForm] = useState(false)
+  // Clip download state (admin only)
+  const [clipDownloading, setClipDownloading] = useState(false)
 
   // Quality selection state
   const [quality, setQuality] = useState('auto')
@@ -450,17 +452,37 @@ function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = nul
           </div>
         ) : <div className="d-none d-md-block" />}
 
-        <button 
-          className="btn btn-outline-warning btn-sm d-flex align-items-center justify-content-center gap-2 shadow-sm"
-          style={{ fontSize: '0.75rem', padding: '4px 10px' }}
-          onClick={() => {
-            if (!showReportForm && isPlaying) togglePlay();
-            setShowReportForm(prev => !prev);
-          }}
-          title="Report an error in detection or classification"
-        >
-          <i className="bi bi-flag-fill"></i> <span>{showReportForm ? 'Hide Report Form' : 'Report Model/Detection Error'}</span>
-        </button>
+        <div className="d-flex gap-2 align-items-center flex-wrap">
+          {isAdmin && (
+            <button
+              className="btn btn-outline-info btn-sm d-flex align-items-center justify-content-center gap-2 shadow-sm"
+              style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+              onClick={async () => {
+                setClipDownloading(true)
+                try { await downloadClip(jobId, currentTime) }
+                catch { alert('Failed to download clip.') }
+                finally { setClipDownloading(false) }
+              }}
+              disabled={clipDownloading}
+              title="Download a 15-second clip centered on the current timestamp"
+            >
+              {clipDownloading
+                ? <><span className="spinner-border spinner-border-sm" role="status" /> Downloading…</>
+                : <><i className="bi bi-scissors"></i> Download 15s Clip</>}
+            </button>
+          )}
+          <button
+            className="btn btn-outline-warning btn-sm d-flex align-items-center justify-content-center gap-2 shadow-sm"
+            style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+            onClick={() => {
+              if (!showReportForm && isPlaying) togglePlay();
+              setShowReportForm(prev => !prev);
+            }}
+            title="Report an error in detection or classification"
+          >
+            <i className="bi bi-flag-fill"></i> <span>{showReportForm ? 'Hide Report Form' : 'Report Model/Detection Error'}</span>
+          </button>
+        </div>
       </div>
 
       <Legend />

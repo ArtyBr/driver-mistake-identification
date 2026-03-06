@@ -154,4 +154,24 @@ export const getAdminJobReports = (jobId) => api.get('/admin/reports', { params:
 export const getAdminReportStats = () => api.get('/admin/reports/stats').then(r => r.data);
 export const adminReanalyzeJob = (jobId) => api.post(`/admin/jobs/${jobId}/reanalyze`).then(r => r.data);
 
+/**
+ * Downloads a 15-second clip (road + face) centered on `timestamp` as a ZIP.
+ * Admin-only.
+ */
+export const downloadClip = async (jobId, timestamp) => {
+  const response = await api.get(`/job/${jobId}/clip`, {
+    params: { timestamp },
+    responseType: 'blob',
+    timeout: 120_000,
+  });
+  const url = URL.createObjectURL(response.data);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `clip_${jobId}_${timestamp.toFixed(1)}s.zip`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+};
+
 export default api;

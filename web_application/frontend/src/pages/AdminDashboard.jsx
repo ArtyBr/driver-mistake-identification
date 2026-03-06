@@ -665,12 +665,12 @@ function ReportsSection({ onRefresh }) {
                      </button>
                      <ul className="dropdown-menu dropdown-menu-dark shadow">
                         <li>
-                          <a className="dropdown-item" href={getFileUrl(`REMOTE:${r.job_id}/road.mp4`)} target="_blank" rel="noopener noreferrer" download>
+                          <a className="dropdown-item" href={getFileUrl(`/video/remote/${r.job_id}/road.mp4`)} target="_blank" rel="noopener noreferrer" download>
                             Road Video
                           </a>
                         </li>
                         <li>
-                          <a className="dropdown-item" href={getFileUrl(`REMOTE:${r.job_id}/face.mp4`)} target="_blank" rel="noopener noreferrer" download>
+                          <a className="dropdown-item" href={getFileUrl(`/video/remote/${r.job_id}/face.mp4`)} target="_blank" rel="noopener noreferrer" download>
                             Face Video
                           </a>
                         </li>

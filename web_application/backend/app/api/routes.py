@@ -1,6 +1,9 @@
 import logging
 import json
+import shutil
 import subprocess
+import tempfile
+import zipfile
 from pathlib import Path
 from typing import List, Optional
 from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException, Form, Depends, Header, Request
@@ -12,6 +15,7 @@ from ..db.database import get_session
 from ..services.job_service import JobService
 from ..services.auth_service import get_current_user, get_optional_current_user, get_verified_user
 from ..services.file_service import FileService
+from ..services.video_utils import trim_video
 from ..models.schemas import JobCreateResponse, JobStatusResponse, AnalysisListResponse, JobUpdate
 from ..models.job import Job
 from ..models.user import User
@@ -59,6 +63,15 @@ def _build_quality_urls(job_id: str) -> dict:
             face_urls[label] = f"/video/remote/{job_id}/{face_file}"
 
     return {"road": road_urls, "face": face_urls}
+
+def _resolve_video_path(job_id: str, filename: str) -> Optional[Path]:
+    """Resolve a video file from job storage directories."""
+    for base in [_LARGE_BASE, UPLOAD_DIR]:
+        p = base / job_id / filename
+        if p.exists():
+            return p
+    return None
+
 
 def get_job_service(session: Session = Depends(get_session)) -> JobService:
     return JobService(session)
@@ -319,6 +332,68 @@ async def get_job_events(
     raise HTTPException(status_code=404, detail="Results not found")
 
 
+@router.get("/job/{job_id}/clip")
+async def download_clip(
+    job_id: str,
+    timestamp: float,
+    service: JobService = Depends(get_job_service),
+    _admin: User = Depends(get_current_user),
+):
+    """
+    Admin-only: download a 15-second clip (road + face) centered on `timestamp`.
+    Returns a ZIP containing road_clip.mp4 and face_clip.mp4.
+    """
+    if not _admin.is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    job = service.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    road_path = _resolve_video_path(job_id, "road.mp4")
+    face_path = _resolve_video_path(job_id, "face.mp4")
+    if not road_path or not face_path:
+        raise HTTPException(status_code=404, detail="Video files not found")
+
+    start = max(0.0, timestamp - 7.5)
+    duration = 15.0
+
+    tmp_dir = Path(tempfile.mkdtemp())
+    try:
+        road_clip = tmp_dir / "road_clip.mp4"
+        face_clip = tmp_dir / "face_clip.mp4"
+
+        if not trim_video(road_path, road_clip, start, duration):
+            raise HTTPException(status_code=500, detail="Failed to trim road video")
+        if not trim_video(face_path, face_clip, start, duration):
+            raise HTTPException(status_code=500, detail="Failed to trim face video")
+
+        zip_path = tmp_dir / "clip.zip"
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.write(road_clip, "road_clip.mp4")
+            zf.write(face_clip, "face_clip.mp4")
+
+        def iterfile():
+            try:
+                with open(zip_path, "rb") as f:
+                    while chunk := f.read(1024 * 1024):
+                        yield chunk
+            finally:
+                shutil.rmtree(tmp_dir, ignore_errors=True)
+
+        return StreamingResponse(
+            iterfile(),
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename=clip_{job_id}_{timestamp:.1f}s.zip"},
+        )
+    except HTTPException:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        raise
+    except Exception:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        raise HTTPException(status_code=500, detail="Clip generation failed")
+
+
 @router.get("/video/remote/{job_id}/{filename}")
 async def stream_remote_video(
     job_id: str, 
@@ -400,14 +475,19 @@ async def stream_remote_video(
                 yield data
 
     headers = {
-        "Content-Range": f"bytes {start}-{end}/{file_size}",
         "Accept-Ranges": "bytes",
         "Content-Length": str(content_length),
     }
 
+    if range:
+        headers["Content-Range"] = f"bytes {start}-{end}/{file_size}"
+        status_code = 206
+    else:
+        status_code = 200
+
     return StreamingResponse(
         iterfile(safe_path, start, content_length),
-        status_code=206, # Partial Content
+        status_code=status_code,
         headers=headers,
         media_type="video/mp4"
     )
