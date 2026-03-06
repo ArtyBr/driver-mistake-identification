@@ -239,9 +239,15 @@ class VisualOdometry:
         # Turn Detector
         # threshold 30 deg, moderate sharpness (0.6 deg/frame)
         self.turn_detector = TurnDetector(angle_threshold_degrees=30.0, cooldown_frames=60)
-        self.turn_pts_x = []
-        self.turn_pts_y = []
-        self.turn_pts_z = []
+        # Yaw integrated from per-frame R_rel (avoids euler decomposition sign-flip
+        # on large accumulated raw_R in long videos)
+        self.yaw_integrated = 0.0
+        self.turn_pts_left_x = []
+        self.turn_pts_left_y = []
+        self.turn_pts_left_z = []
+        self.turn_pts_right_x = []
+        self.turn_pts_right_y = []
+        self.turn_pts_right_z = []
 
     def get_segmentation_mask(self, frame):
         h, w = frame.shape[:2]
@@ -427,6 +433,9 @@ class VisualOdometry:
         if is_moving:
             self.raw_t = self.raw_t + self.raw_R.dot(t_rel)
             self.raw_R = self.raw_R.dot(R_rel)
+            # Integrate per-frame yaw directly from R_rel (index 1 = Y-rotation in ZYX convention)
+            # R_rel is always a small rotation so euler decomposition is well-behaved here
+            self.yaw_integrated += rotationMatrixToEulerAngles(R_rel)[1]
 
         # Kalman Filter Step
         self.kf.predict()
@@ -460,16 +469,23 @@ class VisualOdometry:
         else: status = "STATIONARY"
         
         # Turn Detection
-        current_yaw = est_state[4].item() # Pitch(0), Yaw(1), Roll(2) -> Index 4 corresponds to Y-rot (Yaw)
-        turn_event = self.turn_detector.update(current_yaw, self.frame_count)
+        # Use yaw_integrated (sum of per-frame R_rel Y-rotations) rather than est_state[4]
+        # (euler decomposition of accumulated raw_R). For long videos, raw_R can have a
+        # large accumulated rotation where atan2 can flip sign, causing LEFT/RIGHT confusion.
+        turn_event = self.turn_detector.update(self.yaw_integrated, self.frame_count)
         
         log_msg = f"Frame {self.frame_count} | {status} | Flow: {avg_flow:.2f}px | Inlier: {inlier_ratio:.2f} | Pos: ({self.cur_t[0][0]:.2f}, {self.cur_t[1][0]:.2f}, {self.cur_t[2][0]:.2f})"
         
         if turn_event:
             log_msg += f" | >>> {turn_event} DETECTED <<<"
-            self.turn_pts_x.append(self.cur_t[0][0])
-            self.turn_pts_y.append(self.cur_t[1][0])
-            self.turn_pts_z.append(self.cur_t[2][0])
+            if "LEFT" in turn_event:
+                self.turn_pts_left_x.append(self.cur_t[0][0])
+                self.turn_pts_left_y.append(self.cur_t[1][0])
+                self.turn_pts_left_z.append(self.cur_t[2][0])
+            else:
+                self.turn_pts_right_x.append(self.cur_t[0][0])
+                self.turn_pts_right_y.append(self.cur_t[1][0])
+                self.turn_pts_right_z.append(self.cur_t[2][0])
             
         print(log_msg, flush=True)
 
@@ -493,3 +509,150 @@ class VisualOdometry:
 
         self.prev_image = curr_gray
         return True, frame_raw, frame_cropped, turn_event, dynamic_mask
+
+    def on_key(self, event):
+        if event.key == 'q':
+            self.stop_requested = True
+
+    def run(self):
+        import matplotlib.pyplot as plt
+        from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
+
+        plt.ion()
+        fig = plt.figure(figsize=(14, 7))
+        self.stop_requested = False
+        fig.canvas.mpl_connect('key_press_event', self.on_key)
+
+        ax_masked = fig.add_subplot(121)
+        ax_traj = fig.add_subplot(122, projection='3d')
+
+        ax_masked.set_title("Mask R-CNN Overlay (Red=Dynamic)")
+        ax_masked.axis('off')
+
+        ax_traj.set_title("3D Trajectory")
+        ax_traj.set_xlabel('X')
+        ax_traj.set_ylabel('Z')
+        ax_traj.set_zlabel('Y')
+        ax_traj.view_init(elev=-20, azim=-90)
+
+        line_traj, = ax_traj.plot(self.traj_x, self.traj_z, [-y for y in self.traj_y], color='blue', label='Trajectory')
+        point_curr, = ax_traj.plot([0], [0], [0], 'ro', label='Current')
+        turns_left_plot, = ax_traj.plot([], [], [], 'c*', markersize=12, label='Turn Left')
+        turns_right_plot, = ax_traj.plot([], [], [], 'm*', markersize=12, label='Turn Right')
+        ax_traj.legend()
+
+        img_plot_masked = None
+
+        print("Starting Visual Odometry (Mask R-CNN)... Press Q to quit.")
+        while not self.stop_requested:
+            ret, frame_raw, frame_crop, turn_event, mask_dyn = self.process_frame()
+            if not ret:
+                break
+
+            # Blend red overlay on dynamic objects
+            vis_masked = frame_crop.copy()
+            red_img = np.zeros_like(vis_masked)
+            red_img[:, :, 2] = 255
+            blended = cv2.addWeighted(vis_masked, 0.6, red_img, 0.4, 0)
+            vis_masked[mask_dyn == 255] = blended[mask_dyn == 255]
+
+            # Draw tracked features
+            if self.prev_keypoints is not None:
+                for new in self.prev_keypoints:
+                    a, b = new.ravel()
+                    cv2.circle(vis_masked, (int(a), int(b)), 3, (0, 255, 0), -1)
+
+            masked_rgb = cv2.cvtColor(vis_masked, cv2.COLOR_BGR2RGB)
+            if img_plot_masked is None:
+                img_plot_masked = ax_masked.imshow(masked_rgb)
+            else:
+                img_plot_masked.set_data(masked_rgb)
+
+            # Update trajectory plot
+            p_x = self.traj_x
+            p_y = self.traj_z
+            p_z = [-y for y in self.traj_y]
+
+            line_traj.set_data(p_x, p_y)
+            line_traj.set_3d_properties(p_z)
+            point_curr.set_data([p_x[-1]], [p_y[-1]])
+            point_curr.set_3d_properties([p_z[-1]])
+
+            if len(self.turn_pts_left_x) > 0:
+                turns_left_plot.set_data(self.turn_pts_left_x, self.turn_pts_left_z)
+                turns_left_plot.set_3d_properties([-y for y in self.turn_pts_left_y])
+            if len(self.turn_pts_right_x) > 0:
+                turns_right_plot.set_data(self.turn_pts_right_x, self.turn_pts_right_z)
+                turns_right_plot.set_3d_properties([-y for y in self.turn_pts_right_y])
+
+            if len(p_x) > 1:
+                mx = (max(p_x) + min(p_x)) / 2
+                my = (max(p_y) + min(p_y)) / 2
+                mz = (max(p_z) + min(p_z)) / 2
+                r = max(max(p_x) - min(p_x), max(p_y) - min(p_y), max(p_z) - min(p_z)) / 2.0 or 1.0
+                ax_traj.set_xlim(mx - r, mx + r)
+                ax_traj.set_ylim(my - r, my + r)
+                ax_traj.set_zlim(mz - r, mz + r)
+
+            plt.draw()
+            plt.pause(0.001)
+
+        print("Finished.")
+        plt.ioff()
+
+        # Save X-Z trajectory plot to the same directory as the video
+        if self.video_path and len(self.traj_x) > 1:
+            video_dir = os.path.dirname(os.path.abspath(self.video_path))
+            video_stem = os.path.splitext(os.path.basename(self.video_path))[0]
+            save_path = os.path.join(video_dir, f"{video_stem}_trajectory_xz.png")
+
+            fig_save, ax_save = plt.subplots(figsize=(10, 8))
+            ax_save.plot(self.traj_x, self.traj_z, color='blue', label='Trajectory')
+            if len(self.turn_pts_left_x) > 0:
+                ax_save.plot(self.turn_pts_left_x, self.turn_pts_left_z, 'c*', markersize=12, label='Turn Left')
+            if len(self.turn_pts_right_x) > 0:
+                ax_save.plot(self.turn_pts_right_x, self.turn_pts_right_z, 'm*', markersize=12, label='Turn Right')
+            ax_save.set_title("X-Z Trajectory (Top-Down View)")
+            ax_save.set_xlabel("X")
+            ax_save.set_ylabel("Z")
+            ax_save.legend()
+            ax_save.set_aspect('equal', adjustable='datalim')
+            ax_save.grid(True)
+            fig_save.tight_layout()
+            fig_save.savefig(save_path, dpi=150)
+            plt.close(fig_save)
+            print(f"Trajectory plot saved to: {save_path}")
+
+        if not self.stop_requested:
+            plt.show(block=True)
+        else:
+            plt.close()
+        self.cap.release()
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Monocular Visual Odometry")
+    parser.add_argument("video", help="Path to video file")
+    parser.add_argument("--start", type=float, default=0.0, help="Start time in seconds")
+    parser.add_argument("--show", action="store_true", help="Show live visualisation (trajectory + mask overlay)")
+    args = parser.parse_args()
+
+    if not os.path.exists(args.video):
+        print(f"Error: File '{args.video}' not found.")
+        sys.exit(1)
+
+    vo = VisualOdometry(args.video, start_seconds=args.start)
+
+    if args.show:
+        vo.run()
+    else:
+        # Console-only mode: just print per-frame logs
+        while True:
+            ret, _, _, _, _ = vo.process_frame()
+            if not ret:
+                break
+        print("Finished.")
+        if vo.cap:
+            vo.cap.release()
