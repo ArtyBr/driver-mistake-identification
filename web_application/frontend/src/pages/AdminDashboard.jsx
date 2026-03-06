@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getAdminUsers, getAdminUserJobs, getAdminJobs,
-  updateAdminUser, updateAdminJob, deleteAdminUser, deleteAdminJob,
+  updateAdminUser, updateAdminJob, adminAssignJob, deleteAdminUser, deleteAdminJob,
   getAdminReports, getAdminReportStats, adminReanalyzeJob, getFileUrl
 } from '../services/api';
 import AnalysisListItem from '../components/common/AnalysisListItem';
@@ -307,6 +307,19 @@ function UserRow({ user, jobs, onVerify, onDelete, onJobAction, onDemoChange }) 
     }
   };
 
+  const handleReassignJob = async (jobId) => {
+    const newEmail = prompt("Enter the email of the user to assign this video to:");
+    if (newEmail && newEmail.trim() !== "") {
+      try {
+        await adminAssignJob(jobId, newEmail.trim());
+        if (onJobAction) onJobAction(user.id);
+        if (onVerify) onVerify(); // loadData is passed as onVerify to refresh everything
+      } catch (err) {
+        alert("Failed to reassign video: " + (err.response?.data?.detail || err.message));
+      }
+    }
+  };
+
   return (
     <div
       className="card card-cyber mb-2"
@@ -438,6 +451,14 @@ function UserRow({ user, jobs, onVerify, onDelete, onJobAction, onDemoChange }) 
                       onClick={() => handleRenameJob(job.id, job.name)}
                     >
                       <i className="bi bi-pencil me-2"></i> Rename Video
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className="dropdown-item py-2 text-white"
+                      onClick={() => handleReassignJob(job.id)}
+                    >
+                      <i className="bi bi-person-up me-2"></i> Reassign Video
                     </button>
                   </li>
                   <li>

@@ -52,6 +52,10 @@ class AdminJobUpdate(BaseModel):
     status: Optional[str] = None
     is_demo: Optional[bool] = None
 
+class AdminJobReassign(BaseModel):
+    user_email: str
+
+
 
 # ---------------------------------------------------------------------------
 # Stats
@@ -285,6 +289,27 @@ async def admin_update_job(
     session.refresh(job)
     return {"id": job.id, "name": job.name, "status": job.status, "is_demo": job.is_demo}
 
+
+@router.put("/jobs/{job_id}/assign")
+async def admin_assign_job(
+    job_id: str,
+    data: AdminJobReassign,
+    session: Session = Depends(get_session),
+    _: User = Depends(get_admin_user),
+):
+    job = session.get(Job, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    user = session.exec(select(User).where(User.email == data.user_email)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Target user not found")
+
+    job.owner_id = user.id
+    session.add(job)
+    session.commit()
+    session.refresh(job)
+    return {"id": job.id, "owner_id": job.owner_id, "message": f"Job re-assigned to {user.email}"}
 
 @router.delete("/jobs/{job_id}")
 async def admin_delete_job(

@@ -135,6 +135,7 @@ export const deleteAdminUser = (userId, deleteJobs = false) =>
 
 export const getAdminJobs = (params = {}) => api.get('/admin/jobs', { params }).then(r => r.data);
 export const updateAdminJob = (jobId, data) => api.put(`/admin/jobs/${jobId}`, data).then(r => r.data);
+export const adminAssignJob = (jobId, userEmail) => api.put(`/admin/jobs/${jobId}/assign`, { user_email: userEmail }).then(r => r.data);
 export const deleteAdminJob = (jobId) => api.delete(`/admin/jobs/${jobId}`).then(r => r.data);
 
 export const getAdminSessions = () => api.get('/admin/sessions').then(r => r.data);
