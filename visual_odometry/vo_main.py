@@ -149,11 +149,18 @@ class TurnDetector:
         return detected
 
 class VisualOdometry:
-    def __init__(self, video_path=None, start_seconds=0, fps=30.0):
+    def __init__(self, video_path=None, start_seconds=0, fps=30.0,
+                 use_kalman=True, use_masking=True, use_bucketing=True, use_fb_validation=True):
         self.video_path = video_path
         self.fps = fps
         self.cap = None
-        
+
+        # Feature toggle flags
+        self.use_kalman = use_kalman
+        self.use_masking = use_masking
+        self.use_bucketing = use_bucketing
+        self.use_fb_validation = use_fb_validation
+
         if video_path:
             self.cap = cv2.VideoCapture(video_path)
             if not self.cap.isOpened():
@@ -163,7 +170,7 @@ class VisualOdometry:
             if start_seconds > 0:
                 print(f"Seeking to {start_seconds} seconds...")
                 self.cap.set(cv2.CAP_PROP_POS_MSEC, start_seconds * 1000)
-            
+
             # Update FPS from video
             vid_fps = self.cap.get(cv2.CAP_PROP_FPS)
             if vid_fps > 0 and not np.isnan(vid_fps):
@@ -175,7 +182,7 @@ class VisualOdometry:
             [0.0, 1144.329008082279, 539.4773780846734],
             [0.0, 0.0, 1.0]
         ])
-        
+
         self.K = self.K_orig.copy()
         self.k_adjusted = False
 
@@ -192,46 +199,47 @@ class VisualOdometry:
         # Raw pose accumulator for KF input
         self.raw_R = np.eye(3)
         self.raw_t = np.zeros((3, 1))
-        
+
         self.prev_image = None
         self.prev_keypoints = None
-        
+
         self.traj_x = [0.0]
         self.traj_y = [0.0]
         self.traj_z = [0.0]
         self.frame_count = 0
-        
-        # Kalman Filter Init
-        print(f"Initializing Kalman Filter (FPS: {self.fps})")
-        self.kf = PoseKalmanFilter(fps=self.fps)
-        
-        # Initial State for KF
-        init_meas = np.zeros((6, 1), dtype=np.float32)
-        # We start at 0,0,0 and 0,0,0 rotation
-        self.kf.kalman.statePost[:6] = init_meas
 
-        # --- Mask R-CNN Setup ---
-        print("Initializing Mask R-CNN (ResNet50 FPN V2)...")
+        # Per-frame metrics for benchmarking
+        self.frame_stats = []
+
+        # Kalman Filter Init (skip if disabled)
+        self.kf = None
+        if self.use_kalman:
+            print(f"Initializing Kalman Filter (FPS: {self.fps})")
+            self.kf = PoseKalmanFilter(fps=self.fps)
+            init_meas = np.zeros((6, 1), dtype=np.float32)
+            self.kf.kalman.statePost[:6] = init_meas
+
+        # --- Mask R-CNN Setup (skip if masking disabled) ---
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        
         self.seg_model = None
-        try:
-            # Load the model
-            weights = torchvision.models.detection.MaskRCNN_ResNet50_FPN_V2_Weights.DEFAULT
-            self.seg_model = torchvision.models.detection.maskrcnn_resnet50_fpn_v2(weights=weights)
-            self.seg_model.to(self.device)
-            self.seg_model.eval()
-            print("Mask R-CNN initialized successfully.")
-        except Exception as e:
-            print(f"Warning: Failed to initialize Mask R-CNN. Running without dynamic masking. Error: {e}")
-            self.seg_model = None
-        
+        if self.use_masking:
+            print("Initializing Mask R-CNN (ResNet50 FPN V2)...")
+            try:
+                weights = torchvision.models.detection.MaskRCNN_ResNet50_FPN_V2_Weights.DEFAULT
+                self.seg_model = torchvision.models.detection.maskrcnn_resnet50_fpn_v2(weights=weights)
+                self.seg_model.to(self.device)
+                self.seg_model.eval()
+                print("Mask R-CNN initialized successfully.")
+            except Exception as e:
+                print(f"Warning: Failed to initialize Mask R-CNN. Running without dynamic masking. Error: {e}")
+                self.seg_model = None
+
         # Transform for Mask R-CNN (It expects 0-1 float tensors)
         self.seg_transform = transforms.Compose([
             transforms.ToPILImage(),
             transforms.ToTensor(),
         ])
-        
+
         # COCO classes to ignore (dynamic objects)
         # 1: person, 2: bicycle, 3: car, 4: motorcycle, 6: bus, 8: truck
         self.ignore_classes = [1, 2, 3, 4, 6, 8]
@@ -281,15 +289,18 @@ class VisualOdometry:
         return combined_mask
 
     def detect_features(self, image, mask=None):
-        """Detect features using a grid-based approach (bucketing) to ensure even distribution."""
+        """Detect features, using grid bucketing if enabled for even distribution."""
+        if not self.use_bucketing:
+            return cv2.goodFeaturesToTrack(image, mask=mask, **self.feature_params)
+
         grid_rows, grid_cols = 4, 6
         h, w = image.shape[:2]
         cell_h, cell_w = h // grid_rows, w // grid_cols
-        
+
         all_kps = []
         # Target features per cell
         target_per_cell = self.feature_params['maxCorners'] // (grid_rows * grid_cols)
-        
+
         # Local copy of params to modify maxCorners for each cell
         local_params = self.feature_params.copy()
         local_params['maxCorners'] = target_per_cell
@@ -298,7 +309,7 @@ class VisualOdometry:
             for c in range(grid_cols):
                 y0, y1 = r * cell_h, (r + 1) * cell_h
                 x0, x1 = c * cell_w, (c + 1) * cell_w
-                
+
                 cell_img = image[y0:y1, x0:x1]
                 cell_mask = None
                 if mask is not None:
@@ -312,7 +323,7 @@ class VisualOdometry:
                     kps[:, 0, 0] += x0
                     kps[:, 0, 1] += y0
                     all_kps.append(kps)
-        
+
         if len(all_kps) > 0:
             return np.vstack(all_kps)
         return None
@@ -345,19 +356,19 @@ class VisualOdometry:
             self.K[1, 2] = self.K_orig[1, 2] - y_start
             self.k_adjusted = True
 
-        # Generate Mask using Mask R-CNN
-        dynamic_mask = self.get_segmentation_mask(frame_cropped)
-        
-        # Dilate mask slightly to cover edges
-        kernel = np.ones((31, 31), np.uint8) 
-        dynamic_mask = cv2.dilate(dynamic_mask, kernel, iterations=2)
-        
-        # Static mask: 255 where static, 0 where dynamic
-        static_mask = cv2.bitwise_not(dynamic_mask)
-        
-        # Safety: If mask covers too much of the screen, we are effectively blind
-        static_area_ratio = np.sum(static_mask == 255) / (h_crop * w_crop)
-        is_blind = static_area_ratio < 0.05 # Less than 5% static area
+        # Generate Mask using Mask R-CNN (skip if masking disabled)
+        if self.use_masking:
+            dynamic_mask = self.get_segmentation_mask(frame_cropped)
+            kernel = np.ones((31, 31), np.uint8)
+            dynamic_mask = cv2.dilate(dynamic_mask, kernel, iterations=2)
+            static_mask = cv2.bitwise_not(dynamic_mask)
+            static_area_ratio = np.sum(static_mask == 255) / (h_crop * w_crop)
+            is_blind = static_area_ratio < 0.05
+        else:
+            dynamic_mask = np.zeros((h_crop, w_crop), dtype=np.uint8)
+            static_mask = np.full((h_crop, w_crop), 255, dtype=np.uint8)
+            static_area_ratio = 1.0
+            is_blind = False
 
         # Convert to grayscale
         curr_gray = cv2.cvtColor(frame_cropped, cv2.COLOR_BGR2GRAY)
@@ -379,22 +390,31 @@ class VisualOdometry:
             # Track features (Forward)
             p1, st, err = cv2.calcOpticalFlowPyrLK(self.prev_image, curr_gray, self.prev_keypoints, None, **self.lk_params)
 
-            # Track features (Backward) for consistency check
             if p1 is not None:
-                p0_back, st_back, err_back = cv2.calcOpticalFlowPyrLK(curr_gray, self.prev_image, p1, None, **self.lk_params)
+                if self.use_fb_validation:
+                    # Track features (Backward) for consistency check
+                    p0_back, st_back, err_back = cv2.calcOpticalFlowPyrLK(curr_gray, self.prev_image, p1, None, **self.lk_params)
 
-                if p0_back is not None:
-                    # Forward-Backward error
-                    fb_err = np.linalg.norm((self.prev_keypoints - p0_back).reshape(-1, 2), axis=1)
-                    
+                    if p0_back is not None:
+                        fb_err = np.linalg.norm((self.prev_keypoints - p0_back).reshape(-1, 2), axis=1)
+
+                        for i, (new, old) in enumerate(zip(p1, self.prev_keypoints)):
+                            if st[i] == 1 and st_back[i] == 1 and fb_err[i] < 0.5:
+                                x, y = new.ravel()
+                                if 0 <= int(y) < h_crop and 0 <= int(x) < w_crop:
+                                    if static_mask[int(y), int(x)] > 0:
+                                        good_new.append(new)
+                                        good_old.append(old)
+                else:
+                    # No forward-backward validation: accept features with forward status only
                     for i, (new, old) in enumerate(zip(p1, self.prev_keypoints)):
-                        if st[i] == 1 and st_back[i] == 1 and fb_err[i] < 0.5:
+                        if st[i] == 1:
                             x, y = new.ravel()
                             if 0 <= int(y) < h_crop and 0 <= int(x) < w_crop:
                                 if static_mask[int(y), int(x)] > 0:
                                     good_new.append(new)
                                     good_old.append(old)
-            
+
             good_new = np.array(good_new)
             good_old = np.array(good_old)
             if len(good_new) > 10:
@@ -437,28 +457,30 @@ class VisualOdometry:
             # R_rel is always a small rotation so euler decomposition is well-behaved here
             self.yaw_integrated += rotationMatrixToEulerAngles(R_rel)[1]
 
-        # Kalman Filter Step
-        self.kf.predict()
-        
-        # Prepare measurement (Current Raw Pose)
-        meas_pos = self.raw_t.flatten()
-        meas_euler = rotationMatrixToEulerAngles(self.raw_R)
-        measurement = np.concatenate((meas_pos, meas_euler)).reshape(6, 1).astype(np.float32)
-        
-        # Confidence logic: Lock position if stationary/blind, trust VO if moving
-        if is_moving:
-            conf_scale = 1.0
-        elif is_blind:
-            conf_scale = 0.01 # Extremely high trust in stationary state when masked
+        # Kalman Filter Step (skip if disabled)
+        if self.use_kalman and self.kf is not None:
+            self.kf.predict()
+
+            meas_pos = self.raw_t.flatten()
+            meas_euler = rotationMatrixToEulerAngles(self.raw_R)
+            measurement = np.concatenate((meas_pos, meas_euler)).reshape(6, 1).astype(np.float32)
+
+            if is_moving:
+                conf_scale = 1.0
+            elif is_blind:
+                conf_scale = 0.01
+            else:
+                conf_scale = 0.1
+
+            est_state = self.kf.correct(measurement, confidence_scale=conf_scale)
+
+            self.cur_t = est_state[:3].reshape(3, 1)
+            self.cur_R = eulerAnglesToRotationMatrix(est_state[3:6].flatten())
         else:
-            conf_scale = 0.1 # High trust in stationary state
-            
-        est_state = self.kf.correct(measurement, confidence_scale=conf_scale)
-        
-        # Extract Filtered Pose
-        self.cur_t = est_state[:3].reshape(3, 1)
-        self.cur_R = eulerAnglesToRotationMatrix(est_state[3:6].flatten())
-        
+            # No Kalman filter: use raw pose directly
+            self.cur_t = self.raw_t.copy()
+            self.cur_R = self.raw_R.copy()
+
         self.traj_x.append(self.cur_t[0][0])
         self.traj_y.append(self.cur_t[1][0])
         self.traj_z.append(self.cur_t[2][0])
@@ -506,6 +528,20 @@ class VisualOdometry:
                 self.prev_keypoints = self.detect_features(curr_gray, mask=static_mask)
             else:
                 self.prev_keypoints = None
+
+        # Collect per-frame stats for benchmarking
+        self.frame_stats.append({
+            'frame': self.frame_count,
+            'avg_flow': avg_flow,
+            'inlier_ratio': inlier_ratio,
+            'feature_count': len(good_new) if tracking_success else 0,
+            'is_moving': is_moving,
+            'is_blind': is_blind,
+            'pos_x': self.cur_t[0][0],
+            'pos_y': self.cur_t[1][0],
+            'pos_z': self.cur_t[2][0],
+            'turn_event': turn_event,
+        })
 
         self.prev_image = curr_gray
         return True, frame_raw, frame_cropped, turn_event, dynamic_mask
