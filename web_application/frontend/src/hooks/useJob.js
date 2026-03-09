@@ -1,5 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { uploadVideos, getJobStatus } from '../services/api';
+import { 
+  getJobStatus, 
+  initUpload, 
+  uploadJobFile, 
+  finalizeUpload 
+} from '../services/api';
 
 export const useJobUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
@@ -11,23 +16,43 @@ export const useJobUpload = () => {
     setProgress(0);
     setError(null);
 
-    const formData = new FormData();
-    roadFiles.forEach(file => formData.append('video_road', file));
-    faceFiles.forEach(file => formData.append('video_face', file));
-    formData.append('keep_videos', keepVideos);
-    if (name) {
-        formData.append('name', name);
-    }
-    if (calibrationId) {
-        formData.append('calibration_id', calibrationId);
-    }
-
     try {
-      const data = await uploadVideos(formData, setProgress);
-      // Wait for initial status check to confirm job exists
-      await getJobStatus(data.job_id);
-      return data.job_id;
+      // 1. Initialize the job record
+      const initFormData = new FormData();
+      if (name) initFormData.append('name', name);
+      if (calibrationId) initFormData.append('calibration_id', calibrationId);
+      initFormData.append('keep_videos', keepVideos);
+
+      const { job_id } = await initUpload(initFormData);
+
+      const totalFiles = roadFiles.length + faceFiles.length;
+      let completedFiles = 0;
+
+      // 2. Upload road videos one by one
+      for (const file of roadFiles) {
+        await uploadJobFile(job_id, 'road', file, (p) => {
+          const overall = Math.round(((completedFiles + p / 100) / totalFiles) * 100);
+          setProgress(Math.min(overall, 99)); // Keep at 99 until finalize
+        });
+        completedFiles++;
+      }
+
+      // 3. Upload face videos one by one
+      for (const file of faceFiles) {
+        await uploadJobFile(job_id, 'face', file, (p) => {
+          const overall = Math.round(((completedFiles + p / 100) / totalFiles) * 100);
+          setProgress(Math.min(overall, 99));
+        });
+        completedFiles++;
+      }
+
+      // 4. Finalize the upload to start analysis
+      await finalizeUpload(job_id);
+      setProgress(100);
+      
+      return job_id;
     } catch (err) {
+      console.error("Upload process failed:", err);
       setError(err.response?.data?.detail || "Upload failed. Check your connection or file size.");
       throw err;
     } finally {

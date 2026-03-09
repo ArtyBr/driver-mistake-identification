@@ -36,6 +36,7 @@ from ..services import sync_service
 from ..services.analysis_service import run_analysis_process
 from ..services.auth_service import get_current_user
 from ..services.job_service import JobService
+from ..services.file_service import FileService
 from ..services.video_utils import get_video_duration, splice_videos, trim_video
 
 logger = logging.getLogger(__name__)
@@ -94,6 +95,55 @@ def _do_analyze_background(
         except Exception:
             pass
 
+
+@router.post("/init")
+async def init_sync():
+    """Initializes a new sync analysis session."""
+    _cleanup_old_sessions()
+    session_id = str(uuid.uuid4())
+    temp_dir = SYNC_TEMP_DIR / session_id
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    return {"session_id": session_id}
+
+@router.post("/{session_id}/file/{video_type}")
+async def upload_sync_file(
+    session_id: str,
+    video_type: str,
+    file: UploadFile = File(...),
+):
+    """Uploads a single file part to a sync session."""
+    if video_type not in ["road", "face"]:
+        raise HTTPException(status_code=400, detail="Invalid video_type.")
+        
+    temp_dir = SYNC_TEMP_DIR / session_id
+    if not temp_dir.exists():
+        raise HTTPException(status_code=404, detail="Session not found")
+        
+    try:
+        FileService.save_single_upload(temp_dir, file, video_type)
+        return {"message": "File uploaded"}
+    except Exception as exc:
+        logger.error("Failed to save sync file part: %s", exc)
+        raise HTTPException(status_code=500, detail="Failed to save file part")
+
+@router.post("/{session_id}/finalize")
+async def finalize_sync_analysis(
+    session_id: str,
+    background_tasks: BackgroundTasks,
+):
+    """Splicing and start background sync analysis."""
+    temp_dir = SYNC_TEMP_DIR / session_id
+    if not temp_dir.exists():
+        raise HTTPException(status_code=404, detail="Session not found")
+        
+    road_parts = sorted(list(temp_dir.glob("road_part_*.mp4")))
+    face_parts = sorted(list(temp_dir.glob("face_part_*.mp4")))
+    
+    if not road_parts or not face_parts:
+        raise HTTPException(status_code=400, detail="Both road and face parts are required")
+        
+    background_tasks.add_task(_do_analyze_background, session_id, road_parts, face_parts, temp_dir)
+    return {"session_id": session_id, "status": "processing"}
 
 @router.post("/analyze")
 async def analyze_sync(

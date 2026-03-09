@@ -1,7 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './Uploader.css'
-import api, { updateJobName, deleteJob } from '../../services/api'
+import api, { 
+  updateJobName, 
+  deleteJob, 
+  initSync, 
+  uploadSyncFile, 
+  finalizeSync 
+} from '../../services/api'
 import FileDropZone from '../common/FileDropZone'
 import SyncConfirmStep from './SyncConfirmStep'
 import { useJobUpload } from '../../hooks/useJob'
@@ -9,6 +15,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { useAnalysesList } from '../../hooks/useAnalysesList'
 import AnalysisListItem from '../common/AnalysisListItem'
 import { listCalibrations, renameCalibration } from '../../services/calibrationService'
+import { groupAnalyses } from '../../utils/groupAnalyses'
 
 function Uploader({ onUploadSuccess }) {
   const navigate = useNavigate();
@@ -37,6 +44,9 @@ function Uploader({ onUploadSuccess }) {
   const [localError, setLocalError] = useState(null);
 
   const { analyses, refetch: refetchAnalyses, getEtaMs } = useAnalysesList();
+  
+  const myAnalyses = analyses.filter(a => !a.is_demo);
+  const myAnalysesGroups = groupAnalyses(myAnalyses);
 
   useEffect(() => {
     if (user) {
@@ -130,22 +140,31 @@ function Uploader({ onUploadSuccess }) {
     setIsSyncAnalyzing(true);
     setSyncUploadProgress(0);
     try {
-      const formData = new FormData();
-      roadFiles.forEach(f => formData.append('road_video', f));
-      faceFiles.forEach(f => formData.append('face_video', f));
+      const { session_id } = await initSync();
 
-      const res = await api.post('/sync/analyze', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 30 * 60 * 1000,
-        onUploadProgress: (evt) => {
-          if (evt.total) {
-            setSyncUploadProgress(Math.round((evt.loaded * 100) / evt.total));
-          }
-        },
-      });
+      const totalFiles = roadFiles.length + faceFiles.length;
+      let completedFiles = 0;
+
+      for (const file of roadFiles) {
+        await uploadSyncFile(session_id, 'road', file, (p) => {
+          const overall = Math.round(((completedFiles + p / 100) / totalFiles) * 100);
+          setSyncUploadProgress(overall);
+        });
+        completedFiles++;
+      }
+
+      for (const file of faceFiles) {
+        await uploadSyncFile(session_id, 'face', file, (p) => {
+          const overall = Math.round(((completedFiles + p / 100) / totalFiles) * 100);
+          setSyncUploadProgress(overall);
+        });
+        completedFiles++;
+      }
+
+      const res = await finalizeSync(session_id);
 
       // Backend returns immediately with session_id; polling useEffect takes over
-      setPollingSessionId(res.data.session_id);
+      setPollingSessionId(res.session_id);
     } catch (err) {
       setLocalError(
         err.response?.data?.detail || 'Sync analysis failed. Check your videos and try again.'
@@ -182,7 +201,16 @@ function Uploader({ onUploadSuccess }) {
   };
 
   const handleDeleteItem = async (analysis) => {
-    if (!window.confirm(`Delete "${analysis.name || analysis.id}" and all its files? This cannot be undone.`)) return;
+    const isLast = myAnalyses.filter(a => 
+      (a.road_path === analysis.road_path && analysis.road_path) || 
+      (a.face_path === analysis.face_path && analysis.face_path)
+    ).length === 1;
+
+    const message = isLast && (analysis.road_path || analysis.face_path)
+      ? `Delete "${analysis.name || 'this analysis'}"? This is the final analysis for these videos; deleting it will also delete the corresponding videos from storage. This cannot be undone.`
+      : `Delete "${analysis.name || 'this analysis'}"? This cannot be undone.`;
+
+    if (!window.confirm(message)) return;
     try {
       await deleteJob(analysis.id);
       await refetchAnalyses();
@@ -398,18 +426,45 @@ function Uploader({ onUploadSuccess }) {
           <div className="mb-3">
             <h6 className="text-cyber-blue mb-3 fw-bold"><i className="bi bi-person-video me-2"></i>My Private Analyses</h6>
             <div className="analysis-list border-0 bg-transparent">
-              {analyses.filter(a => !a.is_demo).map(analysis => (
-                <AnalysisListItem
-                  key={analysis.id}
-                  analysis={analysis}
-                  onClick={() => handleView(analysis)}
-                  onView={() => handleView(analysis)}
-                  onRename={() => handleRenameItem(analysis)}
-                  onDelete={() => handleDeleteItem(analysis)}
-                  etaMs={getEtaMs(analysis.id, analysis.progress || 0)}
-                />
+              {myAnalysesGroups.map(group => (
+                <div key={group[0].id} className="mb-3">
+                  <AnalysisListItem
+                    analysis={group[0]}
+                    onClick={() => handleView(group[0])}
+                    onView={() => handleView(group[0])}
+                    onRename={() => handleRenameItem(group[0])}
+                    onDelete={() => handleDeleteItem(group[0])}
+                    etaMs={getEtaMs(group[0].id, group[0].progress || 0)}
+                  />
+                  {group.length > 1 && (
+                    <div className="accordion mt-2" id={`accordion-uploader-${group[0].id}`}>
+                      <div className="accordion-item" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                        <h2 className="accordion-header">
+                          <button className="accordion-button collapsed py-2 px-3 text-muted" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-uploader-${group[0].id}`} style={{ backgroundColor: 'transparent', boxShadow: 'none', fontSize: '0.85rem' }}>
+                            Show {group.length - 1} other re-analyses
+                          </button>
+                        </h2>
+                        <div id={`collapse-uploader-${group[0].id}`} className="accordion-collapse collapse" data-bs-parent={`#accordion-uploader-${group[0].id}`}>
+                          <div className="accordion-body p-2 bg-dark">
+                            {group.slice(1).map(analysis => (
+                              <AnalysisListItem
+                                key={analysis.id}
+                                analysis={analysis}
+                                onClick={() => handleView(analysis)}
+                                onView={() => handleView(analysis)}
+                                onRename={() => handleRenameItem(analysis)}
+                                onDelete={() => handleDeleteItem(analysis)}
+                                etaMs={getEtaMs(analysis.id, analysis.progress || 0)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ))}
-              {!analyses.some(a => !a.is_demo) && (
+              {myAnalysesGroups.length === 0 && (
                 <div className="p-4 text-center text-muted border border-secondary border-dashed rounded bg-panel-lighter">
                   <i className="bi bi-cloud-plus fs-2 mb-2 d-block opacity-50"></i>
                   No personal analyses found.<br />Upload your first video above.

@@ -136,6 +136,8 @@ async def admin_get_user_jobs(
             "progress": job.progress,
             "created_at": job.created_at.isoformat() if job.created_at else None,
             "events": None,
+            "road_path": job.road_path,
+            "face_path": job.face_path,
         }
         if job.status == "COMPLETED":
             for base in [large_base, UPLOAD_DIR]:
@@ -190,18 +192,9 @@ async def admin_delete_user(
 
     if delete_jobs:
         jobs = session.exec(select(Job).where(Job.owner_id == user_id)).all()
-        large_base = Path("/dcs/large/safedrive_cs310_2526/uploads/")
+        job_service = JobService(session)
         for job in jobs:
-            # Delete associated driving sessions
-            driving_sessions = session.exec(select(DrivingSession).where(DrivingSession.job_id == job.id)).all()
-            for ds in driving_sessions:
-                session.delete(ds)
-                
-            for base in [large_base, UPLOAD_DIR]:
-                job_dir = base / job.id
-                if job_dir.exists():
-                    shutil.rmtree(job_dir, ignore_errors=True)
-            session.delete(job)
+            job_service.delete_job(job.id)
 
     # Delete calibration
     cal = session.exec(
@@ -264,6 +257,8 @@ async def admin_list_jobs(
             "owner_email": users_map.get(j.owner_id) if j.owner_id else None,
             "created_at": j.created_at.isoformat() if j.created_at else None,
             "error": j.error,
+            "road_path": j.road_path,
+            "face_path": j.face_path,
         })
     return result
 
@@ -321,19 +316,9 @@ async def admin_delete_job(
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    # Delete associated driving sessions
-    driving_sessions = session.exec(select(DrivingSession).where(DrivingSession.job_id == job_id)).all()
-    for ds in driving_sessions:
-        session.delete(ds)
+    job_service = JobService(session)
+    job_service.delete_job(job_id)
 
-    large_base = Path("/dcs/large/safedrive_cs310_2526/uploads/")
-    for base in [large_base, UPLOAD_DIR]:
-        job_dir = base / job_id
-        if job_dir.exists():
-            shutil.rmtree(job_dir, ignore_errors=True)
-
-    session.delete(job)
-    session.commit()
     return {"message": f"Job {job_id} deleted"}
 
 

@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useAnalysesList } from '../hooks/useAnalysesList';
 import AnalysisListItem from '../components/common/AnalysisListItem';
 import { updateJobName, deleteJob } from '../services/api';
+import { groupAnalyses } from '../utils/groupAnalyses';
 
 const Home = () => {
   const { user } = useAuth();
@@ -12,6 +13,9 @@ const Home = () => {
   const { analyses, getEtaMs, refetch: refetchAnalyses } = useAnalysesList();
   const demoAnalyses = analyses.filter(a => a.is_demo);
   const myAnalyses   = analyses.filter(a => !a.is_demo);
+
+  const myAnalysesGroups = groupAnalyses(myAnalyses);
+  const demoAnalysesGroups = groupAnalyses(demoAnalyses);
 
   const handleLoadDemo = (analysisId) => {
     navigate(`/view/${analysisId}`);
@@ -36,7 +40,16 @@ const Home = () => {
   };
 
   const handleDelete = async (analysis) => {
-    if (!window.confirm(`Delete "${analysis.name || 'this analysis'}"? This cannot be undone.`)) return;
+    const isLast = myAnalyses.filter(a => 
+      (a.road_path === analysis.road_path && analysis.road_path) || 
+      (a.face_path === analysis.face_path && analysis.face_path)
+    ).length === 1;
+
+    const message = isLast && (analysis.road_path || analysis.face_path)
+      ? `Delete "${analysis.name || 'this analysis'}"? This is the final analysis for these videos; deleting it will also delete the corresponding videos from storage. This cannot be undone.`
+      : `Delete "${analysis.name || 'this analysis'}"? This cannot be undone.`;
+
+    if (!window.confirm(message)) return;
     try {
       await deleteJob(analysis.id);
       refetchAnalyses();
@@ -109,7 +122,7 @@ const Home = () => {
             </Link>
           </div>
 
-          {myAnalyses.length === 0 ? (
+          {myAnalysesGroups.length === 0 ? (
             <div className="p-4 rounded" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
               <p className="text-muted small mb-1">You haven't uploaded any analyses yet.</p>
               <p className="text-muted small mb-3">
@@ -123,16 +136,43 @@ const Home = () => {
             </div>
           ) : (
             <div className="my-analyses-list">
-              {myAnalyses.map(analysis => (
-                <AnalysisListItem
-                  key={analysis.id}
-                  analysis={analysis}
-                  onClick={() => handleItemClick(analysis)}
-                  onView={() => handleItemClick(analysis)}
-                  onRename={() => handleRename(analysis)}
-                  onDelete={() => handleDelete(analysis)}
-                  etaMs={getEtaMs(analysis.id, analysis.progress || 0)}
-                />
+              {myAnalysesGroups.map(group => (
+                <div key={group[0].id} className="mb-3">
+                  <AnalysisListItem
+                    analysis={group[0]}
+                    onClick={() => handleItemClick(group[0])}
+                    onView={() => handleItemClick(group[0])}
+                    onRename={() => handleRename(group[0])}
+                    onDelete={() => handleDelete(group[0])}
+                    etaMs={getEtaMs(group[0].id, group[0].progress || 0)}
+                  />
+                  {group.length > 1 && (
+                    <div className="accordion mt-2" id={`accordion-${group[0].id}`}>
+                      <div className="accordion-item" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                        <h2 className="accordion-header">
+                          <button className="accordion-button collapsed py-2 px-3 text-muted" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-${group[0].id}`} style={{ backgroundColor: 'transparent', boxShadow: 'none', fontSize: '0.85rem' }}>
+                            Show {group.length - 1} other re-analyses
+                          </button>
+                        </h2>
+                        <div id={`collapse-${group[0].id}`} className="accordion-collapse collapse" data-bs-parent={`#accordion-${group[0].id}`}>
+                          <div className="accordion-body p-2 bg-dark">
+                            {group.slice(1).map(analysis => (
+                              <AnalysisListItem
+                                key={analysis.id}
+                                analysis={analysis}
+                                onClick={() => handleItemClick(analysis)}
+                                onView={() => handleItemClick(analysis)}
+                                onRename={() => handleRename(analysis)}
+                                onDelete={() => handleDelete(analysis)}
+                                etaMs={getEtaMs(analysis.id, analysis.progress || 0)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -183,14 +223,38 @@ const Home = () => {
           </div>
 
           <div className="demo-list-container">
-            {demoAnalyses.length > 0 ? (
-              demoAnalyses.map(analysis => (
-                <AnalysisListItem
-                  key={analysis.id}
-                  analysis={analysis}
-                  onClick={() => handleLoadDemo(analysis.id)}
-                  onView={() => handleLoadDemo(analysis.id)}
-                />
+            {demoAnalysesGroups.length > 0 ? (
+              demoAnalysesGroups.map(group => (
+                <div key={group[0].id} className="mb-3">
+                  <AnalysisListItem
+                    analysis={group[0]}
+                    onClick={() => handleLoadDemo(group[0].id)}
+                    onView={() => handleLoadDemo(group[0].id)}
+                  />
+                  {group.length > 1 && (
+                    <div className="accordion mt-2" id={`accordion-demo-${group[0].id}`}>
+                      <div className="accordion-item" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                        <h2 className="accordion-header">
+                          <button className="accordion-button collapsed py-2 px-3 text-muted" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-demo-${group[0].id}`} style={{ backgroundColor: 'transparent', boxShadow: 'none', fontSize: '0.85rem' }}>
+                            Show {group.length - 1} other re-analyses
+                          </button>
+                        </h2>
+                        <div id={`collapse-demo-${group[0].id}`} className="accordion-collapse collapse" data-bs-parent={`#accordion-demo-${group[0].id}`}>
+                          <div className="accordion-body p-2 bg-dark">
+                            {group.slice(1).map(analysis => (
+                              <AnalysisListItem
+                                key={analysis.id}
+                                analysis={analysis}
+                                onClick={() => handleLoadDemo(analysis.id)}
+                                onView={() => handleLoadDemo(analysis.id)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ))
             ) : (
               <div className="text-center py-5 border border-color rounded bg-panel-lighter">

@@ -29,6 +29,8 @@ class AnalysisItem(BaseModel):
     created_at: Optional[Any] = None
     calibration_id: Optional[str] = None
     calibration_name: Optional[str] = None
+    road_path: Optional[str] = None
+    face_path: Optional[str] = None
 
 class AnalysisListResponse(BaseModel):
     analyses: List[AnalysisItem]

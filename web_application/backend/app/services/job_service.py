@@ -102,11 +102,123 @@ class JobService:
                 models_dir=models_dir
             )
             
+            # Kick off background transcoding for road only
+            # Face transcoding happens after blurring in the analysis process
+            background_tasks.add_task(FileService.transcode_job_videos_road_only, job_id, road_path)
+            
             return job
 
         except Exception as e:
             logger.error(f"Error creating job: {e}")
             FileService.delete_job_directory(job_id)
+            raise e
+
+    def init_job(self, name: Optional[str] = None, calibration_id: Optional[str] = None, keep_videos: bool = False, owner_id: Optional[str] = None) -> Job:
+        """Initializes a job record for multi-step upload."""
+        job_id = str(uuid.uuid4())
+        
+        # Create directory
+        FileService.create_job_directory(job_id)
+        
+        job = Job(
+            id=job_id,
+            name=name or job_id,
+            status="UPLOADING",
+            owner_id=owner_id,
+            calibration_id=calibration_id,
+            progress=0
+        )
+        # Store keep_videos in a temporary way or just assume it will be passed to finalize
+        # For simplicity, we can store it in road_metadata as a draft
+        job.road_metadata = json.dumps({"keep_videos": keep_videos})
+        
+        self.session.add(job)
+        self.session.commit()
+        self.session.refresh(job)
+        return job
+
+    def add_file_to_job(self, job_id: str, video_type: str, file: UploadFile):
+        """Adds a single file to a job directory."""
+        job_dir = UPLOAD_DIR / job_id
+        if not job_dir.exists():
+             raise FileNotFoundError(f"Job directory {job_id} not found")
+        
+        # Use FileService to save the file
+        FileService.save_single_upload(job_dir, file, video_type)
+
+    def finalize_upload(self, job_id: str, background_tasks: BackgroundTasks):
+        """Finalizes the upload process, splices videos, and starts analysis."""
+        job = self.session.get(Job, job_id)
+        if not job:
+            raise FileNotFoundError(f"Job {job_id} not found")
+        
+        job_dir = UPLOAD_DIR / job_id
+        
+        # Extract keep_videos from draft metadata
+        keep_videos = False
+        if job.road_metadata:
+            try:
+                keep_videos = json.loads(job.road_metadata).get("keep_videos", False)
+            except:
+                pass
+
+        try:
+            # Process files (splice whatever was uploaded)
+            road_path, road_filenames, road_sizes, road_duration = FileService.finalize_uploads(job_dir, "road")
+            face_path, face_filenames, face_sizes, face_duration = FileService.finalize_uploads(job_dir, "face")
+            
+            # Prepare metadata
+            road_meta = json.dumps({
+                "filenames": road_filenames, 
+                "count": len(road_filenames), 
+                "sizes": road_sizes,
+                "duration": road_duration
+            })
+            face_meta = json.dumps({
+                "filenames": face_filenames, 
+                "count": len(face_filenames), 
+                "sizes": face_sizes,
+                "duration": face_duration
+            })
+            
+            # Update DB Record
+            job.status = "PENDING"
+            job.road_path = f"REMOTE:{job_id}/road.mp4"
+            job.face_path = f"REMOTE:{job_id}/face.mp4"
+            job.road_metadata = road_meta
+            job.face_metadata = face_meta
+            
+            self.session.add(job)
+            self.session.commit()
+            self.session.refresh(job)
+            
+            # Trigger Background Task
+            models_dir = None
+            if job.owner_id and job.calibration_id:
+                from . import calibration_service as cal_svc
+                if cal_svc.has_trained_model(job.owner_id, job.calibration_id):
+                    models_dir = str(cal_svc.get_user_model_dir(job.owner_id, job.calibration_id))
+
+            background_tasks.add_task(
+                run_analysis_process,
+                job_id,
+                str(road_path),
+                str(face_path),
+                keep_videos=keep_videos,
+                road_metadata=json.loads(road_meta),
+                face_metadata=json.loads(face_meta),
+                models_dir=models_dir
+            )
+            
+            # Kick off background transcoding for road only
+            background_tasks.add_task(FileService.transcode_job_videos_road_only, job_id, road_path)
+
+        except Exception as e:
+            logger.error(f"Error finalizing job {job_id}: {e}")
+            job.status = "FAILED"
+            job.error = f"Finalization failed: {str(e)}"
+            self.session.add(job)
+            self.session.commit()
             raise e
 
     def get_job(self, job_id: str) -> Optional[Job]:
@@ -232,14 +344,47 @@ class JobService:
         if not job:
             return
 
+        from ..models.session import DrivingSession
+        other_jobs_using_videos = False
+        if job.road_path or job.face_path:
+            statement = select(Job).where(Job.id != job_id)
+            conds = []
+            if job.road_path:
+                conds.append(Job.road_path == job.road_path)
+            if job.face_path:
+                conds.append(Job.face_path == job.face_path)
+            if len(conds) == 2:
+                statement = statement.where((Job.road_path == job.road_path) | (Job.face_path == job.face_path))
+            elif len(conds) == 1:
+                statement = statement.where(conds[0])
+                
+            other_jobs = self.session.exec(statement).all()
+            if other_jobs:
+                other_jobs_using_videos = True
+
+        # Delete associated driving sessions
+        driving_sessions = self.session.exec(select(DrivingSession).where(DrivingSession.job_id == job_id)).all()
+        for ds in driving_sessions:
+            self.session.delete(ds)
+
         # Remove files from both possible storage locations
         large_base = Path("/dcs/large/safedrive_cs310_2526/uploads/")
         for base in [large_base, UPLOAD_DIR]:
             job_dir = base / job_id
             if job_dir.exists():
-                import shutil
-                shutil.rmtree(job_dir, ignore_errors=True)
-                logger.info(f"Deleted job directory: {job_dir}")
+                if other_jobs_using_videos and (
+                    (job.road_path and str(job_dir) in job.road_path) or 
+                    (job.face_path and str(job_dir) in job.face_path)
+                ):
+                    # Only delete results.json because other jobs rely on the videos in this directory
+                    result_path = job_dir / "results.json"
+                    if result_path.exists():
+                        result_path.unlink()
+                    logger.info(f"Deleted results.json from {job_dir} but kept directory for other jobs")
+                else:
+                    import shutil
+                    shutil.rmtree(job_dir, ignore_errors=True)
+                    logger.info(f"Deleted job directory: {job_dir}")
 
         self.session.delete(job)
         self.session.commit()
@@ -323,7 +468,9 @@ class JobService:
                     duration_seconds=duration,
                     created_at=created_at,
                     calibration_id=job.calibration_id,
-                    calibration_name=cal_names.get(job.calibration_id) if job.calibration_id else None
+                    calibration_name=cal_names.get(job.calibration_id) if job.calibration_id else None,
+                    road_path=job.road_path,
+                    face_path=job.face_path
                 ))
 
         return sorted(analyses, key=lambda x: x.created_at, reverse=True)

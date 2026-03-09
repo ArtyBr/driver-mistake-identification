@@ -76,6 +76,64 @@ def _resolve_video_path(job_id: str, filename: str) -> Optional[Path]:
 def get_job_service(session: Session = Depends(get_session)) -> JobService:
     return JobService(session)
 
+@router.post("/upload/init", response_model=JobCreateResponse)
+async def init_upload(
+    name: Optional[str] = Form(None),
+    calibration_id: Optional[str] = Form(None),
+    keep_videos: bool = Form(False),
+    current_user: User = Depends(get_verified_user),
+    service: JobService = Depends(get_job_service)
+):
+    """Initializes a new multi-step upload."""
+    job = service.init_job(name=name, calibration_id=calibration_id, keep_videos=keep_videos, owner_id=current_user.id)
+    return {"job_id": job.id}
+
+@router.post("/upload/{job_id}/file/{video_type}")
+async def upload_job_file(
+    job_id: str,
+    video_type: str,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_verified_user),
+    service: JobService = Depends(get_job_service)
+):
+    """Uploads a single file part to an existing job."""
+    if video_type not in ["road", "face"]:
+        raise HTTPException(status_code=400, detail="Invalid video_type. Must be 'road' or 'face'.")
+        
+    job = service.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    try:
+        service.add_file_to_job(job_id, video_type, file)
+        return {"message": "File uploaded"}
+    except Exception as e:
+        logger.error(f"Sequential upload part failed for {job_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/upload/{job_id}/finalize", response_model=JobCreateResponse)
+async def finalize_upload(
+    job_id: str,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_verified_user),
+    service: JobService = Depends(get_job_service)
+):
+    """Finalizes a multi-step upload and starts analysis."""
+    job = service.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    try:
+        service.finalize_upload(job_id, background_tasks)
+        return {"job_id": job_id}
+    except Exception as e:
+        logger.error(f"Finalize upload failed for {job_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/upload", response_model=JobCreateResponse)
 async def upload_videos(
     background_tasks: BackgroundTasks,

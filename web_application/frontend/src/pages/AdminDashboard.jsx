@@ -6,6 +6,7 @@ import {
   getAdminReports, getAdminReportStats, adminReanalyzeJob, getFileUrl
 } from '../services/api';
 import AnalysisListItem from '../components/common/AnalysisListItem';
+import { groupAnalyses } from '../utils/groupAnalyses';
 
 // ---------------------------------------------------------------------------
 // Colour helpers
@@ -122,6 +123,8 @@ function DemoSection({ demoKey, onRefresh }) {
     }
   };
 
+  const demoGroups = useMemo(() => demoJobs ? groupAnalyses(demoJobs) : null, [demoJobs]);
+
   const count = demoJobs ? demoJobs.length : null;
 
   return (
@@ -162,28 +165,23 @@ function DemoSection({ demoKey, onRefresh }) {
       {/* Expanded body */}
       {expanded && (
         <div className="bg-panel-lighter px-3 pb-3 pt-1" style={{ borderTop: '1px solid var(--border-color)' }}>
-          {demoJobs == null && (
+          {demoGroups == null && (
             <div className="d-flex align-items-center gap-2 mt-2 text-muted small">
               <div className="spinner-border spinner-border-sm" role="status" />
               Loading…
             </div>
           )}
-          {demoJobs && demoJobs.length === 0 && (
+          {demoGroups && demoGroups.length === 0 && (
             <p className="text-muted small mt-2 mb-0">No demo videos configured.</p>
           )}
-          {demoJobs && demoJobs.map(job => (
-            <div key={job.id} className="mt-2">
-              {job.owner_email && (
-                <div className="small text-muted mb-1" style={{ paddingLeft: 2 }}>
-                  <i className="bi bi-person me-1"></i>{job.owner_email}
-                </div>
-              )}
+          {demoGroups && demoGroups.map(group => (
+            <div key={group[0].id} className="mt-2">
               <div className="d-flex align-items-center gap-2">
                 <div className="flex-grow-1">
                   <AnalysisListItem
-                    analysis={job}
+                    analysis={group[0]}
                     events={null}
-                    onClick={() => navigate(`/view/${job.id}`)}
+                    onClick={() => navigate(`/view/${group[0].id}`)}
                   />
                 </div>
 
@@ -202,17 +200,17 @@ function DemoSection({ demoKey, onRefresh }) {
                     <li>
                       <button
                         className="dropdown-item py-2 text-white"
-                        onClick={() => handleRemoveDemo(job.id)}
-                        disabled={removingId === job.id}
+                        onClick={() => handleRemoveDemo(group[0].id)}
+                        disabled={removingId === group[0].id}
                       >
                         <i className="bi bi-star me-2"></i>
-                        {removingId === job.id ? 'Removing…' : 'Remove from Demo'}
+                        {removingId === group[0].id ? 'Removing…' : 'Remove from Demo'}
                       </button>
                     </li>
                     <li>
                       <button
                         className="dropdown-item py-2 text-white"
-                        onClick={() => handleRenameDemo(job.id, job.name)}
+                        onClick={() => handleRenameDemo(group[0].id, group[0].name)}
                       >
                         <i className="bi bi-pencil me-2"></i> Rename Video
                       </button>
@@ -220,6 +218,63 @@ function DemoSection({ demoKey, onRefresh }) {
                   </ul>
                 </div>
               </div>
+              {group.length > 1 && (
+                <div className="accordion mt-2 ms-4" id={`accordion-demo-${group[0].id}`}>
+                  <div className="accordion-item" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                    <h2 className="accordion-header">
+                      <button className="accordion-button collapsed py-1 px-3 text-muted" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-demo-${group[0].id}`} style={{ backgroundColor: 'transparent', boxShadow: 'none', fontSize: '0.8rem' }}>
+                        Show {group.length - 1} other re-analyses
+                      </button>
+                    </h2>
+                    <div id={`collapse-demo-${group[0].id}`} className="accordion-collapse collapse" data-bs-parent={`#accordion-demo-${group[0].id}`}>
+                      <div className="accordion-body p-2 bg-dark">
+                        {group.slice(1).map(job => (
+                          <div key={job.id} className="mt-2 d-flex align-items-center gap-2">
+                            <div className="flex-grow-1">
+                              <AnalysisListItem
+                                analysis={job}
+                                events={null}
+                                onClick={() => navigate(`/view/${job.id}`)}
+                              />
+                            </div>
+                            <div className="dropdown">
+                              <button
+                                className="btn btn-link text-white p-1 opacity-75"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                                style={{ fontSize: '1rem', lineHeight: 1 }}
+                              >
+                                <i className="bi bi-three-dots-vertical"></i>
+                              </button>
+                              <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                                <li>
+                                  <button
+                                    className="dropdown-item py-2 text-white"
+                                    onClick={() => handleRemoveDemo(job.id)}
+                                    disabled={removingId === job.id}
+                                  >
+                                    <i className="bi bi-star me-2"></i>
+                                    {removingId === job.id ? 'Removing…' : 'Remove from Demo'}
+                                  </button>
+                                </li>
+                                <li>
+                                  <button
+                                    className="dropdown-item py-2 text-white"
+                                    onClick={() => handleRenameDemo(job.id, job.name)}
+                                  >
+                                    <i className="bi bi-pencil me-2"></i> Rename Video
+                                  </button>
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -269,7 +324,17 @@ function UserRow({ user, jobs, onVerify, onDelete, onJobAction, onDemoChange }) 
   };
 
   const handleDeleteJob = async (jobId) => {
-    if (window.confirm("PERMANENTLY DELETE this video and all associated data? This cannot be undone.")) {
+    const job = jobs?.find(j => j.id === jobId);
+    const isLast = job && jobs.filter(j => 
+      (j.road_path === job.road_path && job.road_path) || 
+      (j.face_path === job.face_path && job.face_path)
+    ).length === 1;
+
+    const message = isLast && (job.road_path || job.face_path)
+      ? "PERMANENTLY DELETE this analysis? This is the final analysis for these videos for this user; deleting it may also delete the corresponding videos from storage. This cannot be undone."
+      : "PERMANENTLY DELETE this analysis and all associated data? This cannot be undone.";
+
+    if (window.confirm(message)) {
       setDeletingJobId(jobId);
       try {
         await deleteAdminJob(jobId);
@@ -319,6 +384,8 @@ function UserRow({ user, jobs, onVerify, onDelete, onJobAction, onDemoChange }) 
       }
     }
   };
+
+  const userGroups = useMemo(() => jobs ? groupAnalyses(jobs) : null, [jobs]);
 
   return (
     <div
@@ -406,73 +473,149 @@ function UserRow({ user, jobs, onVerify, onDelete, onJobAction, onDemoChange }) 
       {/* Expanded body */}
       {expanded && (
         <div className="bg-panel-lighter px-3 pb-3 pt-1" style={{ borderTop: '1px solid var(--border-color)' }}>
-          {!jobs && (
+          {!userGroups && (
             <div className="d-flex align-items-center gap-2 mt-2 text-muted small">
               <div className="spinner-border spinner-border-sm" role="status" />
               Loading…
             </div>
           )}
-          {jobs && jobs.length === 0 && (
+          {userGroups && userGroups.length === 0 && (
             <p className="text-muted small mt-2 mb-0">No analyses yet.</p>
           )}
-          {jobs && jobs.map(job => (
-            <div key={job.id} className="mt-2 d-flex align-items-center gap-2">
-              <div className="flex-grow-1">
-                <AnalysisListItem
-                  analysis={job}
-                  events={job.events ?? null}
-                  onClick={() => navigate(`/view/${job.id}`)}
-                />
+          {userGroups && userGroups.map(group => (
+            <div key={group[0].id} className="mt-2">
+              <div className="d-flex align-items-center gap-2">
+                <div className="flex-grow-1">
+                  <AnalysisListItem
+                    analysis={group[0]}
+                    events={group[0].events ?? null}
+                    onClick={() => navigate(`/view/${group[0].id}`)}
+                  />
+                </div>
+
+                {/* Video Actions 3-dot Menu */}
+                <div className="dropdown">
+                  <button
+                    className="btn btn-link text-white p-1 opacity-75"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    style={{ fontSize: '1rem', lineHeight: 1 }}
+                  >
+                    <i className="bi bi-three-dots-vertical"></i>
+                  </button>
+                  <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                    <li>
+                      <button
+                        className="dropdown-item py-2 text-white"
+                        onClick={() => handleSetDemo(group[0].id)}
+                      >
+                        <i className="bi bi-star me-2"></i> Set as Demo
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        className="dropdown-item py-2 text-white"
+                        onClick={() => handleRenameJob(group[0].id, group[0].name)}
+                      >
+                        <i className="bi bi-pencil me-2"></i> Rename Video
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        className="dropdown-item py-2 text-white"
+                        onClick={() => handleReassignJob(group[0].id)}
+                      >
+                        <i className="bi bi-person-up me-2"></i> Reassign Video
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        className="dropdown-item py-2 text-white"
+                        onClick={() => handleDeleteJob(group[0].id)}
+                        disabled={deletingJobId === group[0].id}
+                      >
+                        <i className="bi bi-trash me-2"></i>
+                        {deletingJobId === group[0].id ? 'Deleting...' : 'Delete Video'}
+                      </button>
+                    </li>
+                  </ul>
+                </div>
               </div>
 
-              {/* Video Actions 3-dot Menu */}
-              <div className="dropdown">
-                <button
-                  className="btn btn-link text-white p-1 opacity-75"
-                  type="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                  style={{ fontSize: '1rem', lineHeight: 1 }}
-                >
-                  <i className="bi bi-three-dots-vertical"></i>
-                </button>
-                <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
-                  <li>
-                    <button
-                      className="dropdown-item py-2 text-white"
-                      onClick={() => handleSetDemo(job.id)}
-                    >
-                      <i className="bi bi-star me-2"></i> Set as Demo
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      className="dropdown-item py-2 text-white"
-                      onClick={() => handleRenameJob(job.id, job.name)}
-                    >
-                      <i className="bi bi-pencil me-2"></i> Rename Video
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      className="dropdown-item py-2 text-white"
-                      onClick={() => handleReassignJob(job.id)}
-                    >
-                      <i className="bi bi-person-up me-2"></i> Reassign Video
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      className="dropdown-item py-2 text-white"
-                      onClick={() => handleDeleteJob(job.id)}
-                      disabled={deletingJobId === job.id}
-                    >
-                      <i className="bi bi-trash me-2"></i>
-                      {deletingJobId === job.id ? 'Deleting...' : 'Delete Video'}
-                    </button>
-                  </li>
-                </ul>
-              </div>
+              {group.length > 1 && (
+                <div className="accordion mt-2 ms-4" id={`accordion-user-${group[0].id}`}>
+                  <div className="accordion-item" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                    <h2 className="accordion-header">
+                      <button className="accordion-button collapsed py-1 px-3 text-muted" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-user-${group[0].id}`} style={{ backgroundColor: 'transparent', boxShadow: 'none', fontSize: '0.8rem' }}>
+                        Show {group.length - 1} other re-analyses
+                      </button>
+                    </h2>
+                    <div id={`collapse-user-${group[0].id}`} className="accordion-collapse collapse" data-bs-parent={`#accordion-user-${group[0].id}`}>
+                      <div className="accordion-body p-2 bg-dark">
+                        {group.slice(1).map(job => (
+                          <div key={job.id} className="mt-2 d-flex align-items-center gap-2">
+                            <div className="flex-grow-1">
+                              <AnalysisListItem
+                                analysis={job}
+                                events={job.events ?? null}
+                                onClick={() => navigate(`/view/${job.id}`)}
+                              />
+                            </div>
+                            <div className="dropdown">
+                              <button
+                                className="btn btn-link text-white p-1 opacity-75"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                                style={{ fontSize: '1rem', lineHeight: 1 }}
+                              >
+                                <i className="bi bi-three-dots-vertical"></i>
+                              </button>
+                              <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                                <li>
+                                  <button
+                                    className="dropdown-item py-2 text-white"
+                                    onClick={() => handleSetDemo(job.id)}
+                                  >
+                                    <i className="bi bi-star me-2"></i> Set as Demo
+                                  </button>
+                                </li>
+                                <li>
+                                  <button
+                                    className="dropdown-item py-2 text-white"
+                                    onClick={() => handleRenameJob(job.id, job.name)}
+                                  >
+                                    <i className="bi bi-pencil me-2"></i> Rename Video
+                                  </button>
+                                </li>
+                                <li>
+                                  <button
+                                    className="dropdown-item py-2 text-white"
+                                    onClick={() => handleReassignJob(job.id)}
+                                  >
+                                    <i className="bi bi-person-up me-2"></i> Reassign Video
+                                  </button>
+                                </li>
+                                <li>
+                                  <button
+                                    className="dropdown-item py-2 text-white"
+                                    onClick={() => handleDeleteJob(job.id)}
+                                    disabled={deletingJobId === job.id}
+                                  >
+                                    <i className="bi bi-trash me-2"></i>
+                                    {deletingJobId === job.id ? 'Deleting...' : 'Delete Video'}
+                                  </button>
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

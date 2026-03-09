@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { listAnalyses, getJobStatus, getFileUrl, getJobResults } from '../services/api';
+import { groupAnalyses } from '../utils/groupAnalyses';
 import {
   listCalibrations,
   createCalibration,
@@ -592,7 +593,7 @@ function CalibrationPage() {
           <div className="card-body">
             <select className="form-select mb-4" value={selectedJobId} onChange={e => setSelectedJobId(e.target.value)}>
               <option value="">-- Select an analysis --</option>
-              {analyses.map(a => <option key={a.id} value={a.id}>{a.name || a.id}</option>)}
+              {groupAnalyses(analyses).map(group => <option key={group[0].id} value={group[0].id}>{group[0].name || group[0].id}</option>)}
             </select>
             {loadingJob && <p className="text-muted small">Loading job info…</p>}
             {selectedJobId && jobStatus && !jobStatus.face_url && <div className="alert alert-cyber-danger py-2">No face video available for this job.</div>}

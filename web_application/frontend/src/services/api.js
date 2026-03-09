@@ -48,6 +48,70 @@ export const uploadVideos = async (formData, onProgress) => {
 };
 
 /**
+ * Sequential Upload API
+ */
+
+export const initUpload = async (formData) => {
+  const response = await api.post('/upload/init', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+  return response.data;
+};
+
+export const uploadJobFile = async (jobId, videoType, file, onProgress) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await api.post(`/upload/${jobId}/file/${videoType}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress: (progressEvent) => {
+      if (onProgress) {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        onProgress(percentCompleted);
+      }
+    },
+    timeout: 15 * 60 * 1000, // 15 mins per file
+  });
+  return response.data;
+};
+
+export const finalizeUpload = async (jobId) => {
+  const response = await api.post(`/upload/${jobId}/finalize`);
+  return response.data;
+};
+
+/**
+ * Sequential Sync Upload API
+ */
+
+export const initSync = async () => {
+  const response = await api.post('/sync/init');
+  return response.data;
+};
+
+export const uploadSyncFile = async (sessionId, videoType, file, onProgress) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await api.post(`/sync/${sessionId}/file/${videoType}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress: (progressEvent) => {
+      if (onProgress) {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        onProgress(percentCompleted);
+      }
+    },
+    timeout: 15 * 60 * 1000,
+  });
+  return response.data;
+};
+
+export const finalizeSync = async (sessionId) => {
+  const response = await api.post(`/sync/${sessionId}/finalize`);
+  return response.data;
+};
+
+/**
  * Lists available completed analyses.
  * @returns {Promise<Array<{id: string, name: string, video_count: number, duration_seconds: number, created_at: string}>>} List of analyses with metadata.
  */
