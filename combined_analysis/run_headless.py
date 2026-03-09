@@ -1,4 +1,5 @@
 import sys
+import os
 import argparse
 import json
 import logging
@@ -6,9 +7,14 @@ import traceback
 import warnings
 from pathlib import Path
 
+# Fix onnxruntime threading errors (must be set before importing insightface/onnxruntime)
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["ORT_THREAD_AFFINITY_POLICY"] = "0"
+
 # Suppress warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
+warnings.filterwarnings('ignore', category=RuntimeWarning, message='.*tarfile.*')
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)

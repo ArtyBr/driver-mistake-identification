@@ -1,9 +1,15 @@
 import sys
+import os
 from pathlib import Path
 import warnings
 
+# Fix onnxruntime threading errors (must be set before importing insightface/onnxruntime)
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["ORT_THREAD_AFFINITY_POLICY"] = "0"
+
 # Filter specific warnings
 warnings.filterwarnings("ignore", category=FutureWarning, message="`rcond` parameter")
+warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*tarfile.*")
 
 # --- PATH SETUP ---
 CURRENT_DIR = Path(__file__).resolve().parent
