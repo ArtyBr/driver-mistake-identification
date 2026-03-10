@@ -271,9 +271,21 @@ class JobService:
                     
                     # Detect Failure from log content (passive check)
                     error_msg = batch_service.get_job_error(job_id, local_job_dir)
-                    if "Traceback" in error_msg or "Error:" in error_msg or "failed" in error_msg.lower():
+                    # Filter out known harmless warnings before checking for errors
+                    filtered_lines = [
+                        line for line in error_msg.splitlines()
+                        if "pthread_setaffinity_np failed" not in line
+                        and "onnxruntime" not in line
+                    ]
+                    filtered_msg = "\n".join(filtered_lines)
+                    if filtered_msg.strip() and (
+                        "Traceback" in filtered_msg
+                        or "Error:" in filtered_msg
+                        or "failed" in filtered_msg.lower()
+                    ):
                         # Preliminary failure detection
-                        if "it/s]" not in error_msg.splitlines()[-1]:
+                        last_line = filtered_lines[-1] if filtered_lines else ""
+                        if "it/s]" not in last_line:
                              job.status = "FAILED"
                              job.error = error_msg
                     
