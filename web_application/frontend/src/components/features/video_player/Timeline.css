@@ -6,7 +6,7 @@
   padding: 15px 20px;
   background: var(--bg-panel);
   border: 1px solid var(--border-color);
-  border-left: 3px solid var(--cyber-cyan);
+  border-left: 3px solid var(--highlight-cyan);
   border-radius: 4px;
   color: var(--text-main);
 }
@@ -43,9 +43,9 @@
 }
 
 .play-button:hover {
-  background-color: #444;
-  border-color: var(--cyber-cyan);
-  color: var(--cyber-cyan);
+  background-color: var(--bg-panel-lighter);
+  border-color: var(--highlight-cyan);
+  color: var(--highlight-cyan);
   transform: scale(1.05);
 }
 
@@ -139,7 +139,7 @@
   position: absolute;
   width: 16px; /* Larger handle */
   height: 16px; /* Larger handle */
-  background: var(--cyber-cyan);
+  background: var(--highlight-cyan);
   border: 2px solid #fff;
   border-radius: 50%;
   box-shadow: 0 0 4px rgba(0,0,0,0.5);

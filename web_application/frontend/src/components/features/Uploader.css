@@ -2,7 +2,7 @@
 .analysis-list {
   max-height: 300px;
   overflow-y: auto;
-  border: 1px solid rgba(0, 210, 223, 0.2);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.2);
 }

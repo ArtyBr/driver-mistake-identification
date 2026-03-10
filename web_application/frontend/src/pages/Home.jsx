@@ -104,7 +104,7 @@ const Home = () => {
               <div className="col-md-5">
                 <div>
                   <div className="text-white fw-bold mb-1">Private Analysis</div>
-                  <p className="text-muted small mb-0">To upload your own dashcam footage or to view your previous personal results, you'll need to <Link to="/login" className="text-cyber-blue fw-bold text-decoration-none">Login</Link> or <Link to="/signup" className="text-cyber-blue fw-bold text-decoration-none">Sign Up</Link>.</p>
+                  <p className="text-muted small mb-0">To upload your own dashcam footage or to view your previous personal results, you'll need to <Link to="/login" className="text-highlight-cyan fw-bold text-decoration-none">Login</Link> or <Link to="/signup" className="text-highlight-cyan fw-bold text-decoration-none">Sign Up</Link>.</p>
                 </div>
               </div>
             </div>
@@ -123,7 +123,7 @@ const Home = () => {
           </div>
 
           {myAnalysesGroups.length === 0 ? (
-            <div className="p-4 rounded" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+            <div className="p-4 rounded card-cyber">
               <p className="text-muted small mb-1">You haven't uploaded any analyses yet.</p>
               <p className="text-muted small mb-3">
                 Not sure where to start?{' '}
@@ -148,9 +148,9 @@ const Home = () => {
                   />
                   {group.length > 1 && (
                     <div className="accordion mt-2" id={`accordion-${group[0].id}`}>
-                      <div className="accordion-item" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                      <div className="accordion-item accordion-item-dark">
                         <h2 className="accordion-header">
-                          <button className="accordion-button collapsed py-2 px-3 text-muted" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-${group[0].id}`} style={{ backgroundColor: 'transparent', boxShadow: 'none', fontSize: '0.85rem' }}>
+                          <button className="accordion-button collapsed py-2 px-3 text-muted accordion-button-dark" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-${group[0].id}`} style={{ fontSize: '0.85rem' }}>
                             Show {group.length - 1} other re-analyses
                           </button>
                         </h2>
@@ -190,7 +190,7 @@ const Home = () => {
 
             <div className="feature-list mb-5">
               {features.map((f, i) => (
-                <div key={i} className="mb-4 ps-3 border-start border-cyber-blue">
+                <div key={i} className="mb-4 ps-3 border-start border-highlight-cyan">
                   <div className="text-white fw-bold mb-1" style={{ fontSize: '1rem' }}>{f.title}</div>
                   <p className="text-muted small mb-0" style={{ lineHeight: '1.4' }}>{f.desc}</p>
                 </div>
@@ -233,9 +233,9 @@ const Home = () => {
                   />
                   {group.length > 1 && (
                     <div className="accordion mt-2" id={`accordion-demo-${group[0].id}`}>
-                      <div className="accordion-item" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                      <div className="accordion-item accordion-item-dark">
                         <h2 className="accordion-header">
-                          <button className="accordion-button collapsed py-2 px-3 text-muted" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-demo-${group[0].id}`} style={{ backgroundColor: 'transparent', boxShadow: 'none', fontSize: '0.85rem' }}>
+                          <button className="accordion-button collapsed py-2 px-3 text-muted accordion-button-dark" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-demo-${group[0].id}`} style={{ fontSize: '0.85rem' }}>
                             Show {group.length - 1} other re-analyses
                           </button>
                         </h2>
@@ -257,8 +257,8 @@ const Home = () => {
                 </div>
               ))
             ) : (
-              <div className="text-center py-5 border border-color rounded bg-panel-lighter">
-                <div className="spinner-border text-cyber-blue mb-3" role="status"></div>
+              <div className="text-center py-5 border border-secondary rounded" style={{ backgroundColor: 'var(--bg-panel-lighter)' }}>
+                <div className="spinner-border text-highlight-cyan mb-3" role="status"></div>
                 <p className="text-muted small">Loading demos...</p>
               </div>
             )}
@@ -289,16 +289,13 @@ const Home = () => {
           border: 1px solid rgba(13, 110, 253, 0.2);
         }
         .border-left-blue {
-          border-left: 5px solid var(--cyber-cyan) !important;
+          border-left: 5px solid var(--highlight-cyan) !important;
         }
-        .border-start.border-cyber-blue {
-          border-left: 3px solid var(--cyber-cyan) !important;
+        .border-start.border-highlight-cyan {
+          border-left: 3px solid var(--highlight-cyan) !important;
         }
         .border-top-primary {
           border-top: 4px solid var(--accent-primary) !important;
-        }
-        .text-cyber-blue {
-          color: var(--cyber-cyan) !important;
         }
       `}} />
     </div>

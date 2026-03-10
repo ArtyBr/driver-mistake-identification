@@ -312,7 +312,7 @@ function CalibrationPage() {
     const fi = currentFrameInfo?.face_info;
     if (!fi?.nose_2d) return;
     const vW = video.videoWidth || 640, vH = video.videoHeight || 480;
-    drawGazeLine(ctx, fi.nose_2d, fi.yaw ?? 0, fi.pitch ?? 0, vW, vH, w, h, GAZE_STATES[fi.label]?.color || '#00d9ff');
+    drawGazeLine(ctx, fi.nose_2d, fi.yaw ?? 0, fi.pitch ?? 0, vW, vH, w, h, GAZE_STATES[fi.label]?.color || '#00d2df');
   }, [currentFrameInfo]);
 
   const currentSessionPoints = useMemo(() => {
@@ -536,7 +536,7 @@ function CalibrationPage() {
           </div>
           <div className="card-body">
             <div className="guiding-section p-3 mb-4 rounded border border-secondary bg-panel-lighter">
-              <h6 className="text-cyber-blue fw-bold mb-2">Why Calibrate?</h6>
+              <h6 className="text-highlight-cyan fw-bold mb-2">Why Calibrate?</h6>
               <p className="small text-muted mb-2">
                 "Think of it like teaching a new driver where your mirrors are in your car."
               </p>
@@ -720,9 +720,9 @@ function CalibrationPage() {
                   })}
 
                   {/* Range start marker */}
-                  <div style={{ position: 'absolute', top: 0, bottom: 0, left: ((rangeStart || 0) / videoDuration) * 100 + "%", width: 2, background: '#00d9ff', pointerEvents: 'none', zIndex: 11 }} />
+                  <div style={{ position: 'absolute', top: 0, bottom: 0, left: ((rangeStart || 0) / videoDuration) * 100 + "%", width: 2, background: '#00d2df', pointerEvents: 'none', zIndex: 11 }} />
                   {/* Range end marker */}
-                  <div style={{ position: 'absolute', top: 0, bottom: 0, left: ((rangeEnd || 0) / videoDuration) * 100 + "%", width: 2, background: '#00d9ff', pointerEvents: 'none', zIndex: 11 }} />
+                  <div style={{ position: 'absolute', top: 0, bottom: 0, left: ((rangeEnd || 0) / videoDuration) * 100 + "%", width: 2, background: '#00d2df', pointerEvents: 'none', zIndex: 11 }} />
                 </div>
 
                 {/* Zoom-window bracket — white line with vertical bars */}
@@ -1030,7 +1030,7 @@ function drawGazeLine(ctx, nose2d, yaw, pitch, videoW, videoH, canvasW, canvasH,
   const endX = (nose2d[0] + yaw * 10) * scaleX;
   const endY = (nose2d[1] - pitch * 10) * scaleY;
   ctx.save();
-  ctx.strokeStyle = color || '#00d9ff';
+  ctx.strokeStyle = color || '#00d2df';
   ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.moveTo(startX, startY);

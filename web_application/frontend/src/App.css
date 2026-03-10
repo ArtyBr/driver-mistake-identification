@@ -307,3 +307,37 @@ footer {
   color: #ff4d5e;
   font-weight: 700;
 }
+
+/* Utility Classes — backgrounds, text, borders */
+.bg-panel-darker {
+  background-color: var(--bg-panel-darker);
+}
+
+.border-color-muted {
+  border-color: var(--border-color) !important;
+}
+
+.text-accent-primary {
+  color: var(--accent-primary) !important;
+}
+
+.text-highlight-cyan {
+  color: var(--highlight-cyan) !important;
+}
+
+/* Reusable accordion dark theme overrides */
+.accordion-item-dark {
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-color);
+}
+
+.accordion-button-dark {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+/* Reusable dropdown dark theme menu */
+.dropdown-menu-panel {
+  background-color: var(--bg-panel) !important;
+  border: 1px solid var(--border-color) !important;
+}

@@ -129,7 +129,7 @@ export default function SyncConfirmStep({
         <div className="mb-4">
           <div className="d-flex align-items-center gap-3 mb-2">
             <label className="form-label mb-0 fw-bold small text-white text-uppercase">Offset Control</label>
-            <code className="fs-5 text-cyber-blue" style={{ minWidth: '8ch', fontFamily: 'monospace' }}>
+            <code className="fs-5 text-highlight-cyan" style={{ minWidth: '8ch', fontFamily: 'monospace' }}>
               {manualOffset >= 0 ? '+' : ''}{manualOffset.toFixed(3)}s
             </code>
             <div className="d-flex gap-1 ms-auto">
@@ -241,11 +241,11 @@ export default function SyncConfirmStep({
           <div className="row g-3 align-items-center">
             <div className="col-sm-4 border-end" style={{ borderColor: 'var(--border-color)' }}>
               <div className="small text-muted mb-1">Road Trim</div>
-              <code className="text-cyber-blue fs-6">{skipRoad.toFixed(2)}s from start</code>
+              <code className="text-highlight-cyan fs-6">{skipRoad.toFixed(2)}s from start</code>
             </div>
             <div className="col-sm-4 border-end" style={{ borderColor: 'var(--border-color)' }}>
               <div className="small text-muted mb-1">Driver Trim</div>
-              <code className="text-cyber-blue fs-6">{skipFace.toFixed(2)}s from start</code>
+              <code className="text-highlight-cyan fs-6">{skipFace.toFixed(2)}s from start</code>
             </div>
             <div className="col-sm-4 text-center">
               <div className="small text-muted mb-1">Analysis Duration</div>

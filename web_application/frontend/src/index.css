@@ -11,10 +11,13 @@
   --accent-warning: #ffc107; /* Amber */
   --accent-danger: #dc3545;  /* Red */
 
-  /* Cyberpunk Accents (Video Player Only - Subtler) */
-  --cyber-cyan: #00d2df;
-  --cyber-pink: #d63384;
-  --cyber-green: #20c997;
+  /* Highlight Accents (Video Player & decorative elements) */
+  --highlight-cyan: #00d2df;
+  --highlight-pink: #d63384;
+  --highlight-green: #20c997;
+
+  /* Extra background shade */
+  --bg-panel-darker: #1a1d21;
   
   --text-main: #f8f9fa;
   --text-muted: #adb5bd;

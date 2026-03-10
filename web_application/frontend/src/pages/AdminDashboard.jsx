@@ -196,7 +196,7 @@ function DemoSection({ demoKey, onRefresh }) {
                   >
                     <i className="bi bi-three-dots-vertical"></i>
                   </button>
-                  <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                  <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg dropdown-menu-panel">
                     <li>
                       <button
                         className="dropdown-item py-2 text-white"
@@ -220,9 +220,9 @@ function DemoSection({ demoKey, onRefresh }) {
               </div>
               {group.length > 1 && (
                 <div className="accordion mt-2 ms-4" id={`accordion-demo-${group[0].id}`}>
-                  <div className="accordion-item" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                  <div className="accordion-item accordion-item-dark">
                     <h2 className="accordion-header">
-                      <button className="accordion-button collapsed py-1 px-3 text-muted" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-demo-${group[0].id}`} style={{ backgroundColor: 'transparent', boxShadow: 'none', fontSize: '0.8rem' }}>
+                      <button className="accordion-button collapsed py-1 px-3 text-muted accordion-button-dark" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-demo-${group[0].id}`} style={{ fontSize: '0.8rem' }}>
                         Show {group.length - 1} other re-analyses
                       </button>
                     </h2>
@@ -247,7 +247,7 @@ function DemoSection({ demoKey, onRefresh }) {
                               >
                                 <i className="bi bi-three-dots-vertical"></i>
                               </button>
-                              <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                              <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg dropdown-menu-panel">
                                 <li>
                                   <button
                                     className="dropdown-item py-2 text-white"
@@ -453,7 +453,7 @@ function UserRow({ user, jobs, onVerify, onDelete, onJobAction, onDemoChange }) 
           >
             <i className="bi bi-three-dots-vertical"></i>
           </button>
-          <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)', zIndex: 1050 }}>
+          <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg dropdown-menu-panel" style={{ zIndex: 1050 }}>
             {!user.is_verified && (
               <li>
                 <button className="dropdown-item py-2" onClick={handleVerify} disabled={isVerifying || isDeleting}>
@@ -504,7 +504,7 @@ function UserRow({ user, jobs, onVerify, onDelete, onJobAction, onDemoChange }) 
                   >
                     <i className="bi bi-three-dots-vertical"></i>
                   </button>
-                  <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                  <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg dropdown-menu-panel">
                     <li>
                       <button
                         className="dropdown-item py-2 text-white"
@@ -545,9 +545,9 @@ function UserRow({ user, jobs, onVerify, onDelete, onJobAction, onDemoChange }) 
 
               {group.length > 1 && (
                 <div className="accordion mt-2 ms-4" id={`accordion-user-${group[0].id}`}>
-                  <div className="accordion-item" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                  <div className="accordion-item accordion-item-dark">
                     <h2 className="accordion-header">
-                      <button className="accordion-button collapsed py-1 px-3 text-muted" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-user-${group[0].id}`} style={{ backgroundColor: 'transparent', boxShadow: 'none', fontSize: '0.8rem' }}>
+                      <button className="accordion-button collapsed py-1 px-3 text-muted accordion-button-dark" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-user-${group[0].id}`} style={{ fontSize: '0.8rem' }}>
                         Show {group.length - 1} other re-analyses
                       </button>
                     </h2>
@@ -572,7 +572,7 @@ function UserRow({ user, jobs, onVerify, onDelete, onJobAction, onDemoChange }) 
                               >
                                 <i className="bi bi-three-dots-vertical"></i>
                               </button>
-                              <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                              <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg dropdown-menu-panel">
                                 <li>
                                   <button
                                     className="dropdown-item py-2 text-white"

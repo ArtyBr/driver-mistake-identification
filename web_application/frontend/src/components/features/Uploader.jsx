@@ -306,7 +306,7 @@ function Uploader({ onUploadSuccess }) {
                     </button>
                   )}
                 </div>
-                {calibrations.length === 0 && (
+                {calibrations.length === 0 && myAnalyses.some(a => a.status === 'COMPLETED') && (
                   <div className="form-text text-muted small" style={{ fontSize: '0.7rem' }}>
                     No trained calibrations found. <a href="/calibrate" className="text-info">Calibrate here</a> to improve results.
                   </div>
@@ -415,7 +415,7 @@ function Uploader({ onUploadSuccess }) {
       ) : (
         <div className="card-header text-center py-4">
           <h4 className="mb-2">Explore Driver Safety</h4>
-          <p className="text-muted mb-0">Select a demo video below to see the analysis in action. <a href="/login" className="text-cyber-blue">Login</a> to upload your own.</p>
+          <p className="text-muted mb-0">Select a demo video below to see the analysis in action. <a href="/login" className="text-highlight-cyan">Login</a> to upload your own.</p>
         </div>
       )}
 
@@ -424,7 +424,7 @@ function Uploader({ onUploadSuccess }) {
 
         {user ? (
           <div className="mb-3">
-            <h6 className="text-cyber-blue mb-3 fw-bold"><i className="bi bi-person-video me-2"></i>My Private Analyses</h6>
+            <h6 className="text-highlight-cyan mb-3 fw-bold"><i className="bi bi-person-video me-2"></i>My Private Analyses</h6>
             <div className="analysis-list border-0 bg-transparent">
               {myAnalysesGroups.map(group => (
                 <div key={group[0].id} className="mb-3">
@@ -438,9 +438,9 @@ function Uploader({ onUploadSuccess }) {
                   />
                   {group.length > 1 && (
                     <div className="accordion mt-2" id={`accordion-uploader-${group[0].id}`}>
-                      <div className="accordion-item" style={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)' }}>
+                      <div className="accordion-item accordion-item-dark">
                         <h2 className="accordion-header">
-                          <button className="accordion-button collapsed py-2 px-3 text-muted" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-uploader-${group[0].id}`} style={{ backgroundColor: 'transparent', boxShadow: 'none', fontSize: '0.85rem' }}>
+                          <button className="accordion-button collapsed py-2 px-3 text-muted accordion-button-dark" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-uploader-${group[0].id}`} style={{ fontSize: '0.85rem' }}>
                             Show {group.length - 1} other re-analyses
                           </button>
                         </h2>
@@ -474,7 +474,7 @@ function Uploader({ onUploadSuccess }) {
           </div>
         ) : (
           <div className="alert alert-cyber-info mb-3">
-            <p className="mb-0">You are viewing the uploader as a <strong>Guest</strong>. <a href="/login" className="text-cyber-blue fw-bold">Login</a> to start your own analysis or view your previous results.</p>
+            <p className="mb-0">You are viewing the uploader as a <strong>Guest</strong>. <a href="/login" className="text-highlight-cyan fw-bold">Login</a> to start your own analysis or view your previous results.</p>
           </div>
         )}
 
