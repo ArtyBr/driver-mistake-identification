@@ -38,29 +38,44 @@ _QUALITY_FILES = [
 _LARGE_BASE = Path("/dcs/large/safedrive_cs310_2526/uploads")
 
 
-def _build_quality_urls(job_id: str) -> dict:
-    """Returns {"road": {quality: url, …}, "face": {quality: url, …}} for available files."""
+def _extract_remote_dir(remote_path: Optional[str]) -> Optional[str]:
+    """Extract the directory ID from a REMOTE:dir_id/filename path."""
+    if remote_path and remote_path.startswith("REMOTE:"):
+        parts = remote_path.split(":")[1].split("/")
+        if parts:
+            return parts[0]
+    return None
+
+
+def _build_quality_urls(road_remote: Optional[str], face_remote: Optional[str]) -> dict:
+    """Returns {"road": {quality: url, …}, "face": {quality: url, …}} for available files.
+
+    Extracts the actual video directory from the REMOTE: paths, which may differ
+    from the job_id (e.g. re-analysis jobs reference another job's videos).
+    """
     road_urls: dict = {}
     face_urls: dict = {}
 
-    # Determine which base directory holds this job's files
-    job_dir = None
-    for base in [_LARGE_BASE, UPLOAD_DIR]:
-        candidate = base / job_id
-        if candidate.is_dir():
-            job_dir = candidate
-            break
+    road_dir_id = _extract_remote_dir(road_remote)
+    face_dir_id = _extract_remote_dir(face_remote)
 
-    if job_dir is None:
-        return {"road": road_urls, "face": face_urls}
+    def _find_job_dir(dir_id: Optional[str]) -> Optional[Path]:
+        if not dir_id:
+            return None
+        for base in [_LARGE_BASE, UPLOAD_DIR]:
+            candidate = base / dir_id
+            if candidate.is_dir():
+                return candidate
+        return None
+
+    road_job_dir = _find_job_dir(road_dir_id)
+    face_job_dir = _find_job_dir(face_dir_id)
 
     for label, road_file, face_file in _QUALITY_FILES:
-        road_path = job_dir / road_file
-        face_path = job_dir / face_file
-        if road_path.exists():
-            road_urls[label] = f"/video/remote/{job_id}/{road_file}"
-        if face_path.exists():
-            face_urls[label] = f"/video/remote/{job_id}/{face_file}"
+        if road_job_dir and (road_job_dir / road_file).exists():
+            road_urls[label] = f"/video/remote/{road_dir_id}/{road_file}"
+        if face_job_dir and (face_job_dir / face_file).exists():
+            face_urls[label] = f"/video/remote/{face_dir_id}/{face_file}"
 
     return {"road": road_urls, "face": face_urls}
 
@@ -313,12 +328,11 @@ async def get_status(
         if cal:
             calibration_name = cal.name
 
-    # Build quality URL map for REMOTE jobs
+    # Build quality URL map for REMOTE jobs (always include base quality)
     video_qualities = None
     if job.road_path and job.road_path.startswith("REMOTE:"):
-        qmap = _build_quality_urls(job_id)
-        if qmap["road"] or qmap["face"]:
-            video_qualities = qmap
+        qmap = _build_quality_urls(job.road_path, job.face_path)
+        video_qualities = qmap
 
     return {
         "status": job.status,

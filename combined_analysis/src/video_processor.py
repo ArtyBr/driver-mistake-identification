@@ -448,18 +448,44 @@ class VideoProcessor:
     def _generate_all_face_variants(self, temp_blurred_path: Path, final_face_path: Path):
         """
         Transcodes the temporary blurred video into web-compatible face.mp4 (original res),
-        face_720p.mp4 and face_480p.mp4.
+        face_720p.mp4 and face_480p.mp4.  Skips variants that would upscale.
         """
         # 1. Generate main face.mp4 (Full resolution, web-compatible)
         print(f"Transcoding main blurred video: {final_face_path}")
         self._ffmpeg_transcode(temp_blurred_path, final_face_path)
 
-        # 2. Generate quality variants
+        # 2. Determine source height to avoid upscaling
+        orig_height = self._get_video_height(temp_blurred_path)
+
+        # 3. Generate quality variants (skip upscaling)
         targets = [720, 480]
         for target in targets:
+            if orig_height > 0 and orig_height <= target:
+                print(f"Skipping face_{target}p.mp4 (source is {orig_height}p, no upscale)")
+                continue
             out_path = final_face_path.parent / f"face_{target}p.mp4"
             print(f"Generating quality variant: {out_path}")
             self._ffmpeg_transcode(temp_blurred_path, out_path, height=target)
+
+    @staticmethod
+    def _get_video_height(video_path: Path) -> int:
+        """Returns the height of the first video stream using ffprobe. Returns 0 on failure."""
+        import os, subprocess
+        try:
+            env = os.environ.copy()
+            env.pop("LD_LIBRARY_PATH", None)
+            res = subprocess.run(
+                ["ffprobe", "-v", "error", "-select_streams", "v:0",
+                 "-show_entries", "stream=height",
+                 "-of", "default=noprint_wrappers=1:nokey=1",
+                 str(video_path)],
+                capture_output=True, text=True, env=env,
+            )
+            if res.returncode == 0 and res.stdout.strip():
+                return int(res.stdout.strip())
+        except Exception:
+            pass
+        return 0
 
     def _ffmpeg_transcode(self, input_path: Path, output_path: Path, height: int = None):
         """Helper to run ffmpeg with web-compatible settings, optionally scaling."""

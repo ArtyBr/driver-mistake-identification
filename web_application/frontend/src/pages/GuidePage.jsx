@@ -81,7 +81,7 @@ function GuidePage() {
   const { analyses } = useAnalysesList();
 
   const demoAnalysis =
-    analyses.find(a => a.is_demo && a.status === 'COMPLETED' && a.name === 'Turns and lane changes demo') ||
+    analyses.find(a => a.is_demo && a.status === 'COMPLETED' && a.name === 'Me to gym turn cut 2') ||
     analyses.find(a => a.is_demo && a.status === 'COMPLETED');
 
   useEffect(() => {
@@ -159,7 +159,7 @@ function GuidePage() {
 
             <SubHeading>See It in Action</SubHeading>
             <p className="text-muted mb-3">
-              Click the example below to explore a real analysis — the same view you'll see for
+              Click the example below to explore a real analysis. This is the same view you'll see for
               your own sessions.
             </p>
             {demoAnalysis ? (
@@ -189,7 +189,7 @@ function GuidePage() {
             <SubHeading>Road-Facing Dash-Cam</SubHeading>
             <p className="text-muted">
               A road-facing dash-cam is <strong>required</strong> to detect lane changes and turns.
-              Mount it securely on the windscreen — ideally centred behind the rear-view mirror —
+              Mount it securely on the windscreen, ideally centred behind the rear-view mirror,
               so both lane markings are clearly visible. Record in at least 1080p where possible,
               and make sure you know how to download footage afterwards (via SD card or Wi-Fi).
             </p>
@@ -207,7 +207,7 @@ function GuidePage() {
                   <i className="bi bi-camera-video guide-option-icon"></i>
                   <div className="guide-option-title">Internal Dash-Cam</div>
                   <p className="text-muted small mb-0">
-                    If your dash-cam has a cabin-facing lens, use it. No phone needed — both
+                    If your dash-cam has a cabin-facing lens, use it. No phone needed as both
                     streams download from the same device.
                   </p>
                 </div>
@@ -228,7 +228,7 @@ function GuidePage() {
             <Callout>
               The default camera app on most phones stops recording when minimised or when the
               screen turns off. If you want to use navigation or keep the screen off during the
-              drive, we recommend installing an app that supports background video recording —
+              drive, we recommend installing an app that supports background video recording,
               such as <strong>Background Video Recorder</strong> on Android. Search your app
               store for a suitable option before your drive.
             </Callout>
@@ -236,7 +236,7 @@ function GuidePage() {
             <SubHeading>Phone Placement</SubHeading>
             <p className="text-muted">
               Position your phone (or internal camera) so your face is clearly visible across{' '}
-              <strong>all mirror-check directions</strong> — including glances left, right, and
+              <strong>all mirror-check directions</strong>, including glances left, right, and
               up to the rear-view mirror.
             </p>
             <Tip>
@@ -247,7 +247,7 @@ function GuidePage() {
 
             <div className="guide-image-placeholder">
               <i className="bi bi-image guide-placeholder-icon"></i>
-              <span className="guide-placeholder-label">Example phone mount — image coming soon</span>
+              <span className="guide-placeholder-label">Example phone mount (image coming soon)</span>
             </div>
           </StepSection>
 
@@ -263,10 +263,17 @@ function GuidePage() {
               will need to be started manually. Confirm both feeds are active before driving.
             </p>
 
-            <SubHeading>Synchronising the Two Videos</SubHeading>
+            <SubHeading>
+              Synchronising the Two Videos{' '}
+              <span className="guide-subheading-note">
+                (phone + dash-cam setups only)
+              </span>
+            </SubHeading>
             <p className="text-muted mb-3">
-              Because the two cameras start independently, the system needs a reference point
-              to align their timelines.
+              When using a separate phone as the driver-facing camera, the two devices start
+              independently, so the system needs a reference point to align their timelines.
+              If your dash-cam has a built-in cabin-facing lens, both streams come from the
+              same device and are already synchronised, so you can skip this step.
             </p>
             <ActionBox icon="bi-hand-index-thumb" title="Clap once, clearly, at the start of the recording">
               Make sure it's visible to the driver-facing camera. The sharp audio spike and
@@ -276,7 +283,7 @@ function GuidePage() {
             <SubHeading>
               Calibration Look{' '}
               <span className="guide-subheading-note">
-                — recommended for first recordings or new camera positions
+                (recommended for first recordings or new camera positions)
               </span>
             </SubHeading>
             <p className="text-muted mb-3">
@@ -304,12 +311,12 @@ function GuidePage() {
             <SubHeading>Download Your Dash-Cam Footage</SubHeading>
             <p className="text-muted">
               When your session is complete, download the road-facing footage from your dash-cam
-              — either by removing the SD card and copying files to your computer, or wirelessly
+              either by removing the SD card and copying files to your computer, or wirelessly
               via your dash-cam's companion app if it supports Wi-Fi transfer.
             </p>
             <Callout>
               Most dash-cams use <strong>loop recording</strong>, splitting footage into short
-              clips (e.g. 1–3 minute segments). This is fine — upload all clips together and
+              clips (e.g. 1-3 minute segments). This is fine: upload all clips together and
               SafeDrive AI will automatically splice and synchronise them with your driver-facing
               footage.
             </Callout>
@@ -331,7 +338,7 @@ function GuidePage() {
             <SubHeading>Waiting for Analysis</SubHeading>
             <p className="text-muted">
               Analysis can take several minutes. You <strong>do not need to stay on the upload
-              page</strong> — your session will appear in your analysis list on the Home page
+              page</strong>. Your session will appear in your analysis list on the Home page
               with a live progress indicator. Once complete, click it to view your full results.
             </p>
           </StepSection>
@@ -346,9 +353,6 @@ function GuidePage() {
               <div className="d-flex gap-3 flex-wrap justify-content-center">
                 <Link to="/analyze" className="btn btn-cyber-primary">
                   <i className="bi bi-upload me-2"></i>Upload a Session
-                </Link>
-                <Link to="/calibrate" className="btn btn-outline-cyber">
-                  <i className="bi bi-sliders me-2"></i>Set Up Calibration
                 </Link>
               </div>
             </div>

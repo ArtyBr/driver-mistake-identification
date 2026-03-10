@@ -435,7 +435,7 @@ function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = nul
       )}
 
       <div className="d-flex flex-column flex-md-row align-items-stretch align-items-md-center justify-content-between gap-2 px-3 py-2" style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)', borderLeft: '3px solid var(--border-color)', borderRadius: '4px', marginTop: '6px' }}>
-        {availableQualities.length >= 1 ? (
+        {availableQualities.length > 1 ? (
           <div className="d-flex align-items-center gap-2">
             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Quality</span>
             {['auto', ...availableQualities].map(q => (
@@ -449,6 +449,11 @@ function VideoPlayer({ results, roadUrls, faceUrls, jobId, roadQualityUrls = nul
                 {q === 'auto' ? `Auto (${detectedQuality})` : q}
               </button>
             ))}
+          </div>
+        ) : availableQualities.length === 1 ? (
+          <div className="d-flex align-items-center gap-2">
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Quality</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', padding: '2px 10px' }}>{availableQualities[0]}</span>
           </div>
         ) : <div className="d-none d-md-block" />}
 
