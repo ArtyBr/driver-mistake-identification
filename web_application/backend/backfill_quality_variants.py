@@ -56,6 +56,7 @@ def transcode(input_path: Path, output_path: Path, height: int) -> bool:
             "-pix_fmt", "yuv420p",
             "-crf", "23",
             "-preset", "fast",
+            "-movflags", "+faststart",
             "-c:a", "copy",
             str(output_path),
             "-y",

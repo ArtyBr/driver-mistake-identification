@@ -187,6 +187,7 @@ def transcode_to_quality(input_path: Path, output_path: Path, height: int) -> bo
             "-c:v", "libx264",
             "-crf", "23",
             "-preset", "fast",
+            "-movflags", "+faststart",
             "-c:a", "copy",
             str(output_path),
             "-y"

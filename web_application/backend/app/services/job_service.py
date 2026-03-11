@@ -327,6 +327,9 @@ class JobService:
             self.session.commit()
             self.session.refresh(job)
             logger.info(f"Job {job_id} finalized successfully.")
+
+            # Kick off background transcoding for quality variants
+            self._transcode_on_complete(job)
         else:
             # Result file not found but job finished? Check logs for error.
             batch_service = BatchService()
@@ -349,6 +352,40 @@ class JobService:
                 self.session.refresh(job)
         
         return job
+
+    @staticmethod
+    def _transcode_on_complete(job: Job):
+        """Spawn a background thread to transcode road+face to 720p/480p variants."""
+        import threading
+
+        large_base = Path("/dcs/large/safedrive_cs310_2526/uploads/")
+
+        def _resolve(remote_str: Optional[str]) -> Optional[Path]:
+            if not remote_str:
+                return None
+            if remote_str.startswith("REMOTE:"):
+                parts = remote_str.split(":")[1].split("/")
+                dir_id, filename = parts[0], "/".join(parts[1:])
+                for base in [large_base, UPLOAD_DIR]:
+                    p = base / dir_id / filename
+                    if p.exists():
+                        return p
+            else:
+                p = Path(remote_str)
+                if p.exists():
+                    return p
+            return None
+
+        road_path = _resolve(job.road_path)
+        face_path = _resolve(job.face_path)
+
+        def _run():
+            if road_path:
+                FileService._transcode_single_video(job.id, road_path, "road", [720, 480])
+            if face_path:
+                FileService._transcode_single_video(job.id, face_path, "face", [720, 480])
+
+        threading.Thread(target=_run, daemon=True).start()
 
     def delete_job(self, job_id: str) -> None:
         """Deletes a job's DB record and its upload directory from disk."""
