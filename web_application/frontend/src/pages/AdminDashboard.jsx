@@ -182,6 +182,7 @@ function DemoSection({ demoKey, onRefresh }) {
                     analysis={group[0]}
                     events={null}
                     onClick={() => navigate(`/view/${group[0].id}`)}
+                    groupSize={group.length}
                   />
                 </div>
 
@@ -223,18 +224,19 @@ function DemoSection({ demoKey, onRefresh }) {
                   <div className="accordion-item accordion-item-dark">
                     <h2 className="accordion-header">
                       <button className="accordion-button collapsed py-1 px-3 text-muted accordion-button-dark" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-demo-${group[0].id}`} style={{ fontSize: '0.8rem' }}>
-                        Show {group.length - 1} other re-analyses
+                        <i className="bi bi-arrow-repeat me-1"></i>Show {group.length - 1} previous {group.length - 1 === 1 ? 'run' : 'runs'}
                       </button>
                     </h2>
                     <div id={`collapse-demo-${group[0].id}`} className="accordion-collapse collapse" data-bs-parent={`#accordion-demo-${group[0].id}`}>
                       <div className="accordion-body p-2 bg-dark">
-                        {group.slice(1).map(job => (
+                        {group.slice(1).map((job, idx) => (
                           <div key={job.id} className="mt-2 d-flex align-items-center gap-2">
                             <div className="flex-grow-1">
                               <AnalysisListItem
                                 analysis={job}
                                 events={null}
                                 onClick={() => navigate(`/view/${job.id}`)}
+                                reanalysisIndex={group.length - 1 - idx}
                               />
                             </div>
                             <div className="dropdown">
@@ -490,6 +492,7 @@ function UserRow({ user, jobs, onVerify, onDelete, onJobAction, onDemoChange }) 
                     analysis={group[0]}
                     events={group[0].events ?? null}
                     onClick={() => navigate(`/view/${group[0].id}`)}
+                    groupSize={group.length}
                   />
                 </div>
 
@@ -548,18 +551,19 @@ function UserRow({ user, jobs, onVerify, onDelete, onJobAction, onDemoChange }) 
                   <div className="accordion-item accordion-item-dark">
                     <h2 className="accordion-header">
                       <button className="accordion-button collapsed py-1 px-3 text-muted accordion-button-dark" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-user-${group[0].id}`} style={{ fontSize: '0.8rem' }}>
-                        Show {group.length - 1} other re-analyses
+                        <i className="bi bi-arrow-repeat me-1"></i>Show {group.length - 1} previous {group.length - 1 === 1 ? 'run' : 'runs'}
                       </button>
                     </h2>
                     <div id={`collapse-user-${group[0].id}`} className="accordion-collapse collapse" data-bs-parent={`#accordion-user-${group[0].id}`}>
                       <div className="accordion-body p-2 bg-dark">
-                        {group.slice(1).map(job => (
+                        {group.slice(1).map((job, idx) => (
                           <div key={job.id} className="mt-2 d-flex align-items-center gap-2">
                             <div className="flex-grow-1">
                               <AnalysisListItem
                                 analysis={job}
                                 events={job.events ?? null}
                                 onClick={() => navigate(`/view/${job.id}`)}
+                                reanalysisIndex={group.length - 1 - idx}
                               />
                             </div>
                             <div className="dropdown">

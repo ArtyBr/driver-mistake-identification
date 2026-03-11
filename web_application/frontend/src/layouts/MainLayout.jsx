@@ -116,7 +116,7 @@ const MainLayout = () => {
 
       <footer className="py-3 mt-auto">
         <div className="container text-center text-muted">
-          <small>&copy; {new Date().getFullYear()} Driver Mistake Identification System. All rights reserved.</small>
+          <small>Artemiy Brukhno &mdash; Final Year Project, University of Warwick, 2025&ndash;2026</small>
         </div>
       </footer>
     </div>

@@ -435,18 +435,19 @@ function Uploader({ onUploadSuccess }) {
                     onRename={() => handleRenameItem(group[0])}
                     onDelete={() => handleDeleteItem(group[0])}
                     etaMs={getEtaMs(group[0].id, group[0].progress || 0)}
+                    groupSize={group.length}
                   />
                   {group.length > 1 && (
                     <div className="accordion mt-2" id={`accordion-uploader-${group[0].id}`}>
                       <div className="accordion-item accordion-item-dark">
                         <h2 className="accordion-header">
                           <button className="accordion-button collapsed py-2 px-3 text-muted accordion-button-dark" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-uploader-${group[0].id}`} style={{ fontSize: '0.85rem' }}>
-                            Show {group.length - 1} other re-analyses
+                            <i className="bi bi-arrow-repeat me-1"></i>Show {group.length - 1} previous {group.length - 1 === 1 ? 'run' : 'runs'}
                           </button>
                         </h2>
                         <div id={`collapse-uploader-${group[0].id}`} className="accordion-collapse collapse" data-bs-parent={`#accordion-uploader-${group[0].id}`}>
                           <div className="accordion-body p-2 bg-dark">
-                            {group.slice(1).map(analysis => (
+                            {group.slice(1).map((analysis, idx) => (
                               <AnalysisListItem
                                 key={analysis.id}
                                 analysis={analysis}
@@ -455,6 +456,7 @@ function Uploader({ onUploadSuccess }) {
                                 onRename={() => handleRenameItem(analysis)}
                                 onDelete={() => handleDeleteItem(analysis)}
                                 etaMs={getEtaMs(analysis.id, analysis.progress || 0)}
+                                reanalysisIndex={group.length - 1 - idx}
                               />
                             ))}
                           </div>

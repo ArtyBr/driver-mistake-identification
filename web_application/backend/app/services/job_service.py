@@ -587,7 +587,7 @@ class JobService:
         new_job_id = str(uuid.uuid4())
         job = Job(
             id=new_job_id,
-            name=f"Re-analysis of {source_job.name or source_job.id}",
+            name=source_job.name or source_job.id,
             status="PENDING",
             owner_id=owner_id,
             road_path=source_job.road_path,

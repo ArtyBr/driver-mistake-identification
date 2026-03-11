@@ -331,8 +331,11 @@ footer {
   border: 1px solid var(--border-color);
 }
 
-.accordion-button-dark {
+.accordion-button-dark,
+.accordion-button-dark:not(.collapsed),
+.accordion-button-dark:focus {
   background-color: transparent;
+  color: var(--text-muted);
   box-shadow: none;
 }
 

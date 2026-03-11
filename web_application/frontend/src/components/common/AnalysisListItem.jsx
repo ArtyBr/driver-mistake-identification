@@ -146,7 +146,7 @@ function EventDisplay({ events }) {
  *               If omitted, auto-fetched for COMPLETED jobs.
  *               Pass null to suppress the fetch entirely.
  */
-const AnalysisListItem = ({ analysis, selected, onClick, etaMs, events: propEvents, onView, onRename, onDelete }) => {
+const AnalysisListItem = ({ analysis, selected, onClick, etaMs, events: propEvents, onView, onRename, onDelete, reanalysisIndex, groupSize }) => {
   const isActive = ACTIVE_STATUSES.has(analysis.status);
   const { cls: _cls, label: _label } = STATUS_MAP[analysis.status] || { cls: 'bg-secondary', label: analysis.status };
   const eta = isActive ? formatEta(etaMs) : null;
@@ -176,8 +176,18 @@ const AnalysisListItem = ({ analysis, selected, onClick, etaMs, events: propEven
     >
       {/* Row 1: name + badge + action buttons */}
       <div className="d-flex justify-content-between align-items-start gap-2">
-        <div className="d-flex align-items-center flex-wrap gap-1">
+        <div className="d-flex align-items-center flex-wrap gap-2">
           <span className="fw-bold text-white">{analysis.name}</span>
+          {groupSize > 1 && !reanalysisIndex && (
+            <span className="badge bg-info bg-opacity-25 text-info fw-normal" style={{ fontSize: '0.7rem' }}>
+              <i className="bi bi-arrow-repeat me-1"></i>Latest
+            </span>
+          )}
+          {reanalysisIndex && (
+            <span className="badge bg-secondary bg-opacity-50 text-muted fw-normal" style={{ fontSize: '0.7rem' }}>
+              <i className="bi bi-arrow-repeat me-1"></i>Run #{reanalysisIndex}
+            </span>
+          )}
         </div>
         <div className="d-flex align-items-center gap-1 flex-shrink-0">
           {selected && <i className="bi bi-check-circle-fill text-accent-primary" />}

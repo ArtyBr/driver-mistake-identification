@@ -145,18 +145,19 @@ const Home = () => {
                     onRename={() => handleRename(group[0])}
                     onDelete={() => handleDelete(group[0])}
                     etaMs={getEtaMs(group[0].id, group[0].progress || 0)}
+                    groupSize={group.length}
                   />
                   {group.length > 1 && (
                     <div className="accordion mt-2" id={`accordion-${group[0].id}`}>
                       <div className="accordion-item accordion-item-dark">
                         <h2 className="accordion-header">
                           <button className="accordion-button collapsed py-2 px-3 text-muted accordion-button-dark" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-${group[0].id}`} style={{ fontSize: '0.85rem' }}>
-                            Show {group.length - 1} other re-analyses
+                            <i className="bi bi-arrow-repeat me-1"></i>Show {group.length - 1} previous {group.length - 1 === 1 ? 'run' : 'runs'}
                           </button>
                         </h2>
                         <div id={`collapse-${group[0].id}`} className="accordion-collapse collapse" data-bs-parent={`#accordion-${group[0].id}`}>
                           <div className="accordion-body p-2 bg-dark">
-                            {group.slice(1).map(analysis => (
+                            {group.slice(1).map((analysis, idx) => (
                               <AnalysisListItem
                                 key={analysis.id}
                                 analysis={analysis}
@@ -165,6 +166,7 @@ const Home = () => {
                                 onRename={() => handleRename(analysis)}
                                 onDelete={() => handleDelete(analysis)}
                                 etaMs={getEtaMs(analysis.id, analysis.progress || 0)}
+                                reanalysisIndex={group.length - 1 - idx}
                               />
                             ))}
                           </div>
@@ -230,23 +232,25 @@ const Home = () => {
                     analysis={group[0]}
                     onClick={() => handleLoadDemo(group[0].id)}
                     onView={() => handleLoadDemo(group[0].id)}
+                    groupSize={group.length}
                   />
                   {group.length > 1 && (
                     <div className="accordion mt-2" id={`accordion-demo-${group[0].id}`}>
                       <div className="accordion-item accordion-item-dark">
                         <h2 className="accordion-header">
                           <button className="accordion-button collapsed py-2 px-3 text-muted accordion-button-dark" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse-demo-${group[0].id}`} style={{ fontSize: '0.85rem' }}>
-                            Show {group.length - 1} other re-analyses
+                            <i className="bi bi-arrow-repeat me-1"></i>Show {group.length - 1} previous {group.length - 1 === 1 ? 'run' : 'runs'}
                           </button>
                         </h2>
                         <div id={`collapse-demo-${group[0].id}`} className="accordion-collapse collapse" data-bs-parent={`#accordion-demo-${group[0].id}`}>
                           <div className="accordion-body p-2 bg-dark">
-                            {group.slice(1).map(analysis => (
+                            {group.slice(1).map((analysis, idx) => (
                               <AnalysisListItem
                                 key={analysis.id}
                                 analysis={analysis}
                                 onClick={() => handleLoadDemo(analysis.id)}
                                 onView={() => handleLoadDemo(analysis.id)}
+                                reanalysisIndex={group.length - 1 - idx}
                               />
                             ))}
                           </div>

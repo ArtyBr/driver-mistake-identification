@@ -48,6 +48,16 @@ def init_db():
         except OperationalError:
             pass
 
+        # Strip "Re-analysis of " prefix from existing job names
+        try:
+            conn.execute(text(
+                "UPDATE jobs SET name = SUBSTR(name, 16) "
+                "WHERE name LIKE 'Re-analysis of %'"
+            ))
+            conn.commit()
+        except Exception:
+            pass
+
         # Mark all existing users as verified if we just added the column
         # This only runs once effectively if is_verified was just added
         # Or we can just ensure all currently signed up users are verified as requested.

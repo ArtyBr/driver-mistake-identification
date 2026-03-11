@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAnalysesList } from '../hooks/useAnalysesList';
 import AnalysisListItem from '../components/common/AnalysisListItem';
+import phoneHolderImg from '../assets/phone_holder_example.jpeg';
 import './GuidePage.css';
 
 const SECTIONS = [
@@ -245,9 +246,9 @@ function GuidePage() {
               you don't need to worry about passengers being in frame.
             </Tip>
 
-            <div className="guide-image-placeholder">
-              <i className="bi bi-image guide-placeholder-icon"></i>
-              <span className="guide-placeholder-label">Example phone mount (image coming soon)</span>
+            <div className="guide-image-container">
+              <img src={phoneHolderImg} alt="Example phone holder mounted on dashboard" className="guide-image" />
+              <span className="guide-image-caption">Example phone mount position</span>
             </div>
           </StepSection>
 

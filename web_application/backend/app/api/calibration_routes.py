@@ -318,7 +318,7 @@ async def reanalyze_with_user_model(
     new_job_id = str(uuid.uuid4())
     new_job = Job(
         id=new_job_id,
-        name=f"Re-analysis of {job.name or job_id}",
+        name=job.name or job_id,
         status="PENDING",
         owner_id=current_user.id,
         calibration_id=cal_id,
