@@ -26,8 +26,10 @@ function pctColor(pct) {
 function AggregateChips({ jobs }) {
   const agg = useMemo(() => {
     if (!jobs) return null;
+    // Only count events from the most recent analysis of each unique video pair
+    const latestJobs = groupAnalyses(jobs).map(group => group[0]);
     let tTotal = 0, tSafe = 0, lcTotal = 0, lcSafe = 0;
-    jobs.forEach(j => {
+    latestJobs.forEach(j => {
       if (j.events) {
         tTotal  += j.events.turns?.total  || 0;
         tSafe   += j.events.turns?.safe   || 0;
