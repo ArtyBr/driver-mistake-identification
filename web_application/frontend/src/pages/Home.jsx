@@ -182,8 +182,8 @@ const Home = () => {
       )}
 
       <div className="row g-5 align-items-start">
-        {/* Left Column: Action Card */}
-        <div className="col-lg-7">
+        {/* Left Column: Action Card (appears second on mobile) */}
+        <div className="col-lg-7 order-2 order-lg-1">
           <div className="card card-cyber p-4 h-100 shadow-lg border-top-primary">
             <h3 className="mb-4 fw-bold text-white">Analyze Your Driving</h3>
             <p className="text-muted mb-4 lead" style={{ fontSize: '1rem' }}>
@@ -218,8 +218,8 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Right Column: Demo Section */}
-        <div className="col-lg-5">
+        {/* Right Column: Demo Section (appears first on mobile) */}
+        <div className="col-lg-5 order-1 order-lg-2">
           <div className="d-flex align-items-center mb-4 border-bottom border-secondary pb-2">
             <h3 className="mb-0 fw-bold text-white">Demo Analyses</h3>
           </div>
