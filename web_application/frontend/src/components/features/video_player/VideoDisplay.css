@@ -67,6 +67,16 @@
   .video-container {
     flex-wrap: wrap;
   }
+
+  /* When face video is portrait, keep side-by-side layout on mobile */
+  .video-container.side-by-side {
+    flex-wrap: nowrap;
+  }
+
+  .video-container.side-by-side > .video-wrapper {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
 }
 
 /* Subtle decorative corner */
@@ -179,6 +189,11 @@
   .video-wrapper {
     flex: 1 1 100%;
     min-width: 100%;
+  }
+
+  .side-by-side > .video-wrapper {
+    flex: 0 0 auto;
+    min-width: 0;
   }
 }
 

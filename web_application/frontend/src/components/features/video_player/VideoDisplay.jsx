@@ -42,13 +42,17 @@ const VideoDisplay = ({
 
   // Compute a shared height so both videos are the same height and fill the container.
   // H = (containerContentWidth - gap) / (roadAR + faceAR)
-  // On mobile (< 768px content width) fall back to CSS stacking layout.
+  // On mobile (< 768px content width) fall back to CSS stacking layout,
+  // UNLESS the face video is portrait — then keep side-by-side since the
+  // narrow portrait video fits beside the road video without being too small.
   const GAP = 15; // matches CSS gap
   const isMobile = contentWidth !== null && contentWidth < 768;
-  const videoHeight =
-    !isMobile && contentWidth && roadAspectRatio && faceAspectRatio
-      ? (contentWidth - GAP) / (roadAspectRatio + faceAspectRatio)
-      : null;
+  const faceIsPortrait = faceAspectRatio && faceAspectRatio < 1;
+  const useSideBySide = contentWidth && roadAspectRatio && faceAspectRatio
+    && (!isMobile || faceIsPortrait);
+  const videoHeight = useSideBySide
+    ? (contentWidth - GAP) / (roadAspectRatio + faceAspectRatio)
+    : null;
 
   const roadWrapperStyle = videoHeight
     ? { height: `${videoHeight}px`, width: `${videoHeight * roadAspectRatio}px`, flex: '0 0 auto', minWidth: 0 }
@@ -57,7 +61,8 @@ const VideoDisplay = ({
     ? { height: `${videoHeight}px`, width: `${videoHeight * faceAspectRatio}px`, flex: '0 0 auto', minWidth: 0 }
     : {};
 
-  const containerClass = `video-container ${currentEvent ? `event-active ${currentEvent.severity.toLowerCase()}` : ''}`;
+  const sideBySideClass = isMobile && faceIsPortrait ? 'side-by-side' : '';
+  const containerClass = `video-container ${sideBySideClass} ${currentEvent ? `event-active ${currentEvent.severity.toLowerCase()}` : ''}`;
 
   return (
     <div ref={containerRef} className={containerClass}>
