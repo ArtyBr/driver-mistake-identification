@@ -162,25 +162,36 @@ export default function AudioWaveform({
     dragRef.current = { startX: e.touches[0].clientX, startOffset: offset };
   }, [offset]);
 
-  const onTouchMove = useCallback((e) => {
-    if (!dragRef.current) return;
-    const { startX, startOffset } = dragRef.current;
-    const delta = pxToSeconds(e.touches[0].clientX - startX);
-    onOffsetChange(startOffset + delta);
-  }, [pxToSeconds, onOffsetChange]);
-
   const onTouchEnd = useCallback(() => { dragRef.current = null; }, []);
+
+  // Attach touchmove as a non-passive listener so preventDefault() works
+  // (React synthetic events are passive by default for touch)
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleTouchMove = (e) => {
+      if (!dragRef.current) return;
+      e.preventDefault(); // prevent page scroll while dragging
+      const { startX, startOffset } = dragRef.current;
+      const dx = e.touches[0].clientX - startX;
+      const delta = (dx / canvas.clientWidth) * (roadDuration || 1);
+      onOffsetChange(startOffset + delta);
+    };
+
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    return () => canvas.removeEventListener('touchmove', handleTouchMove);
+  }, [roadDuration, onOffsetChange]);
 
   return (
     <canvas
       ref={canvasRef}
-      style={{ width: '100%', height: '160px', cursor: 'ew-resize', display: 'block', borderRadius: '4px' }}
+      style={{ width: '100%', height: '160px', cursor: 'ew-resize', display: 'block', borderRadius: '4px', touchAction: 'none' }}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseUp}
       onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     />
   );

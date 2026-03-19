@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './Uploader.css'
-import api, { 
-  updateJobName, 
-  deleteJob, 
-  initSync, 
-  uploadSyncFile, 
-  finalizeSync 
+import api, {
+  updateJobName,
+  deleteJob,
+  initSync,
+  uploadSyncFile,
+  finalizeSync
 } from '../../services/api'
 import FileDropZone from '../common/FileDropZone'
 import SyncConfirmStep from './SyncConfirmStep'
@@ -342,19 +342,6 @@ function Uploader({ onUploadSuccess }) {
                   multiple={true}
                 />
               </div>
-            </div>
-
-            <div className="form-check mb-3">
-              <input
-                className="form-check-input"
-                type="checkbox"
-                id="keepVideosCheck"
-                checked={keepVideos}
-                onChange={(e) => setKeepVideos(e.target.checked)}
-              />
-              <label className="form-check-label text-white" htmlFor="keepVideosCheck">
-                Keep videos on server after analysis (Uncheck to delete after processing)
-              </label>
             </div>
 
             <div className="form-check mb-4">

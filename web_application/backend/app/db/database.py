@@ -58,15 +58,6 @@ def init_db():
         except Exception:
             pass
 
-        # Mark all existing users as verified if we just added the column
-        # This only runs once effectively if is_verified was just added
-        # Or we can just ensure all currently signed up users are verified as requested.
-        try:
-            conn.execute(text("UPDATE users SET is_verified = 1"))
-            conn.commit()
-        except Exception:
-            pass
-
     # Seed admin account
     admin_email = "admin@admin.com"
     admin_password = os.environ.get("ADMIN_PASSWORD", "SafeDrive2026!")
@@ -77,6 +68,7 @@ def init_db():
                 email=admin_email,
                 hashed_password=get_password_hash(admin_password),
                 is_admin=True,
+                is_verified=True,
             )
             session.add(admin_user)
             session.commit()

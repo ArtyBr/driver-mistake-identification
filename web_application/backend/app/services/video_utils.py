@@ -1,28 +1,51 @@
 import subprocess
 import logging
 import os
+import threading
 from pathlib import Path
 from typing import List
 
 logger = logging.getLogger(__name__)
 
 def _is_browser_playable(video_path: Path) -> bool:
-    """Check via ffprobe whether the file is an mp4/mov container that browsers can play natively."""
+    """Check via ffprobe whether the file uses a browser-playable container AND audio codec.
+
+    Returns False for non-mp4/mov containers *or* mp4 files that contain
+    codecs browsers cannot play (e.g. pcm_s16le audio from dashcams).
+    """
     try:
-        cmd = [
+        env = os.environ.copy()
+        env.pop("LD_LIBRARY_PATH", None)
+
+        # Check container format
+        fmt_cmd = [
             "ffprobe", "-v", "error",
             "-show_entries", "format=format_name",
             "-of", "default=noprint_wrappers=1:nokey=1",
             str(video_path),
         ]
-        env = os.environ.copy()
-        env.pop("LD_LIBRARY_PATH", None)
-        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
-        if result.returncode != 0:
+        fmt_result = subprocess.run(fmt_cmd, capture_output=True, text=True, env=env)
+        if fmt_result.returncode != 0:
             return False
-        fmt = result.stdout.strip().lower()
-        # mp4/mov containers are browser-playable; avi, matroska, etc. are not
-        return any(tag in fmt for tag in ("mov", "mp4", "m4a", "m4v"))
+        fmt = fmt_result.stdout.strip().lower()
+        if not any(tag in fmt for tag in ("mov", "mp4", "m4a", "m4v")):
+            return False
+
+        # Check audio codec — PCM variants are not valid in mp4 for browsers
+        codec_cmd = [
+            "ffprobe", "-v", "error",
+            "-select_streams", "a:0",
+            "-show_entries", "stream=codec_name",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            str(video_path),
+        ]
+        codec_result = subprocess.run(codec_cmd, capture_output=True, text=True, env=env)
+        if codec_result.returncode == 0:
+            acodec = codec_result.stdout.strip().lower()
+            if acodec.startswith("pcm_"):
+                return False
+
+        return True
     except Exception:
         return False
 
@@ -44,6 +67,15 @@ def _run_ffmpeg_with_progress(cmd: list, duration_seconds: float, on_progress=No
     full_cmd = cmd + ["-progress", "pipe:1"]
     proc = subprocess.Popen(full_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, text=True)
 
+    # Drain stderr in a background thread to prevent pipe buffer deadlock:
+    # ffmpeg writes diagnostics to stderr; if the buffer fills while we're
+    # blocked reading stdout, both sides stall.
+    stderr_chunks = []
+    def _drain_stderr():
+        stderr_chunks.append(proc.stderr.read())
+    stderr_thread = threading.Thread(target=_drain_stderr, daemon=True)
+    stderr_thread.start()
+
     last_pct = -1
     for line in proc.stdout:
         if line.startswith("out_time_us="):
@@ -57,7 +89,8 @@ def _run_ffmpeg_with_progress(cmd: list, duration_seconds: float, on_progress=No
                 pass
 
     proc.wait()
-    stderr = proc.stderr.read() if proc.stderr else ""
+    stderr_thread.join(timeout=5)
+    stderr = stderr_chunks[0] if stderr_chunks else ""
     return subprocess.CompletedProcess(full_cmd, proc.returncode, stdout="", stderr=stderr)
 
 
@@ -152,11 +185,15 @@ def splice_videos(input_paths: List[Path], output_path: Path, on_progress=None) 
             ]
             result = _run_ffmpeg_with_progress(cmd, total_duration, on_progress)
         else:
-            # All inputs are mp4 — fast stream copy
+            # All inputs are mp4-like containers — copy video, re-encode
+            # audio to AAC (some dashcams use PCM audio which is not valid
+            # in mp4 containers and would fail with stream copy).
             cmd = [
-                "ffmpeg", "-f", "concat", "-safe", "0",
+                _get_ffmpeg_exe(), "-f", "concat", "-safe", "0",
                 "-i", str(list_file_path),
-                "-c", "copy", str(output_path), "-y",
+                "-c:v", "copy", "-c:a", "aac",
+                "-movflags", "+faststart",
+                str(output_path), "-y",
             ]
             env = os.environ.copy()
             env.pop("LD_LIBRARY_PATH", None)

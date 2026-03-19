@@ -127,8 +127,12 @@ async def admin_get_user_jobs(
         .order_by(Job.created_at.desc())
     ).all()
 
+    # Refresh progress for active jobs via filesystem check
+    job_service = JobService(session)
     result = []
     for job in jobs:
+        if job.status in ("SUBMITTED", "RUNNING", "PENDING"):
+            job = job_service.check_job_status(job.id) or job
         item = {
             "id": job.id,
             "name": job.name or job.id,
