@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang='en'><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<title>Driver Safety — Evaluation Report</title>
+<style>
+
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    max-width: 1400px; margin: 0 auto; padding: 20px;
+    background: #f8f9fa; color: #222;
+  }
+  h1 { border-bottom: 2px solid #333; padding-bottom: 8px; font-size: 1.6em; }
+  h2 { margin-top: 36px; color: #333; font-size: 1.3em; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+  .timestamp { color: #888; font-size: 0.85em; margin-top: -8px; }
+  a { color: #0366d6; }
+
+  .nav {
+    background: #fff; padding: 10px 14px; border: 1px solid #ddd;
+    border-radius: 6px; margin-bottom: 20px; position: sticky; top: 0; z-index: 10;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .nav a { margin-right: 16px; font-weight: 500; font-size: 0.95em; white-space: nowrap; }
+
+  img { max-width: 100%; border: 1px solid #ddd; border-radius: 4px; display: block; }
+  .fig-label { font-size: 0.85em; font-weight: 600; color: #555; margin-bottom: 2px; }
+
+  /* Grid for half-width key plots */
+  .grid-2 {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin: 8px 0;
+  }
+  .img-half { }
+  .img-full { margin: 10px 0; max-width: 900px; }
+
+  /* HTML content (tables etc.) */
+  .html-content { margin: 12px 0; overflow-x: auto; }
+  .html-content table { font-size: 0.85em; }
+
+  /* Collapsible per-video sections */
+  details.per-video {
+    margin: 10px 0; border: 1px solid #ddd; border-radius: 6px;
+    background: #fff;
+  }
+  details.per-video summary {
+    padding: 8px 14px; cursor: pointer; font-weight: 600;
+    font-size: 0.95em; color: #444; user-select: none;
+    background: #f0f2f5; border-radius: 6px;
+  }
+  details.per-video[open] summary {
+    border-bottom: 1px solid #ddd; border-radius: 6px 6px 0 0;
+  }
+  .per-video-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 10px; padding: 10px;
+  }
+  .per-video-card {
+    border: 1px solid #eee; border-radius: 4px; padding: 6px;
+    background: #fafafa;
+  }
+  .per-video-card img { width: 100%; }
+  .card-label { font-size: 0.8em; font-weight: 600; color: #666; margin-bottom: 2px; font-family: monospace; }
+
+  @media (max-width: 800px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .per-video-grid { grid-template-columns: 1fr; }
+  }
+
+</style>
+</head><body>
+<h1>Driver Safety — Evaluation Report</h1>
+<p class='timestamp'>Generated: 2026-03-19 15:43:40</p>
+<nav class='nav'>
+<a href='#dataset-overview'>Dataset Overview</a>
+<a href='#gps-analysis'>GPS Analysis</a>
+<a href='#ground-truth-evaluation'>Ground Truth Evaluation</a>
+<a href='#gaze-analysis'>Gaze Analysis</a>
+<a href='#lane-detection-analysis'>Lane Detection Analysis</a>
+<a href='#safety-analysis'>Safety Analysis</a>
+</nav>
+<h2 id='dataset-overview'>Dataset Overview</h2>
+<div class='grid-2'>
+<div class='img-half'><div class='fig-label'>Clips By Driver</div><img src='stats/clips_by_driver.png' alt='clips_by_driver'></div>
+<div class='img-half'><div class='fig-label'>Clips By Condition</div><img src='stats/clips_by_condition.png' alt='clips_by_condition'></div>
+<div class='img-half'><div class='fig-label'>Clips Per Trip</div><img src='stats/clips_per_trip.png' alt='clips_per_trip'></div>
+<div class='img-half'><div class='fig-label'>Labeled Split</div><img src='stats/labeled_split.png' alt='labeled_split'></div>
+<div class='img-half'><div class='fig-label'>Event Distribution</div><img src='stats/event_distribution.png' alt='event_distribution'></div>
+<div class='img-half'><div class='fig-label'>Events Per Video</div><img src='stats/events_per_video.png' alt='events_per_video'></div>
+</div>
+<div class='html-content'>
+
+    <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; margin:16px 0;">
+    <tr><th>Metric</th><th>Value</th></tr>
+    <tr><td>Total trips</td><td>29</td></tr>
+    <tr><td>Total video pairs</td><td>353</td></tr>
+    <tr><td>Estimated total duration</td><td>1059 min</td></tr>
+    <tr><td>Labeled trips</td><td>4</td></tr>
+    <tr><td>Labeled video clips</td><td>40</td></tr>
+    <tr><td>Total labeled events</td><td>104</td></tr>
+    <tr><td>Unique drivers</td><td>3</td></tr>
+    <tr><td>Conditions</td><td>day, night, rainy_day</td></tr>
+    </table>
+    
+</div>
+<h2 id='gps-analysis'>GPS Analysis</h2>
+<p><a href='gps/all_routes.html'>All Routes</a> (interactive map)</p>
+<div class='grid-2'>
+<div class='img-half'><div class='fig-label'>Speed At Events</div><img src='gps/speed_at_events.png' alt='speed_at_events'></div>
+</div>
+<div class='html-content'>
+<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse; margin:16px 0;'><tr><th>Trip</th><th>Distance</th><th>Avg Speed</th><th>Max Speed</th><th>Stops (speed&lt;2)</th></tr><tr><td>01_09_25_me_to_wp_night</td><td>12.2 km</td><td>32.2 km/h</td><td>113.2 km/h</td><td>151</td></tr>
+<tr><td>02_09_25_me_to_gym_day</td><td>10.5 km</td><td>14.4 km/h</td><td>52.2 km/h</td><td>1198</td></tr>
+<tr><td>13_09_25_me_to_cov_day</td><td colspan='4'>No GPS data</td></tr>
+<tr><td>13_09_25_me_to_lem_day</td><td colspan='4'>No GPS data</td></tr></table>
+</div>
+<details class='per-video'><summary>Route 01 09 25 Me To Wp Night (1 videos)</summary><div class='per-video-grid'>
+<div class='per-video-card'><a href='gps/route_01_09_25_me_to_wp_night.html'>Route 01 09 25 Me To Wp Night</a></div>
+</div></details>
+<details class='per-video'><summary>Speed 01 09 25 Me To Wp Night (1 videos)</summary><div class='per-video-grid'>
+<div class='per-video-card'><div class='card-label'>Speed 01 09 25 Me To Wp Night</div><img src='gps/speed_01_09_25_me_to_wp_night.png' alt='speed_01_09_25_me_to_wp_night' loading='lazy'></div>
+</div></details>
+<details class='per-video'><summary>Route 02 09 25 Me To Gym Day (1 videos)</summary><div class='per-video-grid'>
+<div class='per-video-card'><a href='gps/route_02_09_25_me_to_gym_day.html'>Route 02 09 25 Me To Gym Day</a></div>
+</div></details>
+<details class='per-video'><summary>Speed 02 09 25 Me To Gym Day (1 videos)</summary><div class='per-video-grid'>
+<div class='per-video-card'><div class='card-label'>Speed 02 09 25 Me To Gym Day</div><img src='gps/speed_02_09_25_me_to_gym_day.png' alt='speed_02_09_25_me_to_gym_day' loading='lazy'></div>
+</div></details>
+<h2 id='ground-truth-evaluation'>Ground Truth Evaluation</h2>
+<div class='img-full'><div class='fig-label'>Prf1 Bar</div><img src='ground_truth/prf1_bar.png' alt='prf1_bar'></div>
+<div class='img-full'><div class='fig-label'>Confusion Matrix</div><img src='ground_truth/confusion_matrix.png' alt='confusion_matrix'></div>
+<div class='img-full'><div class='fig-label'>Timing Errors</div><img src='ground_truth/timing_errors.png' alt='timing_errors'></div>
+<div class='html-content'>
+<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse; margin:16px 0; width:100%;'><tr style='background:#444; color:white;'><th>Video</th><th>GT Time</th><th>GT Type</th><th>Det Time</th><th>Det Type</th><th>Safe?</th><th>Δt</th><th>Result</th></tr>
+<tr style='background:#fff3cd; font-weight:bold;'><td colspan='3'>2025_0901_202916_004595F</td><td colspan='3'>01_09_25_me_to_wp_night</td><td colspan='2'>TP=2 FP=2 FN=2 (P=50% R=50%)</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>0:58 (58s)</td><td>left turn</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>1:29 (89s)</td><td>left turn</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:23 (143s)</td><td>left turn</td><td>2:25 (145s)</td><td>left turn</td><td>SAFE</td><td>2.1s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>2:38 (158s)</td><td>right turn</td><td>SAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:47 (167s)</td><td>right turn</td><td>2:45 (166s)</td><td>right turn</td><td>SAFE</td><td>1.4s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>2:49 (169s)</td><td>right turn</td><td>SAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#f8d7da; font-weight:bold;'><td colspan='3'>2025_0901_193215_004598F</td><td colspan='3'>01_09_25_me_to_wp_night</td><td colspan='2'>ALL MISSED (1 FN)</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>1:25 (85s)</td><td>left turn</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0901_193515_004601F</td><td colspan='3'>01_09_25_me_to_wp_night</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>1:00 (60s)</td><td>right turn</td><td>1:03 (63s)</td><td>right turn</td><td>SAFE</td><td>3.2s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:20 (140s)</td><td>left turn</td><td>2:16 (136s)</td><td>right turn</td><td>SAFE</td><td>3.9s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0901_193816_004604F</td><td colspan='3'>01_09_25_me_to_wp_night</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:49 (169s)</td><td>left turn</td><td>2:50 (170s)</td><td>left turn</td><td>SAFE</td><td>1.3s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3cd; font-weight:bold;'><td colspan='3'>2025_0901_194115_004607F</td><td colspan='3'>01_09_25_me_to_wp_night</td><td colspan='2'>TP=2 FP=0 FN=1 (P=100% R=67%)</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>0:10 (10s)</td><td>right turn</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:17 (17s)</td><td>left turn</td><td>0:20 (20s)</td><td>left turn</td><td>SAFE</td><td>3.2s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:29 (29s)</td><td>right turn</td><td>0:30 (30s)</td><td>left turn</td><td>UNSAFE</td><td>1.5s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3cd; font-weight:bold;'><td colspan='3'>2025_0901_210641_004610F</td><td colspan='3'>01_09_25_me_to_wp_night</td><td colspan='2'>TP=2 FP=0 FN=3 (P=100% R=40%)</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:15 (15s)</td><td>right turn</td><td>0:18 (18s)</td><td>right turn</td><td>SAFE</td><td>3.2s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:26 (26s)</td><td>right turn</td><td>0:24 (25s)</td><td>right turn</td><td>SAFE</td><td>1.1s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>0:40 (40s)</td><td>left turn</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>1:22 (82s)</td><td>right turn</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>2:48 (168s)</td><td>left turn</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#fff3cd; font-weight:bold;'><td colspan='3'>2025_0901_210942_004613F</td><td colspan='3'>01_09_25_me_to_wp_night</td><td colspan='2'>TP=1 FP=0 FN=1 (P=100% R=50%)</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>1:50 (110s)</td><td>left lane change</td><td>1:51 (111s)</td><td>left lane change</td><td>SAFE</td><td>1.5s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>2:23 (143s)</td><td>left lane change</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0901_211242_004616F</td><td colspan='3'>01_09_25_me_to_wp_night</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:06 (6s)</td><td>right lane change</td><td>0:06 (7s)</td><td>right lane change</td><td>SAFE</td><td>0.5s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:29 (29s)</td><td>left lane change</td><td>0:29 (30s)</td><td>left lane change</td><td>UNSAFE</td><td>0.9s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:25 (145s)</td><td>left turn</td><td>2:28 (148s)</td><td>left turn</td><td>SAFE</td><td>3.0s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:45 (165s)</td><td>left lane change</td><td>2:45 (166s)</td><td>left lane change</td><td>SAFE</td><td>0.7s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0902_151536_004628F</td><td colspan='3'>02_09_25_me_to_gym_day</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:25 (145s)</td><td>right turn</td><td>2:25 (145s)</td><td>right turn</td><td>SAFE</td><td>0.0s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:45 (165s)</td><td>right turn</td><td>2:46 (167s)</td><td>right turn</td><td>SAFE</td><td>1.7s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0902_151836_004631F</td><td colspan='3'>02_09_25_me_to_gym_day</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:52 (52s)</td><td>left turn</td><td>0:53 (53s)</td><td>left turn</td><td>SAFE</td><td>1.0s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0902_152136_004634F</td><td colspan='3'>02_09_25_me_to_gym_day</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:08 (8s)</td><td>left turn</td><td>0:08 (8s)</td><td>left turn</td><td>SAFE</td><td>0.3s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:30 (150s)</td><td>left turn</td><td>2:29 (149s)</td><td>right turn</td><td>SAFE</td><td>0.7s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3cd; font-weight:bold;'><td colspan='3'>2025_0902_152436_004637F</td><td colspan='3'>02_09_25_me_to_gym_day</td><td colspan='2'>TP=4 FP=1 FN=1 (P=80% R=80%)</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:11 (11s)</td><td>right turn</td><td>0:11 (12s)</td><td>right turn</td><td>SAFE</td><td>0.7s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:24 (24s)</td><td>left turn</td><td>0:25 (25s)</td><td>left turn</td><td>SAFE</td><td>1.3s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:58 (58s)</td><td>left turn</td><td>0:59 (59s)</td><td>left turn</td><td>SAFE</td><td>1.4s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>1:03 (64s)</td><td>right turn</td><td>SAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>1:57 (117s)</td><td>left turn</td><td>1:57 (117s)</td><td>left turn</td><td>SAFE</td><td>0.5s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>2:01 (121s)</td><td>right lane change</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0902_153336_004646F</td><td colspan='3'>02_09_25_me_to_gym_day</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:11 (131s)</td><td>right lane change</td><td>2:11 (131s)</td><td>right lane change</td><td>SAFE</td><td>0.1s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3cd; font-weight:bold;'><td colspan='3'>2025_0902_153636_004649F</td><td colspan='3'>02_09_25_me_to_gym_day</td><td colspan='2'>TP=5 FP=1 FN=1 (P=83% R=83%)</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:28 (28s)</td><td>right turn</td><td>0:28 (29s)</td><td>right turn</td><td>SAFE</td><td>0.6s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:39 (39s)</td><td>left lane change</td><td>0:40 (40s)</td><td>left lane change</td><td>SAFE</td><td>1.0s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>1:45 (105s)</td><td>left turn</td><td>1:46 (107s)</td><td>left turn</td><td>UNSAFE</td><td>1.7s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:32 (152s)</td><td>right turn</td><td>2:35 (156s)</td><td>right turn</td><td>SAFE</td><td>3.5s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>2:36 (156s)</td><td>left turn</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:43 (163s)</td><td>left turn</td><td>2:43 (164s)</td><td>left turn</td><td>UNSAFE</td><td>0.6s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>2:53 (174s)</td><td>right turn</td><td>SAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#fff3cd; font-weight:bold;'><td colspan='3'>2025_0902_170208_004730F</td><td colspan='3'>02_09_25_me_to_gym_day</td><td colspan='2'>TP=3 FP=3 FN=1 (P=50% R=75%)</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>0:19 (19s)</td><td>left turn</td><td>SAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:23 (23s)</td><td>left turn</td><td>0:25 (26s)</td><td>right turn</td><td>SAFE</td><td>2.5s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>1:57 (118s)</td><td>left turn</td><td>UNSAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>2:07 (127s)</td><td>right turn</td><td>SAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:15 (135s)</td><td>left turn</td><td>2:13 (134s)</td><td>right turn</td><td>SAFE</td><td>1.2s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:23 (143s)</td><td>left turn</td><td>2:19 (139s)</td><td>left turn</td><td>SAFE</td><td>4.0s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>2:25 (145s)</td><td>right turn</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#fff3cd; font-weight:bold;'><td colspan='3'>2025_0902_170808_004736F</td><td colspan='3'>02_09_25_me_to_gym_day</td><td colspan='2'>TP=2 FP=0 FN=1 (P=100% R=67%)</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>1:33 (93s)</td><td>right turn</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>1:56 (116s)</td><td>right turn</td><td>1:58 (118s)</td><td>right turn</td><td>SAFE</td><td>2.4s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:10 (130s)</td><td>left turn</td><td>2:10 (131s)</td><td>left turn</td><td>SAFE</td><td>0.8s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0902_171108_004739F</td><td colspan='3'>02_09_25_me_to_gym_day</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:59 (179s)</td><td>right lane change</td><td>2:59 (179s)</td><td>right lane change</td><td>SAFE</td><td>0.3s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3cd; font-weight:bold;'><td colspan='3'>2025_0902_171408_004742F</td><td colspan='3'>02_09_25_me_to_gym_day</td><td colspan='2'>TP=1 FP=0 FN=2 (P=100% R=33%)</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>0:52 (52s)</td><td>left lane change</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>1:23 (83s)</td><td>right lane change</td><td>1:24 (84s)</td><td>right lane change</td><td>SAFE</td><td>1.1s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>1:47 (107s)</td><td>right turn</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0902_172008_004748F</td><td colspan='3'>02_09_25_me_to_gym_day</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>1:08 (68s)</td><td>right turn</td><td>1:09 (69s)</td><td>right turn</td><td>SAFE</td><td>1.1s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:00 (120s)</td><td>left turn</td><td>2:01 (121s)</td><td>left turn</td><td>SAFE</td><td>1.4s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0913_102753_007433F</td><td colspan='3'>13_09_25_me_to_cov_day</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:46 (166s)</td><td>left lane change</td><td>2:46 (167s)</td><td>left lane change</td><td>SAFE</td><td>0.8s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3cd; font-weight:bold;'><td colspan='3'>2025_0913_103053_007436F</td><td colspan='3'>13_09_25_me_to_cov_day</td><td colspan='2'>TP=5 FP=3 FN=1 (P=62% R=83%)</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:18 (18s)</td><td>left lane change</td><td>0:20 (20s)</td><td>left lane change</td><td>SAFE</td><td>2.1s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>1:00 (60s)</td><td>left lane change</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>1:25 (85s)</td><td>right turn</td><td>SAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>1:40 (100s)</td><td>left lane change</td><td>1:40 (101s)</td><td>left lane change</td><td>SAFE</td><td>0.8s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>1:50 (111s)</td><td>left turn</td><td>UNSAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>1:55 (115s)</td><td>right lane change</td><td>1:56 (116s)</td><td>right lane change</td><td>SAFE</td><td>1.1s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>2:02 (122s)</td><td>left turn</td><td>UNSAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:15 (135s)</td><td>left lane change</td><td>2:15 (136s)</td><td>left lane change</td><td>SAFE</td><td>0.6s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:49 (169s)</td><td>right lane change</td><td>2:50 (170s)</td><td>right lane change</td><td>SAFE</td><td>1.4s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0913_103353_007439F</td><td colspan='3'>13_09_25_me_to_cov_day</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>1:03 (63s)</td><td>left lane change</td><td>1:03 (63s)</td><td>left lane change</td><td>UNSAFE</td><td>0.3s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3cd; font-weight:bold;'><td colspan='3'>2025_0913_103653_007442F</td><td colspan='3'>13_09_25_me_to_cov_day</td><td colspan='2'>TP=3 FP=2 FN=0 (P=60% R=100%)</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:05 (5s)</td><td>left lane change</td><td>0:06 (7s)</td><td>left lane change</td><td>SAFE</td><td>1.9s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>0:25 (25s)</td><td>left turn</td><td>UNSAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:57 (57s)</td><td>right lane change</td><td>0:57 (58s)</td><td>right lane change</td><td>SAFE</td><td>0.8s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>1:42 (102s)</td><td>right lane change</td><td>1:42 (103s)</td><td>right lane change</td><td>SAFE</td><td>1.0s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>1:50 (110s)</td><td>left lane change</td><td>SAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0913_104853_007454F</td><td colspan='3'>13_09_25_me_to_cov_day</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:22 (22s)</td><td>left lane change</td><td>0:23 (23s)</td><td>left lane change</td><td>UNSAFE</td><td>1.1s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:54 (54s)</td><td>right lane change</td><td>0:55 (55s)</td><td>right lane change</td><td>UNSAFE</td><td>1.1s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0913_111253_007478F</td><td colspan='3'>13_09_25_me_to_cov_day</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:55 (175s)</td><td>right lane change</td><td>2:56 (176s)</td><td>right lane change</td><td>SAFE</td><td>1.4s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3cd; font-weight:bold;'><td colspan='3'>2025_0913_112753_007493F</td><td colspan='3'>13_09_25_me_to_cov_day</td><td colspan='2'>TP=2 FP=1 FN=1 (P=67% R=67%)</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>1:07 (67s)</td><td>right lane change</td><td>1:05 (65s)</td><td>left lane change</td><td>SAFE</td><td>1.8s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>1:15 (76s)</td><td>right lane change</td><td>SAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>1:47 (107s)</td><td>left lane change</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:26 (146s)</td><td>left lane change</td><td>2:24 (144s)</td><td>left lane change</td><td>SAFE</td><td>1.6s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0913_113353_007499F</td><td colspan='3'>13_09_25_me_to_cov_day</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:10 (130s)</td><td>right lane change</td><td>2:11 (131s)</td><td>right lane change</td><td>UNSAFE</td><td>1.0s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0913_113653_007502F</td><td colspan='3'>13_09_25_me_to_cov_day</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:37 (37s)</td><td>left lane change</td><td>0:37 (37s)</td><td>left lane change</td><td>SAFE</td><td>0.3s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:19 (139s)</td><td>right lane change</td><td>2:20 (140s)</td><td>right lane change</td><td>SAFE</td><td>1.0s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0913_120053_007526F</td><td colspan='3'>13_09_25_me_to_cov_day</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:04 (4s)</td><td>right lane change</td><td>0:04 (4s)</td><td>right lane change</td><td>SAFE</td><td>0.2s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0913_120353_007529F</td><td colspan='3'>13_09_25_me_to_cov_day</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:26 (26s)</td><td>left lane change</td><td>0:26 (27s)</td><td>left lane change</td><td>UNSAFE</td><td>0.9s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>1:31 (91s)</td><td>right lane change</td><td>1:32 (93s)</td><td>right lane change</td><td>UNSAFE</td><td>1.6s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:43 (163s)</td><td>left lane change</td><td>2:43 (164s)</td><td>left lane change</td><td>UNSAFE</td><td>0.5s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3cd; font-weight:bold;'><td colspan='3'>2025_0913_120653_007532F</td><td colspan='3'>13_09_25_me_to_cov_day</td><td colspan='2'>TP=3 FP=1 FN=1 (P=75% R=75%)</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:31 (31s)</td><td>left lane change</td><td>0:31 (32s)</td><td>left lane change</td><td>SAFE</td><td>0.9s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>1:12 (72s)</td><td>left lane change</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:05 (125s)</td><td>right lane change</td><td>2:05 (126s)</td><td>right lane change</td><td>SAFE</td><td>0.8s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>2:48 (169s)</td><td>right turn</td><td>SAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:59 (179s)</td><td>left lane change</td><td>2:58 (178s)</td><td>right turn</td><td>SAFE</td><td>0.8s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0913_121253_007538F</td><td colspan='3'>13_09_25_me_to_cov_day</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:11 (11s)</td><td>right lane change</td><td>0:12 (12s)</td><td>right lane change</td><td>SAFE</td><td>1.3s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:33 (33s)</td><td>right lane change</td><td>0:34 (34s)</td><td>right lane change</td><td>SAFE</td><td>1.1s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:53 (53s)</td><td>right lane change</td><td>0:54 (54s)</td><td>right lane change</td><td>SAFE</td><td>1.2s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>1:30 (90s)</td><td>left lane change</td><td>1:30 (91s)</td><td>left lane change</td><td>SAFE</td><td>0.8s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0913_121553_007541F</td><td colspan='3'>13_09_25_me_to_cov_day</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:32 (32s)</td><td>right lane change</td><td>0:33 (33s)</td><td>right lane change</td><td>SAFE</td><td>1.3s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:42 (42s)</td><td>left lane change</td><td>0:42 (43s)</td><td>left lane change</td><td>SAFE</td><td>0.8s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3cd; font-weight:bold;'><td colspan='3'>2025_0913_121853_007544F</td><td colspan='3'>13_09_25_me_to_cov_day</td><td colspan='2'>TP=1 FP=1 FN=0 (P=50% R=100%)</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>2:08 (129s)</td><td>right turn</td><td>UNSAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:26 (146s)</td><td>right lane change</td><td>2:27 (147s)</td><td>right lane change</td><td>UNSAFE</td><td>1.1s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3cd; font-weight:bold;'><td colspan='3'>2025_0913_122153_007547F</td><td colspan='3'>13_09_25_me_to_cov_day</td><td colspan='2'>TP=1 FP=1 FN=2 (P=50% R=33%)</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:41 (41s)</td><td>right lane change</td><td>0:41 (42s)</td><td>right lane change</td><td>SAFE</td><td>0.7s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>2:00 (120s)</td><td>right turn</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>2:05 (125s)</td><td>right turn</td><td>SAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>2:11 (131s)</td><td>left turn</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0913_145628_007652F</td><td colspan='3'>13_09_25_me_to_lem_day</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:04 (124s)</td><td>right turn</td><td>2:04 (124s)</td><td>right turn</td><td>SAFE</td><td>0.4s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:25 (145s)</td><td>left turn</td><td>2:28 (149s)</td><td>left turn</td><td>UNSAFE</td><td>3.5s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:44 (164s)</td><td>right turn</td><td>2:44 (164s)</td><td>right turn</td><td>SAFE</td><td>0.3s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#d4edda; font-weight:bold;'><td colspan='3'>2025_0913_145929_007655F</td><td colspan='3'>13_09_25_me_to_lem_day</td><td colspan='2'>PERFECT</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:46 (46s)</td><td>left turn</td><td>0:48 (48s)</td><td>left turn</td><td>SAFE</td><td>2.1s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:06 (126s)</td><td>left turn</td><td>2:06 (126s)</td><td>left turn</td><td>SAFE</td><td>0.5s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3cd; font-weight:bold;'><td colspan='3'>2025_0913_150529_007661F</td><td colspan='3'>13_09_25_me_to_lem_day</td><td colspan='2'>TP=4 FP=1 FN=0 (P=80% R=100%)</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>1:36 (96s)</td><td>right turn</td><td>SAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>1:51 (111s)</td><td>right turn</td><td>1:51 (112s)</td><td>right turn</td><td>SAFE</td><td>0.5s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:16 (136s)</td><td>right lane change</td><td>2:17 (137s)</td><td>right lane change</td><td>SAFE</td><td>1.4s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:21 (141s)</td><td>right lane change</td><td>2:21 (141s)</td><td>right lane change</td><td>SAFE</td><td>0.4s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>2:56 (176s)</td><td>left lane change</td><td>2:56 (177s)</td><td>left lane change</td><td>SAFE</td><td>0.9s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3cd; font-weight:bold;'><td colspan='3'>2025_0913_151428_007670F</td><td colspan='3'>13_09_25_me_to_lem_day</td><td colspan='2'>TP=1 FP=0 FN=1 (P=100% R=50%)</td></tr>
+<tr style='background:#f8d7da;'><td></td><td>1:10 (70s)</td><td>right turn</td><td>—</td><td>—</td><td>—</td><td>—</td><td style='color:#d62728; font-weight:bold;'>FN</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>1:55 (115s)</td><td>left turn</td><td>1:55 (116s)</td><td>left turn</td><td>SAFE</td><td>0.5s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3cd; font-weight:bold;'><td colspan='3'>2025_0913_152028_007676F</td><td colspan='3'>13_09_25_me_to_lem_day</td><td colspan='2'>TP=3 FP=2 FN=0 (P=60% R=100%)</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>0:02 (3s)</td><td>right turn</td><td>SAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:27 (27s)</td><td>left turn</td><td>0:27 (27s)</td><td>left turn</td><td>SAFE</td><td>0.4s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:36 (36s)</td><td>right turn</td><td>0:38 (39s)</td><td>right turn</td><td>SAFE</td><td>2.7s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#e6ffe6;'><td></td><td>0:48 (48s)</td><td>right turn</td><td>0:49 (49s)</td><td>right turn</td><td>SAFE</td><td>1.2s</td><td style='color:#2ca02c; font-weight:bold;'>TP</td></tr>
+<tr style='background:#fff3e0;'><td></td><td>—</td><td>—</td><td>0:56 (56s)</td><td>right turn</td><td>SAFE</td><td>—</td><td style='color:#e67e22; font-weight:bold;'>FP</td></tr>
+<tr style='background:#333; color:white; font-weight:bold;'><td colspan='3'>TOTAL: 104 GT events, 103 detections</td><td colspan='2'>TP=84  FP=19  FN=20</td><td colspan='3'>Precision=0.82  Recall=0.81  F1=0.81</td></tr>
+</table>
+</div>
+<details class='per-video'><summary>Timeline (40 videos)</summary><div class='per-video-grid'>
+<div class='per-video-card'><div class='card-label'>2025_0901_193215_004598F</div><img src='ground_truth/timeline_2025_0901_193215_004598F.png' alt='timeline_2025_0901_193215_004598F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0901_193515_004601F</div><img src='ground_truth/timeline_2025_0901_193515_004601F.png' alt='timeline_2025_0901_193515_004601F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0901_193816_004604F</div><img src='ground_truth/timeline_2025_0901_193816_004604F.png' alt='timeline_2025_0901_193816_004604F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0901_194115_004607F</div><img src='ground_truth/timeline_2025_0901_194115_004607F.png' alt='timeline_2025_0901_194115_004607F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0901_202916_004595F</div><img src='ground_truth/timeline_2025_0901_202916_004595F.png' alt='timeline_2025_0901_202916_004595F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0901_210641_004610F</div><img src='ground_truth/timeline_2025_0901_210641_004610F.png' alt='timeline_2025_0901_210641_004610F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0901_210942_004613F</div><img src='ground_truth/timeline_2025_0901_210942_004613F.png' alt='timeline_2025_0901_210942_004613F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0901_211242_004616F</div><img src='ground_truth/timeline_2025_0901_211242_004616F.png' alt='timeline_2025_0901_211242_004616F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_151536_004628F</div><img src='ground_truth/timeline_2025_0902_151536_004628F.png' alt='timeline_2025_0902_151536_004628F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_151836_004631F</div><img src='ground_truth/timeline_2025_0902_151836_004631F.png' alt='timeline_2025_0902_151836_004631F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_152136_004634F</div><img src='ground_truth/timeline_2025_0902_152136_004634F.png' alt='timeline_2025_0902_152136_004634F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_152436_004637F</div><img src='ground_truth/timeline_2025_0902_152436_004637F.png' alt='timeline_2025_0902_152436_004637F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_153336_004646F</div><img src='ground_truth/timeline_2025_0902_153336_004646F.png' alt='timeline_2025_0902_153336_004646F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_153636_004649F</div><img src='ground_truth/timeline_2025_0902_153636_004649F.png' alt='timeline_2025_0902_153636_004649F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_170208_004730F</div><img src='ground_truth/timeline_2025_0902_170208_004730F.png' alt='timeline_2025_0902_170208_004730F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_170808_004736F</div><img src='ground_truth/timeline_2025_0902_170808_004736F.png' alt='timeline_2025_0902_170808_004736F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_171108_004739F</div><img src='ground_truth/timeline_2025_0902_171108_004739F.png' alt='timeline_2025_0902_171108_004739F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_171408_004742F</div><img src='ground_truth/timeline_2025_0902_171408_004742F.png' alt='timeline_2025_0902_171408_004742F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_172008_004748F</div><img src='ground_truth/timeline_2025_0902_172008_004748F.png' alt='timeline_2025_0902_172008_004748F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_102753_007433F</div><img src='ground_truth/timeline_2025_0913_102753_007433F.png' alt='timeline_2025_0913_102753_007433F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_103053_007436F</div><img src='ground_truth/timeline_2025_0913_103053_007436F.png' alt='timeline_2025_0913_103053_007436F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_103353_007439F</div><img src='ground_truth/timeline_2025_0913_103353_007439F.png' alt='timeline_2025_0913_103353_007439F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_103653_007442F</div><img src='ground_truth/timeline_2025_0913_103653_007442F.png' alt='timeline_2025_0913_103653_007442F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_104853_007454F</div><img src='ground_truth/timeline_2025_0913_104853_007454F.png' alt='timeline_2025_0913_104853_007454F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_111253_007478F</div><img src='ground_truth/timeline_2025_0913_111253_007478F.png' alt='timeline_2025_0913_111253_007478F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_112753_007493F</div><img src='ground_truth/timeline_2025_0913_112753_007493F.png' alt='timeline_2025_0913_112753_007493F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_113353_007499F</div><img src='ground_truth/timeline_2025_0913_113353_007499F.png' alt='timeline_2025_0913_113353_007499F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_113653_007502F</div><img src='ground_truth/timeline_2025_0913_113653_007502F.png' alt='timeline_2025_0913_113653_007502F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_120053_007526F</div><img src='ground_truth/timeline_2025_0913_120053_007526F.png' alt='timeline_2025_0913_120053_007526F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_120353_007529F</div><img src='ground_truth/timeline_2025_0913_120353_007529F.png' alt='timeline_2025_0913_120353_007529F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_120653_007532F</div><img src='ground_truth/timeline_2025_0913_120653_007532F.png' alt='timeline_2025_0913_120653_007532F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_121253_007538F</div><img src='ground_truth/timeline_2025_0913_121253_007538F.png' alt='timeline_2025_0913_121253_007538F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_121553_007541F</div><img src='ground_truth/timeline_2025_0913_121553_007541F.png' alt='timeline_2025_0913_121553_007541F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_121853_007544F</div><img src='ground_truth/timeline_2025_0913_121853_007544F.png' alt='timeline_2025_0913_121853_007544F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_122153_007547F</div><img src='ground_truth/timeline_2025_0913_122153_007547F.png' alt='timeline_2025_0913_122153_007547F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_145628_007652F</div><img src='ground_truth/timeline_2025_0913_145628_007652F.png' alt='timeline_2025_0913_145628_007652F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_145929_007655F</div><img src='ground_truth/timeline_2025_0913_145929_007655F.png' alt='timeline_2025_0913_145929_007655F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_150529_007661F</div><img src='ground_truth/timeline_2025_0913_150529_007661F.png' alt='timeline_2025_0913_150529_007661F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_151428_007670F</div><img src='ground_truth/timeline_2025_0913_151428_007670F.png' alt='timeline_2025_0913_151428_007670F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_152028_007676F</div><img src='ground_truth/timeline_2025_0913_152028_007676F.png' alt='timeline_2025_0913_152028_007676F' loading='lazy'></div>
+</div></details>
+<details class='per-video'><summary>Odometry (40 videos)</summary><div class='per-video-grid'>
+<div class='per-video-card'><div class='card-label'>2025_0901_193215_004598F</div><img src='ground_truth/odometry_2025_0901_193215_004598F.png' alt='odometry_2025_0901_193215_004598F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0901_193515_004601F</div><img src='ground_truth/odometry_2025_0901_193515_004601F.png' alt='odometry_2025_0901_193515_004601F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0901_193816_004604F</div><img src='ground_truth/odometry_2025_0901_193816_004604F.png' alt='odometry_2025_0901_193816_004604F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0901_194115_004607F</div><img src='ground_truth/odometry_2025_0901_194115_004607F.png' alt='odometry_2025_0901_194115_004607F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0901_202916_004595F</div><img src='ground_truth/odometry_2025_0901_202916_004595F.png' alt='odometry_2025_0901_202916_004595F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0901_210641_004610F</div><img src='ground_truth/odometry_2025_0901_210641_004610F.png' alt='odometry_2025_0901_210641_004610F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0901_210942_004613F</div><img src='ground_truth/odometry_2025_0901_210942_004613F.png' alt='odometry_2025_0901_210942_004613F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0901_211242_004616F</div><img src='ground_truth/odometry_2025_0901_211242_004616F.png' alt='odometry_2025_0901_211242_004616F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_151536_004628F</div><img src='ground_truth/odometry_2025_0902_151536_004628F.png' alt='odometry_2025_0902_151536_004628F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_151836_004631F</div><img src='ground_truth/odometry_2025_0902_151836_004631F.png' alt='odometry_2025_0902_151836_004631F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_152136_004634F</div><img src='ground_truth/odometry_2025_0902_152136_004634F.png' alt='odometry_2025_0902_152136_004634F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_152436_004637F</div><img src='ground_truth/odometry_2025_0902_152436_004637F.png' alt='odometry_2025_0902_152436_004637F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_153336_004646F</div><img src='ground_truth/odometry_2025_0902_153336_004646F.png' alt='odometry_2025_0902_153336_004646F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_153636_004649F</div><img src='ground_truth/odometry_2025_0902_153636_004649F.png' alt='odometry_2025_0902_153636_004649F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_170208_004730F</div><img src='ground_truth/odometry_2025_0902_170208_004730F.png' alt='odometry_2025_0902_170208_004730F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_170808_004736F</div><img src='ground_truth/odometry_2025_0902_170808_004736F.png' alt='odometry_2025_0902_170808_004736F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_171108_004739F</div><img src='ground_truth/odometry_2025_0902_171108_004739F.png' alt='odometry_2025_0902_171108_004739F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_171408_004742F</div><img src='ground_truth/odometry_2025_0902_171408_004742F.png' alt='odometry_2025_0902_171408_004742F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0902_172008_004748F</div><img src='ground_truth/odometry_2025_0902_172008_004748F.png' alt='odometry_2025_0902_172008_004748F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_102753_007433F</div><img src='ground_truth/odometry_2025_0913_102753_007433F.png' alt='odometry_2025_0913_102753_007433F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_103053_007436F</div><img src='ground_truth/odometry_2025_0913_103053_007436F.png' alt='odometry_2025_0913_103053_007436F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_103353_007439F</div><img src='ground_truth/odometry_2025_0913_103353_007439F.png' alt='odometry_2025_0913_103353_007439F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_103653_007442F</div><img src='ground_truth/odometry_2025_0913_103653_007442F.png' alt='odometry_2025_0913_103653_007442F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_104853_007454F</div><img src='ground_truth/odometry_2025_0913_104853_007454F.png' alt='odometry_2025_0913_104853_007454F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_111253_007478F</div><img src='ground_truth/odometry_2025_0913_111253_007478F.png' alt='odometry_2025_0913_111253_007478F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_112753_007493F</div><img src='ground_truth/odometry_2025_0913_112753_007493F.png' alt='odometry_2025_0913_112753_007493F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_113353_007499F</div><img src='ground_truth/odometry_2025_0913_113353_007499F.png' alt='odometry_2025_0913_113353_007499F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_113653_007502F</div><img src='ground_truth/odometry_2025_0913_113653_007502F.png' alt='odometry_2025_0913_113653_007502F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_120053_007526F</div><img src='ground_truth/odometry_2025_0913_120053_007526F.png' alt='odometry_2025_0913_120053_007526F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_120353_007529F</div><img src='ground_truth/odometry_2025_0913_120353_007529F.png' alt='odometry_2025_0913_120353_007529F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_120653_007532F</div><img src='ground_truth/odometry_2025_0913_120653_007532F.png' alt='odometry_2025_0913_120653_007532F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_121253_007538F</div><img src='ground_truth/odometry_2025_0913_121253_007538F.png' alt='odometry_2025_0913_121253_007538F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_121553_007541F</div><img src='ground_truth/odometry_2025_0913_121553_007541F.png' alt='odometry_2025_0913_121553_007541F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_121853_007544F</div><img src='ground_truth/odometry_2025_0913_121853_007544F.png' alt='odometry_2025_0913_121853_007544F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_122153_007547F</div><img src='ground_truth/odometry_2025_0913_122153_007547F.png' alt='odometry_2025_0913_122153_007547F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_145628_007652F</div><img src='ground_truth/odometry_2025_0913_145628_007652F.png' alt='odometry_2025_0913_145628_007652F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_145929_007655F</div><img src='ground_truth/odometry_2025_0913_145929_007655F.png' alt='odometry_2025_0913_145929_007655F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_150529_007661F</div><img src='ground_truth/odometry_2025_0913_150529_007661F.png' alt='odometry_2025_0913_150529_007661F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_151428_007670F</div><img src='ground_truth/odometry_2025_0913_151428_007670F.png' alt='odometry_2025_0913_151428_007670F' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0913_152028_007676F</div><img src='ground_truth/odometry_2025_0913_152028_007676F.png' alt='odometry_2025_0913_152028_007676F' loading='lazy'></div>
+</div></details>
+<h2 id='gaze-analysis'>Gaze Analysis</h2>
+<div class='grid-2'>
+<div class='img-half'><div class='fig-label'>Gaze Distribution</div><img src='gaze/gaze_distribution.png' alt='gaze_distribution'></div>
+</div>
+<div class='img-full'><div class='fig-label'>Gaze Timelines</div><img src='gaze/gaze_timelines.png' alt='gaze_timelines'></div>
+<div class='grid-2'>
+<div class='img-half'><div class='fig-label'>Gaze Transitions</div><img src='gaze/gaze_transitions.png' alt='gaze_transitions'></div>
+</div>
+<div class='img-full'><div class='fig-label'>Head Pose Scatter</div><img src='gaze/head_pose_scatter.png' alt='head_pose_scatter'></div>
+<div class='html-content'>
+<h3>Mirror Check Statistics</h3><p>Total frames analysed: 106830 (~3561s)</p><table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'><tr><th>Mirror</th><th>Frames</th><th>% of Time</th><th>Per Minute</th></tr><tr><td>Left Mirror</td><td>3470</td><td>3.2%</td><td>3.2</td></tr><tr><td>Rear Mirror</td><td>1568</td><td>1.5%</td><td>6.6</td></tr><tr><td>Right Mirror</td><td>21768</td><td>20.4%</td><td>12.7</td></tr></table>
+</div>
+<details class='per-video'><summary>Head Pose (4 videos)</summary><div class='per-video-grid'>
+<div class='per-video-card'><div class='card-label'>2025_0901_193215_004598F</div><img src='gaze/head_pose_2025_0901_193215_004598F_55.png' alt='head_pose_2025_0901_193215_004598F_55' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0901_193515_004601F</div><img src='gaze/head_pose_2025_0901_193515_004601F_110.png' alt='head_pose_2025_0901_193515_004601F_110' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0901_193515_004601F</div><img src='gaze/head_pose_2025_0901_193515_004601F_30.png' alt='head_pose_2025_0901_193515_004601F_30' loading='lazy'></div>
+<div class='per-video-card'><div class='card-label'>2025_0901_202916_004595F</div><img src='gaze/head_pose_2025_0901_202916_004595F_28.png' alt='head_pose_2025_0901_202916_004595F_28' loading='lazy'></div>
+</div></details>
+<h2 id='lane-detection-analysis'>Lane Detection Analysis</h2>
+<div class='grid-2'>
+<div class='img-half'><div class='fig-label'>Lane Coverage Overall</div><img src='lanes/lane_coverage_overall.png' alt='lane_coverage_overall'></div>
+</div>
+<div class='img-full'><div class='fig-label'>Lane Count Timelines</div><img src='lanes/lane_count_timelines.png' alt='lane_count_timelines'></div>
+<div class='grid-2'>
+<div class='img-half'><div class='fig-label'>Lane Coverage By Condition</div><img src='lanes/lane_coverage_by_condition.png' alt='lane_coverage_by_condition'></div>
+</div>
+<div class='html-content'>
+<h3>Lane Detection Statistics</h3><p>Windows analysed: 51</p><table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'><tr><th>Video</th><th>Window</th><th>Frames</th><th>≥1 Lane</th><th>≥2 Lanes</th><th>Stability</th><th>Condition</th></tr><tr><td>2025_0901_202916_004595F</td><td>28–180s</td><td>4560</td><td>70.2%</td><td>50.9%</td><td>0.96</td><td>night</td></tr><tr><td>2025_0901_193215_004598F</td><td>55–115s</td><td>1800</td><td>89.8%</td><td>80.4%</td><td>0.97</td><td>night</td></tr><tr><td>2025_0901_193515_004601F</td><td>30–90s</td><td>1800</td><td>43.1%</td><td>38.6%</td><td>0.97</td><td>night</td></tr><tr><td>2025_0901_193515_004601F</td><td>110–170s</td><td>1800</td><td>89.7%</td><td>84.2%</td><td>0.97</td><td>night</td></tr><tr><td>2025_0901_193816_004604F</td><td>139–180s</td><td>1230</td><td>93.3%</td><td>82.5%</td><td>0.98</td><td>night</td></tr><tr><td>2025_0901_194115_004607F</td><td>0–59s</td><td>1770</td><td>26.8%</td><td>21.0%</td><td>0.99</td><td>night</td></tr><tr><td>2025_0901_210641_004610F</td><td>0–112s</td><td>3360</td><td>64.2%</td><td>60.7%</td><td>0.97</td><td>night</td></tr><tr><td>2025_0901_210641_004610F</td><td>138–180s</td><td>1260</td><td>100.0%</td><td>99.8%</td><td>0.98</td><td>night</td></tr><tr><td>2025_0901_210942_004613F</td><td>80–173s</td><td>2790</td><td>100.0%</td><td>97.0%</td><td>0.96</td><td>night</td></tr><tr><td>2025_0901_211242_004616F</td><td>0–59s</td><td>1770</td><td>100.0%</td><td>100.0%</td><td>0.98</td><td>night</td></tr><tr><td>2025_0901_211242_004616F</td><td>115–180s</td><td>1950</td><td>93.7%</td><td>77.8%</td><td>0.96</td><td>night</td></tr><tr><td>2025_0902_151536_004628F</td><td>115–180s</td><td>1950</td><td>45.2%</td><td>33.0%</td><td>0.99</td><td>day</td></tr><tr><td>2025_0902_151836_004631F</td><td>22–82s</td><td>1800</td><td>70.2%</td><td>64.8%</td><td>0.96</td><td>day</td></tr><tr><td>2025_0902_152136_004634F</td><td>0–38s</td><td>1140</td><td>100.0%</td><td>89.8%</td><td>0.94</td><td>day</td></tr><tr><td>2025_0902_152136_004634F</td><td>120–180s</td><td>1800</td><td>86.6%</td><td>73.1%</td><td>0.95</td><td>day</td></tr><tr><td>2025_0902_152436_004637F</td><td>0–151s</td><td>4530</td><td>60.9%</td><td>44.6%</td><td>0.96</td><td>day</td></tr><tr><td>2025_0902_153336_004646F</td><td>101–161s</td><td>1800</td><td>98.8%</td><td>93.8%</td><td>0.97</td><td>day</td></tr><tr><td>2025_0902_153636_004649F</td><td>0–69s</td><td>2070</td><td>95.8%</td><td>90.0%</td><td>0.98</td><td>day</td></tr><tr><td>2025_0902_153636_004649F</td><td>75–180s</td><td>3150</td><td>73.1%</td><td>69.1%</td><td>0.97</td><td>day</td></tr><tr><td>2025_0902_170208_004730F</td><td>0–53s</td><td>1590</td><td>20.6%</td><td>18.5%</td><td>0.99</td><td>day</td></tr><tr><td>2025_0902_170208_004730F</td><td>105–175s</td><td>2100</td><td>17.1%</td><td>11.1%</td><td>0.98</td><td>day</td></tr><tr><td>2025_0902_170808_004736F</td><td>63–160s</td><td>2910</td><td>35.0%</td><td>19.3%</td><td>0.98</td><td>day</td></tr><tr><td>2025_0902_171108_004739F</td><td>149–180s</td><td>930</td><td>30.5%</td><td>27.7%</td><td>0.98</td><td>day</td></tr><tr><td>2025_0902_171408_004742F</td><td>22–137s</td><td>3450</td><td>98.6%</td><td>83.8%</td><td>0.95</td><td>day</td></tr><tr><td>2025_0902_172008_004748F</td><td>38–150s</td><td>3360</td><td>86.5%</td><td>60.9%</td><td>0.94</td><td>day</td></tr><tr><td>2025_0913_102753_007433F</td><td>136–180s</td><td>1320</td><td>100.0%</td><td>100.0%</td><td>0.99</td><td>day</td></tr><tr><td>2025_0913_103053_007436F</td><td>0–180s</td><td>5400</td><td>100.0%</td><td>100.0%</td><td>0.97</td><td>day</td></tr><tr><td>2025_0913_103353_007439F</td><td>33–93s</td><td>1800</td><td>100.0%</td><td>100.0%</td><td>0.96</td><td>day</td></tr><tr><td>2025_0913_103653_007442F</td><td>0–132s</td><td>3960</td><td>99.8%</td><td>97.2%</td><td>0.97</td><td>day</td></tr><tr><td>2025_0913_104853_007454F</td><td>0–84s</td><td>2520</td><td>100.0%</td><td>100.0%</td><td>0.99</td><td>day</td></tr><tr><td>2025_0913_111253_007478F</td><td>145–180s</td><td>1050</td><td>100.0%</td><td>100.0%</td><td>0.99</td><td>day</td></tr><tr><td>2025_0913_112753_007493F</td><td>37–176s</td><td>4170</td><td>100.0%</td><td>100.0%</td><td>0.98</td><td>day</td></tr><tr><td>2025_0913_113353_007499F</td><td>100–160s</td><td>1800</td><td>100.0%</td><td>100.0%</td><td>0.97</td><td>day</td></tr><tr><td>2025_0913_113653_007502F</td><td>7–67s</td><td>1800</td><td>100.0%</td><td>100.0%</td><td>0.97</td><td>day</td></tr><tr><td>2025_0913_113653_007502F</td><td>109–169s</td><td>1800</td><td>100.0%</td><td>100.0%</td><td>0.96</td><td>day</td></tr><tr><td>2025_0913_120053_007526F</td><td>0–34s</td><td>1020</td><td>100.0%</td><td>100.0%</td><td>0.99</td><td>day</td></tr><tr><td>2025_0913_120353_007529F</td><td>0–56s</td><td>1680</td><td>100.0%</td><td>100.0%</td><td>0.96</td><td>day</td></tr><tr><td>2025_0913_120353_007529F</td><td>61–121s</td><td>1800</td><td>100.0%</td><td>100.0%</td><td>0.95</td><td>day</td></tr><tr><td>2025_0913_120353_007529F</td><td>133–180s</td><td>1410</td><td>100.0%</td><td>100.0%</td><td>0.98</td><td>day</td></tr><tr><td>2025_0913_120653_007532F</td><td>1–180s</td><td>5370</td><td>84.8%</td><td>79.6%</td><td>0.95</td><td>day</td></tr><tr><td>2025_0913_121253_007538F</td><td>0–120s</td><td>3600</td><td>100.0%</td><td>100.0%</td><td>0.98</td><td>day</td></tr><tr><td>2025_0913_121553_007541F</td><td>2–72s</td><td>2100</td><td>100.0%</td><td>100.0%</td><td>0.98</td><td>day</td></tr><tr><td>2025_0913_121853_007544F</td><td>116–176s</td><td>1800</td><td>92.9%</td><td>90.6%</td><td>0.97</td><td>day</td></tr><tr><td>2025_0913_122153_007547F</td><td>11–71s</td><td>1800</td><td>92.6%</td><td>89.6%</td><td>0.97</td><td>day</td></tr><tr><td>2025_0913_122153_007547F</td><td>90–161s</td><td>2130</td><td>64.7%</td><td>57.5%</td><td>0.97</td><td>day</td></tr><tr><td>2025_0913_145628_007652F</td><td>94–180s</td><td>2580</td><td>81.5%</td><td>60.3%</td><td>0.95</td><td>day</td></tr><tr><td>2025_0913_145929_007655F</td><td>16–76s</td><td>1800</td><td>64.6%</td><td>54.4%</td><td>0.95</td><td>day</td></tr><tr><td>2025_0913_145929_007655F</td><td>96–156s</td><td>1800</td><td>88.8%</td><td>81.6%</td><td>0.95</td><td>day</td></tr><tr><td>2025_0913_150529_007661F</td><td>81–180s</td><td>2970</td><td>90.4%</td><td>82.5%</td><td>0.96</td><td>day</td></tr><tr><td>2025_0913_151428_007670F</td><td>40–145s</td><td>3150</td><td>62.9%</td><td>57.6%</td><td>0.95</td><td>day</td></tr><tr><td>2025_0913_152028_007676F</td><td>0–78s</td><td>2340</td><td>55.7%</td><td>24.5%</td><td>0.97</td><td>day</td></tr></table>
+</div>
+<h2 id='safety-analysis'>Safety Analysis</h2>
+<div class='grid-2'>
+<div class='img-half'><div class='fig-label'>Safety Overall</div><img src='safety/safety_overall.png' alt='safety_overall'></div>
+<div class='img-half'><div class='fig-label'>Safety By Condition</div><img src='safety/safety_by_condition.png' alt='safety_by_condition'></div>
+<div class='img-half'><div class='fig-label'>Safety By Type</div><img src='safety/safety_by_type.png' alt='safety_by_type'></div>
+</div>
+<p><a href='safety/safety_events_map.html'>Safety Events Map</a> (interactive map)</p>
+<div class='html-content'>
+<h3>Safety Event Summary</h3><p>Total events: 94 (Safe: 85, Unsafe: 9)</p><table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'><tr><th>Video</th><th>Time</th><th>Safe?</th><th>Mirror</th><th>Maneuver</th><th>Condition</th></tr><tr style='background:#e6ffe6;'><td>2025_0901_211242_004616F</td><td>6.5s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>night</td></tr><tr style='background:#e6ffe6;'><td>2025_0901_210641_004610F</td><td>18.2s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>night</td></tr><tr style='background:#e6ffe6;'><td>2025_0901_194115_004607F</td><td>20.2s</td><td>SAFE</td><td>Left Mirror</td><td>left turn</td><td>night</td></tr><tr style='background:#e6ffe6;'><td>2025_0901_210641_004610F</td><td>24.9s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>night</td></tr><tr style='background:#ffe6e6;'><td>2025_0901_211242_004616F</td><td>29.9s</td><td>UNSAFE</td><td>Left Mirror</td><td>left lane change</td><td>night</td></tr><tr style='background:#ffe6e6;'><td>2025_0901_194115_004607F</td><td>30.5s</td><td>UNSAFE</td><td>Left Mirror</td><td>left turn</td><td>night</td></tr><tr style='background:#e6ffe6;'><td>2025_0901_193515_004601F</td><td>63.2s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>night</td></tr><tr style='background:#e6ffe6;'><td>2025_0901_210942_004613F</td><td>111.5s</td><td>SAFE</td><td>Left Mirror</td><td>left lane change</td><td>night</td></tr><tr style='background:#e6ffe6;'><td>2025_0901_193515_004601F</td><td>136.1s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>night</td></tr><tr style='background:#e6ffe6;'><td>2025_0901_202916_004595F</td><td>145.1s</td><td>SAFE</td><td>Left Mirror</td><td>left turn</td><td>night</td></tr><tr style='background:#e6ffe6;'><td>2025_0901_211242_004616F</td><td>148.0s</td><td>SAFE</td><td>Left Mirror</td><td>left turn</td><td>night</td></tr><tr style='background:#e6ffe6;'><td>2025_0901_202916_004595F</td><td>158.1s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>night</td></tr><tr style='background:#e6ffe6;'><td>2025_0901_202916_004595F</td><td>165.6s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>night</td></tr><tr style='background:#e6ffe6;'><td>2025_0901_211242_004616F</td><td>165.7s</td><td>SAFE</td><td>Left Mirror</td><td>left lane change</td><td>night</td></tr><tr style='background:#e6ffe6;'><td>2025_0901_202916_004595F</td><td>169.0s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>night</td></tr><tr style='background:#e6ffe6;'><td>2025_0901_193816_004604F</td><td>170.3s</td><td>SAFE</td><td>Left Mirror</td><td>left turn</td><td>night</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_152136_004634F</td><td>8.3s</td><td>SAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_152436_004637F</td><td>11.7s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_170208_004730F</td><td>19.1s</td><td>SAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_152436_004637F</td><td>25.3s</td><td>SAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_170208_004730F</td><td>25.5s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_153636_004649F</td><td>28.6s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_153636_004649F</td><td>40.0s</td><td>SAFE</td><td>Left Mirror</td><td>left lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_151836_004631F</td><td>53.0s</td><td>SAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_152436_004637F</td><td>59.4s</td><td>SAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_152436_004637F</td><td>63.5s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_172008_004748F</td><td>69.1s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_171408_004742F</td><td>84.1s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#ffe6e6;'><td>2025_0902_153636_004649F</td><td>106.7s</td><td>UNSAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_152436_004637F</td><td>117.5s</td><td>SAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#ffe6e6;'><td>2025_0902_170208_004730F</td><td>117.9s</td><td>UNSAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_170808_004736F</td><td>118.4s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_172008_004748F</td><td>121.4s</td><td>SAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_170208_004730F</td><td>127.4s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_170808_004736F</td><td>130.8s</td><td>SAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_153336_004646F</td><td>131.1s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_170208_004730F</td><td>133.8s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_170208_004730F</td><td>139.0s</td><td>SAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_151536_004628F</td><td>145.0s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_152136_004634F</td><td>149.3s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_153636_004649F</td><td>155.5s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#ffe6e6;'><td>2025_0902_153636_004649F</td><td>163.6s</td><td>UNSAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_151536_004628F</td><td>166.7s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_153636_004649F</td><td>173.9s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0902_171108_004739F</td><td>179.3s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_120053_007526F</td><td>4.2s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_103653_007442F</td><td>6.9s</td><td>SAFE</td><td>Left Mirror</td><td>left lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_121253_007538F</td><td>12.3s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_103053_007436F</td><td>20.1s</td><td>SAFE</td><td>Left Mirror</td><td>left lane change</td><td>day</td></tr><tr style='background:#ffe6e6;'><td>2025_0913_103653_007442F</td><td>25.1s</td><td>UNSAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_120653_007532F</td><td>31.9s</td><td>SAFE</td><td>Left Mirror</td><td>left lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_121553_007541F</td><td>33.3s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_121253_007538F</td><td>34.1s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_113653_007502F</td><td>37.3s</td><td>SAFE</td><td>Left Mirror</td><td>left lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_122153_007547F</td><td>41.7s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_121553_007541F</td><td>42.8s</td><td>SAFE</td><td>Left Mirror</td><td>left lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_121253_007538F</td><td>54.2s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_103653_007442F</td><td>57.8s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_112753_007493F</td><td>65.2s</td><td>SAFE</td><td>Left Mirror</td><td>left lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_112753_007493F</td><td>75.6s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_103053_007436F</td><td>85.4s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_121253_007538F</td><td>90.8s</td><td>SAFE</td><td>Left Mirror</td><td>left lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_103053_007436F</td><td>100.8s</td><td>SAFE</td><td>Left Mirror</td><td>left lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_103653_007442F</td><td>103.0s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_103653_007442F</td><td>110.2s</td><td>SAFE</td><td>Left Mirror</td><td>left lane change</td><td>day</td></tr><tr style='background:#ffe6e6;'><td>2025_0913_103053_007436F</td><td>110.6s</td><td>UNSAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_103053_007436F</td><td>116.1s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#ffe6e6;'><td>2025_0913_103053_007436F</td><td>122.1s</td><td>UNSAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_122153_007547F</td><td>125.2s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_120653_007532F</td><td>125.8s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_103053_007436F</td><td>135.6s</td><td>SAFE</td><td>Left Mirror</td><td>left lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_113653_007502F</td><td>140.0s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_112753_007493F</td><td>144.4s</td><td>SAFE</td><td>Left Mirror</td><td>left lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_102753_007433F</td><td>166.8s</td><td>SAFE</td><td>Left Mirror</td><td>left lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_120653_007532F</td><td>168.9s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_103053_007436F</td><td>170.4s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_111253_007478F</td><td>176.4s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_120653_007532F</td><td>178.2s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_152028_007676F</td><td>2.9s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_152028_007676F</td><td>27.4s</td><td>SAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_152028_007676F</td><td>38.7s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_145929_007655F</td><td>48.1s</td><td>SAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_152028_007676F</td><td>49.2s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_152028_007676F</td><td>56.1s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_150529_007661F</td><td>96.3s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_150529_007661F</td><td>111.5s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_151428_007670F</td><td>115.5s</td><td>SAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_145628_007652F</td><td>124.4s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_145929_007655F</td><td>126.5s</td><td>SAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_150529_007661F</td><td>137.4s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_150529_007661F</td><td>141.4s</td><td>SAFE</td><td>Right Mirror</td><td>right lane change</td><td>day</td></tr><tr style='background:#ffe6e6;'><td>2025_0913_145628_007652F</td><td>148.5s</td><td>UNSAFE</td><td>Left Mirror</td><td>left turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_145628_007652F</td><td>164.3s</td><td>SAFE</td><td>Right Mirror</td><td>right turn</td><td>day</td></tr><tr style='background:#e6ffe6;'><td>2025_0913_150529_007661F</td><td>176.9s</td><td>SAFE</td><td>Left Mirror</td><td>left lane change</td><td>day</td></tr></table>
+</div>
+</body></html>
