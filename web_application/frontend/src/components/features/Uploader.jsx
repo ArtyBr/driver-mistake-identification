@@ -34,11 +34,13 @@ function Uploader({ onUploadSuccess }) {
   const [manualOffset,       setManualOffset]       = useState(0)
   const [isSyncAnalyzing,    setIsSyncAnalyzing]    = useState(false)
   const [syncUploadProgress, setSyncUploadProgress] = useState(0)
+  const [syncPhase,          setSyncPhase]          = useState(null) // { message, step, total_steps }
   const [isSubmitting,       setIsSubmitting]       = useState(false)
+  const [flipFace,           setFlipFace]           = useState(false)
   const [pollingSessionId,   setPollingSessionId]   = useState(null)
   const pollIntervalRef = useRef(null)
   const pollAttemptsRef = useRef(0)
-  const MAX_POLL_ATTEMPTS = 150 // 150 × 2 s = 5 minutes
+  const MAX_POLL_ATTEMPTS = 600 // 600 × 2 s = 20 minutes
 
   const { upload, progress, isUploading, error: uploadError } = useJobUpload();
   const [localError, setLocalError] = useState(null);
@@ -78,6 +80,7 @@ function Uploader({ onUploadSuccess }) {
         if (status === 'done') {
           clearInterval(pollIntervalRef.current)
           setPollingSessionId(null)
+          setSyncPhase(null)
           setSyncData(data)
           setManualOffset(data.offset_seconds ?? 0)
           setSyncStep('sync_confirm')
@@ -85,8 +88,11 @@ function Uploader({ onUploadSuccess }) {
         } else if (status === 'error') {
           clearInterval(pollIntervalRef.current)
           setPollingSessionId(null)
+          setSyncPhase(null)
           setLocalError(data.detail || 'Sync analysis failed.')
           setIsSyncAnalyzing(false)
+        } else if (data.message) {
+          setSyncPhase({ message: data.message, step: data.step, total_steps: data.total_steps, step_pct: data.step_pct })
         }
       } catch {
         clearInterval(pollIntervalRef.current)
@@ -139,6 +145,7 @@ function Uploader({ onUploadSuccess }) {
     // Sync analysis path
     setIsSyncAnalyzing(true);
     setSyncUploadProgress(0);
+    setSyncPhase(null);
     try {
       const { session_id } = await initSync();
 
@@ -182,6 +189,7 @@ function Uploader({ onUploadSuccess }) {
         name: uploadName || undefined,
         keep_videos: keepVideos,
         calibration_id: selectedCalId || undefined,
+        flip_face: flipFace,
       });
       onUploadSuccess(res.data.job_id, {}, {});
     } catch (err) {
@@ -243,6 +251,8 @@ function Uploader({ onUploadSuccess }) {
         onConfirm={handleConfirmSync}
         onBack={() => { setSyncStep('upload'); setLocalError(null); }}
         isSubmitting={isSubmitting}
+        flipFace={flipFace}
+        setFlipFace={setFlipFace}
       />
     );
   }
@@ -376,9 +386,28 @@ function Uploader({ onUploadSuccess }) {
               </div>
             )}
             {isSyncAnalyzing && (
-              <div className="d-flex align-items-center text-muted small mb-3">
-                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
-                Analysing audio for synchronisation…
+              <div className="mb-3">
+                {syncPhase && (() => {
+                  const stepFraction = (syncPhase.step_pct != null ? syncPhase.step_pct / 100 : 1);
+                  const overallPct = Math.round(((syncPhase.step - 1 + stepFraction) / syncPhase.total_steps) * 100);
+                  return (
+                    <div className="progress mb-2" style={{ height: '6px' }}>
+                      <div
+                        className="progress-bar bg-info"
+                        role="progressbar"
+                        style={{ width: `${overallPct}%`, transition: 'width 0.5s ease' }}
+                        aria-valuenow={overallPct}
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                      />
+                    </div>
+                  );
+                })()}
+                <div className="d-flex align-items-center text-muted small">
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                  {syncPhase?.message || 'Preparing synchronisation analysis…'}
+                  {syncPhase && <span className="ms-auto text-muted" style={{ fontSize: '0.75rem' }}>Step {syncPhase.step}/{syncPhase.total_steps}</span>}
+                </div>
               </div>
             )}
             {isUploading && progress > 0 && progress < 100 && (

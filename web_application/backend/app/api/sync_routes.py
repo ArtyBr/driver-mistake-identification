@@ -69,6 +69,22 @@ def _cleanup_old_sessions():
             pass
 
 
+def _write_progress(temp_dir: Path, message: str, step: int, total_steps: int, pct: int = None):
+    """Write a progress update that the status endpoint can pick up."""
+    try:
+        progress_path = temp_dir / "sync_progress.json"
+        data = {
+            "message": message,
+            "step": step,
+            "total_steps": total_steps,
+        }
+        if pct is not None:
+            data["step_pct"] = pct
+        progress_path.write_text(json.dumps(data))
+    except Exception:
+        pass
+
+
 def _do_analyze_background(
     session_id: str, road_parts: List[Path], face_parts: List[Path], temp_dir: Path
 ) -> None:
@@ -78,12 +94,24 @@ def _do_analyze_background(
     result_path = temp_dir / "sync_result.json"
     error_path  = temp_dir / "sync_error.json"
     try:
-        if not splice_videos(road_parts, road_path):
+        def _road_progress(pct):
+            _write_progress(temp_dir, f"Transcoding road video… {pct}%", 1, 4, pct)
+
+        def _face_progress(pct):
+            _write_progress(temp_dir, f"Transcoding driver video… {pct}%", 2, 4, pct)
+
+        _write_progress(temp_dir, "Processing road video…", 1, 4)
+        if not splice_videos(road_parts, road_path, on_progress=_road_progress):
             raise ValueError("Failed to splice road video parts.")
-        if not splice_videos(face_parts, face_path):
+
+        _write_progress(temp_dir, "Processing driver video…", 2, 4)
+        if not splice_videos(face_parts, face_path, on_progress=_face_progress):
             raise ValueError("Failed to splice face video parts.")
 
+        _write_progress(temp_dir, "Extracting audio…", 3, 4)
         result = sync_service.analyze_sync(road_path, face_path)
+
+        _write_progress(temp_dir, "Finalising…", 4, 4)
         result["session_id"]     = session_id
         result["road_video_url"] = f"/static/sync_temp/{session_id}/road.mp4"
         result["face_video_url"] = f"/static/sync_temp/{session_id}/face.mp4"
@@ -207,7 +235,15 @@ async def get_sync_status(session_id: str):
     if error_path.exists():
         error_data = json.loads(error_path.read_text())
         return {"status": "error", "detail": error_data.get("detail", "Unknown error")}
-    return {"status": "processing"}
+
+    progress_path = temp_dir / "sync_progress.json"
+    progress = {}
+    if progress_path.exists():
+        try:
+            progress = json.loads(progress_path.read_text())
+        except Exception:
+            pass
+    return {"status": "processing", **progress}
 
 
 class SyncSubmitRequest(BaseModel):
@@ -216,6 +252,7 @@ class SyncSubmitRequest(BaseModel):
     name: Optional[str] = None
     keep_videos: bool = False
     calibration_id: Optional[str] = None
+    flip_face: bool = False
 
 
 @router.post("/submit")
@@ -326,6 +363,7 @@ async def submit_sync(
         json.loads(road_meta),
         json.loads(face_meta),
         models_dir,
+        flip_face=body.flip_face,
     )
 
     # Clean up sync temp session

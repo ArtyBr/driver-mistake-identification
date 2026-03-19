@@ -6,41 +6,115 @@ from typing import List
 
 logger = logging.getLogger(__name__)
 
-def splice_videos(input_paths: List[Path], output_path: Path) -> bool:
+def _is_browser_playable(video_path: Path) -> bool:
+    """Check via ffprobe whether the file is an mp4/mov container that browsers can play natively."""
+    try:
+        cmd = [
+            "ffprobe", "-v", "error",
+            "-show_entries", "format=format_name",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            str(video_path),
+        ]
+        env = os.environ.copy()
+        env.pop("LD_LIBRARY_PATH", None)
+        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        if result.returncode != 0:
+            return False
+        fmt = result.stdout.strip().lower()
+        # mp4/mov containers are browser-playable; avi, matroska, etc. are not
+        return any(tag in fmt for tag in ("mov", "mp4", "m4a", "m4v"))
+    except Exception:
+        return False
+
+
+def _run_ffmpeg_with_progress(cmd: list, duration_seconds: float, on_progress=None) -> subprocess.CompletedProcess:
+    """
+    Run an ffmpeg command with real-time progress tracking.
+
+    Appends ``-progress pipe:1`` to *cmd* and parses ``out_time_us`` lines to
+    compute a percentage.  *on_progress* is called with an int 0-100.
+    Falls back to a plain ``subprocess.run`` when *on_progress* is ``None``.
+    """
+    env = os.environ.copy()
+    env.pop("LD_LIBRARY_PATH", None)
+
+    if on_progress is None or duration_seconds <= 0:
+        return subprocess.run(cmd, capture_output=True, text=True, env=env)
+
+    full_cmd = cmd + ["-progress", "pipe:1"]
+    proc = subprocess.Popen(full_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, text=True)
+
+    last_pct = -1
+    for line in proc.stdout:
+        if line.startswith("out_time_us="):
+            try:
+                us = int(line.split("=", 1)[1].strip())
+                pct = min(100, int(us / (duration_seconds * 1_000_000) * 100))
+                if pct != last_pct:
+                    last_pct = pct
+                    on_progress(pct)
+            except (ValueError, ZeroDivisionError):
+                pass
+
+    proc.wait()
+    stderr = proc.stderr.read() if proc.stderr else ""
+    return subprocess.CompletedProcess(full_cmd, proc.returncode, stdout="", stderr=stderr)
+
+
+def splice_videos(input_paths: List[Path], output_path: Path, on_progress=None) -> bool:
     """
     Concatenates multiple video files into a single video file using ffmpeg.
-    
+
     Args:
         input_paths: List of paths to the video files to be concatenated.
         output_path: Path where the resulting spliced video should be saved.
-        
+        on_progress: Optional callback ``(pct: int) -> None`` called with 0-100
+                     during transcoding.  Ignored for fast stream-copy paths.
+
     Returns:
         True if successful, False otherwise.
     """
     if not input_paths:
         logger.warning("No input paths provided for splicing.")
         return False
-        
-    # If there's only one video, we don't need to run ffmpeg concat, 
+
+    # If there's only one video, we don't need to run ffmpeg concat,
     # but the caller expects the file at output_path.
-    # The caller is responsible for renaming/moving if it's a single file 
+    # The caller is responsible for renaming/moving if it's a single file
     # and they didn't write it to output_path directly.
-    # However, to support the 'part' workflow, if we are given one part, 
+    # However, to support the 'part' workflow, if we are given one part,
     # we should move/copy it to output_path.
     if len(input_paths) == 1:
         try:
+            src = input_paths[0]
             # If the source and dest are the same, do nothing
-            if input_paths[0].resolve() == output_path.resolve():
+            if src.resolve() == output_path.resolve():
                 return True
-                
-            # Move the single file to the output path
-            # using shutil.move would be safer across filesystems but pathlib rename is fine here
-            # assuming same temp dir.
+
+            # Check the actual container format via ffprobe, since the file
+            # may have been saved with a .mp4 extension despite being AVI/MOV.
+            if not _is_browser_playable(src):
+                logger.info(f"Transcoding {src.name} to mp4 for browser compatibility")
+                duration = get_video_duration(src)
+                cmd = [
+                    _get_ffmpeg_exe(), "-i", str(src),
+                    "-c:v", "libx264", "-crf", "28", "-preset", "ultrafast",
+                    "-movflags", "+faststart",
+                    "-c:a", "aac",
+                    str(output_path), "-y",
+                ]
+                result = _run_ffmpeg_with_progress(cmd, duration, on_progress)
+                if result.returncode != 0:
+                    logger.error(f"FFmpeg transcode error: {result.stderr}")
+                    return False
+                return True
+
+            # Already browser-playable mp4 — just move it
             import shutil
-            shutil.move(str(input_paths[0]), str(output_path))
+            shutil.move(str(src), str(output_path))
             return True
         except Exception as e:
-            logger.error(f"Error moving single file: {e}")
+            logger.error(f"Error processing single file: {e}")
             return False
 
     # Create a list file for ffmpeg
@@ -55,24 +129,38 @@ def splice_videos(input_paths: List[Path], output_path: Path) -> bool:
                 f.write(f"file '{safe_path}'\n")
                 
         logger.info(f"Splicing {len(input_paths)} videos into {output_path}")
-        
-        # Run ffmpeg
-        # -safe 0 is required for absolute paths
-        # -c copy does a stream copy (fast, no re-encoding)
-        cmd = [
-            "ffmpeg", "-f", "concat", "-safe", "0", 
-            "-i", str(list_file_path), 
-            "-c", "copy", str(output_path), "-y"
-        ]
-        
-        # Prepare environment: remove LD_LIBRARY_PATH to avoid conflicts 
+
+        # Prepare environment: remove LD_LIBRARY_PATH to avoid conflicts
         # between conda libraries and system ffmpeg
         env = os.environ.copy()
-        if "LD_LIBRARY_PATH" in env:
-            del env["LD_LIBRARY_PATH"]
+        env.pop("LD_LIBRARY_PATH", None)
 
-        # Capture output for debugging
-        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        # Check if any input is non-mp4 — if so, we must transcode rather
+        # than stream-copy, since the codecs may not fit an mp4 container.
+        needs_transcode = any(not _is_browser_playable(p) for p in input_paths)
+
+        if needs_transcode:
+            logger.info("Non-mp4 inputs detected — transcoding during concat")
+            total_duration = sum(get_video_duration(p) for p in input_paths)
+            cmd = [
+                _get_ffmpeg_exe(), "-f", "concat", "-safe", "0",
+                "-i", str(list_file_path),
+                "-c:v", "libx264", "-crf", "28", "-preset", "ultrafast",
+                "-movflags", "+faststart",
+                "-c:a", "aac",
+                str(output_path), "-y",
+            ]
+            result = _run_ffmpeg_with_progress(cmd, total_duration, on_progress)
+        else:
+            # All inputs are mp4 — fast stream copy
+            cmd = [
+                "ffmpeg", "-f", "concat", "-safe", "0",
+                "-i", str(list_file_path),
+                "-c", "copy", str(output_path), "-y",
+            ]
+            env = os.environ.copy()
+            env.pop("LD_LIBRARY_PATH", None)
+            result = subprocess.run(cmd, capture_output=True, text=True, env=env)
         
         if result.returncode != 0:
             logger.error(f"FFmpeg error: {result.stderr}")
