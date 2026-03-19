@@ -157,6 +157,7 @@ async def upload_videos(
     keep_videos: bool = Form(False),
     name: Optional[str] = Form(None),
     calibration_id: Optional[str] = Form(None),
+    flip_face: bool = Form(False),
     current_user: User = Depends(get_verified_user),
     service: JobService = Depends(get_job_service)
 ):
@@ -167,7 +168,7 @@ async def upload_videos(
     if not video_road or not video_face:
         raise HTTPException(status_code=400, detail="Both road and face videos are required")
 
-    job = service.create_job(video_road, video_face, background_tasks, keep_videos, owner_id=current_user.id, calibration_id=calibration_id)
+    job = service.create_job(video_road, video_face, background_tasks, keep_videos, owner_id=current_user.id, calibration_id=calibration_id, flip_face=flip_face)
 
     # Update name if provided
     if name:

@@ -8,6 +8,8 @@
  *   onConfirm       — () => void — called when user clicks "Confirm & Analyse"
  *   onBack          — () => void — called when user clicks "← Back to Upload"
  *   isSubmitting    — boolean
+ *   flipFace        — boolean — whether to mirror the face video horizontally
+ *   setFlipFace     — (flip: boolean) => void
  */
 import { useState, useCallback, useEffect } from 'react';
 import AudioWaveform from './AudioWaveform';
@@ -31,6 +33,8 @@ export default function SyncConfirmStep({
   onConfirm,
   onBack,
   isSubmitting,
+  flipFace,
+  setFlipFace,
 }) {
   const [previewOpen, setPreviewOpen] = useState(true);
   const [audioSource, setAudioSource] = useState('none');
@@ -127,18 +131,18 @@ export default function SyncConfirmStep({
 
         {/* Offset controls */}
         <div className="mb-4">
-          <div className="d-flex align-items-center gap-3 mb-2">
+          <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
             <label className="form-label mb-0 fw-bold small text-white text-uppercase">Offset Control</label>
             <code className="fs-5 text-highlight-cyan" style={{ minWidth: '8ch', fontFamily: 'monospace' }}>
               {manualOffset >= 0 ? '+' : ''}{manualOffset.toFixed(3)}s
             </code>
-            <div className="d-flex gap-1 ms-auto">
+            <div className="d-flex flex-wrap gap-1 ms-sm-auto">
               <button className="btn btn-outline-secondary btn-sm" onClick={() => nudge(-0.1)}>−0.1s</button>
               <button className="btn btn-outline-secondary btn-sm" onClick={() => nudge(-0.01)}>−0.01s</button>
               <button className="btn btn-outline-secondary btn-sm" onClick={() => nudge(+0.01)}>+0.01s</button>
               <button className="btn btn-outline-secondary btn-sm" onClick={() => nudge(+0.1)}>+0.1s</button>
               <button
-                className="btn btn-outline-info btn-sm ms-2"
+                className="btn btn-outline-info btn-sm"
                 onClick={() => setManualOffset(syncData?.offset_seconds ?? 0)}
                 title="Reset to auto-detected value"
               >
@@ -188,12 +192,12 @@ export default function SyncConfirmStep({
                   />
                 </div>
                 <div className="col-md-6">
-                  <div className="small text-muted mb-1">Driver (phone)</div>
+                  <div className="small text-muted mb-1">Driver (phone){flipFace ? ' — Mirrored' : ''}</div>
                   <video
                     ref={faceVideoRef}
                     src={getFileUrl(syncData?.face_video_url)}
                     className="w-100 rounded"
-                    style={{ maxHeight: '220px', background: '#000', objectFit: 'contain' }}
+                    style={{ maxHeight: '220px', background: '#000', objectFit: 'contain', transform: flipFace ? 'scaleX(-1)' : 'none' }}
                     onLoadedMetadata={e => setFaceDuration(e.target.duration)}
                     playsInline
                     webkit-playsinline="true"
@@ -202,7 +206,7 @@ export default function SyncConfirmStep({
                 </div>
               </div>
               
-              <div className="d-flex align-items-center gap-3 mt-3 p-2 bg-panel-lighter rounded border" style={{ borderColor: 'var(--border-color)' }}>
+              <div className="d-flex flex-wrap align-items-center gap-2 mt-3 p-2 bg-panel-lighter rounded border" style={{ borderColor: 'var(--border-color)' }}>
                 <button
                   className="btn btn-cyber-primary px-4"
                   onClick={togglePlay}
@@ -214,7 +218,7 @@ export default function SyncConfirmStep({
                   {currentTime.toFixed(2)}s
                 </span>
 
-                <div className="ms-auto d-flex align-items-center gap-2">
+                <div className="ms-sm-auto d-flex align-items-center gap-2">
                   <span className="small text-muted">Audio:</span>
                   <div className="btn-group btn-group-sm">
                     <button
@@ -234,6 +238,31 @@ export default function SyncConfirmStep({
               </div>
             </div>
           )}
+        </div>
+
+        {/* Flip face video toggle */}
+        <div className="alert alert-cyber-info py-3 mb-4">
+          <div className="d-flex align-items-start gap-3">
+            <div className="form-check form-switch mt-1">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                role="switch"
+                id="flipFaceCheck"
+                checked={flipFace}
+                onChange={e => setFlipFace(e.target.checked)}
+              />
+              <label className="form-check-label text-white fw-bold" htmlFor="flipFaceCheck">
+                Mirror driver video
+              </label>
+            </div>
+            <div className="small text-muted">
+              Some phone cameras automatically mirror (flip) the video. Enable this if the driver's face
+              appears on the <strong>right</strong> side in landscape, or if it looks like a mirror image.
+              The driver's face should be on the <strong>left</strong> side in landscape, or the largest
+              face in portrait.
+            </div>
+          </div>
         </div>
 
         {/* Trim info */}

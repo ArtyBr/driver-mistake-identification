@@ -34,10 +34,11 @@ class NumpyEncoder(json.JSONEncoder):
         return super().default(obj)
 
 class VideoProcessor:
-    def __init__(self, lane_wrapper, face_analyzer, args):
+    def __init__(self, lane_wrapper, face_analyzer, args, flip_face=False):
         self.lane_wrapper = lane_wrapper
         self.face_analyzer = face_analyzer
         self.args = args
+        self.flip_face = flip_face
         self.visualizer = VideoVisualizer()
         self.safety_monitor = ManeuverValidator()
         
@@ -108,7 +109,11 @@ class VideoProcessor:
                             face_exhausted = True
                             break
                         face_current_time = cap_face.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
-                        
+
+                        # Flip face frame horizontally if requested (mirrors selfie-camera video)
+                        if self.flip_face:
+                            candidate = cv2.flip(candidate, 1)
+
                         # Apply face blurring to the face frame *before* analysis and writing
                         candidate_blurred, _ = self.face_analyzer.process_frame(candidate)
                         last_good_face_frame = candidate_blurred

@@ -28,7 +28,7 @@ def update_job(job_id: str, status: str = None, progress: int = None, error: str
             session.add(job)
             session.commit()
 
-def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_videos: bool = False, road_metadata: dict = None, face_metadata: dict = None, models_dir: str = None) -> None:
+def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_videos: bool = False, road_metadata: dict = None, face_metadata: dict = None, models_dir: str = None, flip_face: bool = False) -> None:
 
     """
 
@@ -72,7 +72,9 @@ def run_analysis_process(job_id: str, road_path: str, face_path: str, keep_video
 
             face_meta=face_meta_str,
 
-            models_dir=models_dir
+            models_dir=models_dir,
+
+            flip_face=flip_face
 
         )
 

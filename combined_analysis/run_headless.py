@@ -68,6 +68,7 @@ def main():
     parser.add_argument("--road_meta", type=str, help="JSON string of road video metadata")
     parser.add_argument("--face_meta", type=str, help="JSON string of face video metadata")
     parser.add_argument("--models_dir", type=str, default=None, help="Path to custom gaze model directory (user calibration)")
+    parser.add_argument("--flip_face", action="store_true", help="Horizontally flip the face video (for mirrored selfie cameras)")
     args_cli = parser.parse_args()
 
     try:
@@ -110,7 +111,7 @@ def main():
         output_dir = Path(args_cli.output).parent
         dummy_args = DummyArgs(savedir=str(output_dir), video_base=args_cli.road)
         
-        processor = VideoProcessor(lane_wrapper, face_analyzer, dummy_args)
+        processor = VideoProcessor(lane_wrapper, face_analyzer, dummy_args, flip_face=args_cli.flip_face)
         
         # Run
         custom_paths = {"road": args_cli.road, "face": args_cli.face}

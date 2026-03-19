@@ -24,13 +24,14 @@ class JobService:
         self.session = session
 
     def create_job(
-        self, 
-        video_road: List[UploadFile], 
-        video_face: List[UploadFile], 
-        background_tasks: BackgroundTasks, 
+        self,
+        video_road: List[UploadFile],
+        video_face: List[UploadFile],
+        background_tasks: BackgroundTasks,
         keep_videos: bool = False,
         owner_id: Optional[str] = None,
-        calibration_id: Optional[str] = None
+        calibration_id: Optional[str] = None,
+        flip_face: bool = False
     ) -> Job:
         
         # Generate ID
@@ -99,13 +100,14 @@ class JobService:
                 keep_videos=keep_videos,
                 road_metadata=json.loads(road_meta),
                 face_metadata=json.loads(face_meta),
-                models_dir=models_dir
+                models_dir=models_dir,
+                flip_face=flip_face
             )
-            
+
             # Kick off background transcoding for road only
             # Face transcoding happens after blurring in the analysis process
             background_tasks.add_task(FileService.transcode_job_videos_road_only, job_id, road_path)
-            
+
             return job
 
         except Exception as e:
