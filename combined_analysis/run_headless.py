@@ -68,6 +68,8 @@ def main():
     parser.add_argument("--road_meta", type=str, help="JSON string of road video metadata")
     parser.add_argument("--face_meta", type=str, help="JSON string of face video metadata")
     parser.add_argument("--models_dir", type=str, default=None, help="Path to custom gaze model directory (user calibration)")
+    parser.add_argument("--start_seconds", type=float, default=0, help="Start time in seconds (default: 0)")
+    parser.add_argument("--end_seconds", type=float, default=None, help="End time in seconds (default: None = end of video)")
     args_cli = parser.parse_args()
 
     try:
@@ -109,6 +111,8 @@ def main():
         # Initialize Processor
         output_dir = Path(args_cli.output).parent
         dummy_args = DummyArgs(savedir=str(output_dir), video_base=args_cli.road)
+        dummy_args.start_seconds = args_cli.start_seconds
+        dummy_args.end_seconds = args_cli.end_seconds
         
         processor = VideoProcessor(lane_wrapper, face_analyzer, dummy_args)
         

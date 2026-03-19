@@ -438,12 +438,16 @@ class VideoProcessor:
                 'nose_2d': [int(x) for x in face_info.get('nose_2d')] if face_info.get('nose_2d') else None
             }
 
-        return {
+        frame_result = {
             "time": round(float(current_time), 3),
             "lane_lines": serialized_lanes,
             "face_info": serialized_face,
             "current_state": self.last_state
         }
+        if vo_pos['x'] is not None:
+            frame_result["vo_x"] = round(vo_pos['x'], 3)
+            frame_result["vo_z"] = round(vo_pos['z'], 3)
+        return frame_result
 
     def _generate_all_face_variants(self, temp_blurred_path: Path, final_face_path: Path):
         """
@@ -644,12 +648,16 @@ class VideoProcessor:
                 'nose_2d': [int(x) for x in face_info.get('nose_2d')] if face_info.get('nose_2d') else None
             }
 
-        return {
+        frame_result = {
             "time": round(float(current_time), 3),
             "lane_lines": serialized_lanes,
             "face_info": serialized_face,
             "current_state": self.last_state
         }
+        if vo_pos['x'] is not None:
+            frame_result["vo_x"] = round(vo_pos['x'], 3)
+            frame_result["vo_z"] = round(vo_pos['z'], 3)
+        return frame_result
 
     def _show_summary_plot(self):
         """Generates and shows the 3D trajectory plot with event markers."""
