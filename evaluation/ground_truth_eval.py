@@ -277,6 +277,11 @@ def run_ground_truth_eval(labeled_trips, all_labels, window_results):
     if p:
         outputs.append(p)
 
+    # ── Confusion matrix (matched events only — TP, percentages) ──
+    p = _plot_confusion_matrix_matched(all_gt, all_det, all_matches)
+    if p:
+        outputs.append(p)
+
     # ── Timeline comparison + odometry per video ──
     for pvd in per_video_data:
         p = _plot_timeline_comparison(pvd)
@@ -285,6 +290,9 @@ def run_ground_truth_eval(labeled_trips, all_labels, window_results):
         p = _plot_odometry(pvd, results_by_video)
         if p:
             outputs.append(p)
+
+    # ── Overall score summary table (HTML) ──
+    summary_html = _build_score_summary(all_gt, all_det, all_matches, all_unmatched_gt, all_unmatched_det)
 
     # ── Per-event detail table (HTML) ──
     detail_html = _build_detail_table(per_video_data, all_gt, all_det, all_matches, all_unmatched_gt, all_unmatched_det)
@@ -305,7 +313,90 @@ def run_ground_truth_eval(labeled_trips, all_labels, window_results):
     elapsed = time.time() - t0
     print(f"[Ground Truth Eval] Done ({elapsed:.1f}s) — {len(outputs)} plots")
 
-    return outputs, detail_html
+    return outputs, summary_html + detail_html
+
+
+def _build_score_summary(all_gt, all_det, matches, unmatched_gt, unmatched_det):
+    """Build an HTML summary table: per event-type matched/missed/accuracy + overall."""
+    gt_types = sorted(set(GT_EVENT_TYPES))
+
+    rows = []
+    total_gt = len(all_gt)
+    total_matched = len(matches)
+    total_missed = len(unmatched_gt)
+    total_fp = len(unmatched_det)
+    total_correct = 0
+
+    for etype in gt_types:
+        n_gt = sum(1 for g in all_gt if g[1] == etype)
+        matched = sum(1 for gi, di, _ in matches if all_gt[gi][1] == etype)
+        correct = sum(1 for gi, di, _ in matches
+                      if all_gt[gi][1] == etype and all_det[di].get("maneuver_gt_type") == etype)
+        missed = sum(1 for gi in unmatched_gt if all_gt[gi][1] == etype)
+        fp = sum(1 for di in unmatched_det if all_det[di].get("maneuver_gt_type") == etype)
+        total_correct += correct
+
+        detect_rate = f"{100 * matched / n_gt:.0f}%" if n_gt else "—"
+        class_acc = f"{100 * correct / matched:.0f}%" if matched else "—"
+        p_val = matched / (matched + fp) if (matched + fp) else 0
+        r_val = matched / (matched + missed) if (matched + missed) else 0
+        f1_val = 2 * p_val * r_val / (p_val + r_val) if (p_val + r_val) else 0
+        precision_s = f"{100 * p_val:.0f}%"
+        recall_s = f"{100 * r_val:.0f}%"
+        f1_s = f"{100 * f1_val:.0f}%"
+
+        rows.append(
+            f"<tr>"
+            f"<td>{etype}</td>"
+            f"<td>{n_gt}</td>"
+            f"<td style='color:#2ca02c; font-weight:bold;'>{matched}</td>"
+            f"<td style='color:#d62728; font-weight:bold;'>{missed}</td>"
+            f"<td>{detect_rate}</td>"
+            f"<td>{correct}</td>"
+            f"<td>{class_acc}</td>"
+            f"<td>{fp}</td>"
+            f"<td>{precision_s}</td>"
+            f"<td>{recall_s}</td>"
+            f"<td>{f1_s}</td>"
+            f"</tr>"
+        )
+
+    # Overall row
+    overall_detect = f"{100 * total_matched / total_gt:.0f}%" if total_gt else "—"
+    overall_class = f"{100 * total_correct / total_matched:.0f}%" if total_matched else "—"
+    o_p = total_matched / (total_matched + total_fp) if (total_matched + total_fp) else 0
+    o_r = total_matched / (total_matched + total_missed) if (total_matched + total_missed) else 0
+    o_f1 = 2 * o_p * o_r / (o_p + o_r) if (o_p + o_r) else 0
+
+    rows.append(
+        f"<tr style='background:#333; color:white; font-weight:bold;'>"
+        f"<td>Overall</td>"
+        f"<td>{total_gt}</td>"
+        f"<td>{total_matched}</td>"
+        f"<td>{total_missed}</td>"
+        f"<td>{overall_detect}</td>"
+        f"<td>{total_correct}</td>"
+        f"<td>{overall_class}</td>"
+        f"<td>{total_fp}</td>"
+        f"<td>{100 * o_p:.0f}%</td>"
+        f"<td>{100 * o_r:.0f}%</td>"
+        f"<td>{100 * o_f1:.0f}%</td>"
+        f"</tr>"
+    )
+
+    return (
+        "<h3>Detection Score Summary</h3>"
+        "<table border='1' cellpadding='6' cellspacing='0' "
+        "style='border-collapse:collapse; margin:16px 0; width:100%;'>"
+        "<tr style='background:#444; color:white;'>"
+        "<th>Event Type</th><th>GT</th>"
+        "<th>Matched</th><th>Missed</th><th>Detection Rate</th>"
+        "<th>Correct Type</th><th>Classification Acc.</th>"
+        "<th>False Positives</th><th>Precision</th>"
+        "<th>Recall</th><th>F1</th></tr>\n"
+        + "\n".join(rows) +
+        "\n</table>\n"
+    )
 
 
 def _plot_confusion_matrix(all_gt, all_det, matches, unmatched_gt, unmatched_det):
@@ -391,6 +482,55 @@ def _plot_confusion_matrix(all_gt, all_det, matches, unmatched_gt, unmatched_det
 
     fig.colorbar(im, ax=ax, shrink=0.8)
     return save_figure(fig, "confusion_matrix", "ground_truth")
+
+
+def _plot_confusion_matrix_matched(all_gt, all_det, matches):
+    """Confusion matrix of matched (TP) events only, showing row-normalised percentages."""
+    gt_types = sorted(set(GT_EVENT_TYPES))
+    n = len(gt_types)
+    type_to_idx = {t: i for i, t in enumerate(gt_types)}
+
+    matrix = np.zeros((n, n), dtype=int)
+
+    for gt_idx, det_idx, _ in matches:
+        gt_type = all_gt[gt_idx][1]
+        det_type = all_det[det_idx].get("maneuver_gt_type")
+        ri = type_to_idx.get(gt_type)
+        ci = type_to_idx.get(det_type)
+        if ri is not None and ci is not None:
+            matrix[ri, ci] += 1
+
+    if matrix.sum() == 0:
+        return None
+
+    row_totals = matrix.sum(axis=1, keepdims=True)
+    pct_matrix = np.where(row_totals > 0, 100.0 * matrix / row_totals, 0.0)
+
+    fig, ax = plt.subplots(figsize=(8, 7))
+    im = ax.imshow(pct_matrix, cmap="Blues", aspect="auto", vmin=0, vmax=100)
+
+    ax.set_xticks(range(n))
+    ax.set_yticks(range(n))
+    ax.set_xticklabels(gt_types, rotation=45, ha="right")
+    ax.set_yticklabels(gt_types)
+    ax.set_xlabel("System Detection")
+    ax.set_ylabel("Ground Truth")
+    ax.set_title(f"Matched Events Confusion Matrix — {int(matrix.sum())} TP "
+                 f"(excluding FP & FN)")
+
+    for i in range(n):
+        for j in range(n):
+            val = matrix[i, j]
+            pct = pct_matrix[i, j]
+            if val == 0 and pct == 0:
+                continue
+            text_color = "white" if pct > 50 else "black"
+            fontweight = "bold" if i == j else "normal"
+            ax.text(j, i, f"{val}\n({pct:.0f}%)", ha="center", va="center",
+                    color=text_color, fontweight=fontweight, fontsize=11)
+
+    fig.colorbar(im, ax=ax, shrink=0.8, label="Row %")
+    return save_figure(fig, "confusion_matrix_matched", "ground_truth")
 
 
 def _plot_timeline_comparison(pvd):
