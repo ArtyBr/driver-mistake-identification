@@ -34,23 +34,23 @@ class NumpyEncoder(json.JSONEncoder):
         return super().default(obj)
 
 class VideoProcessor:
-    def __init__(self, lane_wrapper, face_analyzer, args):
+    def __init__(self, lane_wrapper, face_analyzer, args, use_segmentation=True):
         self.lane_wrapper = lane_wrapper
         self.face_analyzer = face_analyzer
         self.args = args
         self.visualizer = VideoVisualizer()
         self.safety_monitor = ManeuverValidator()
-        
+
         self.state_history = []
         self.last_state = None
         self.all_events = []
-        
+
         # Initialize VO
         self.vo = None
         if VisualOdometry:
             # We don't provide a video path because we will feed frames manually
             # Assuming 30 FPS default, will be updated in run() if possible
-            self.vo = VisualOdometry(video_path=None, fps=30.0)
+            self.vo = VisualOdometry(video_path=None, fps=30.0, use_segmentation=use_segmentation)
 
     def run(self, export_json=False, output_json_path=None, custom_video_paths=None, metadata=None):
         # 1. Setup Video Capture

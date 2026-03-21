@@ -149,7 +149,7 @@ class TurnDetector:
         return detected
 
 class VisualOdometry:
-    def __init__(self, video_path=None, start_seconds=0, fps=30.0):
+    def __init__(self, video_path=None, start_seconds=0, fps=30.0, use_segmentation=True):
         self.video_path = video_path
         self.fps = fps
         self.cap = None
@@ -211,20 +211,24 @@ class VisualOdometry:
         self.kf.kalman.statePost[:6] = init_meas
 
         # --- Mask R-CNN Setup ---
-        print("Initializing Mask R-CNN (ResNet50 FPN V2)...")
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        
         self.seg_model = None
-        try:
-            # Load the model
-            weights = torchvision.models.detection.MaskRCNN_ResNet50_FPN_V2_Weights.DEFAULT
-            self.seg_model = torchvision.models.detection.maskrcnn_resnet50_fpn_v2(weights=weights)
-            self.seg_model.to(self.device)
-            self.seg_model.eval()
-            print("Mask R-CNN initialized successfully.")
-        except Exception as e:
-            print(f"Warning: Failed to initialize Mask R-CNN. Running without dynamic masking. Error: {e}")
-            self.seg_model = None
+        if use_segmentation:
+            print("Initializing Mask R-CNN (ResNet50 FPN V2)...")
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+            try:
+                # Load the model
+                weights = torchvision.models.detection.MaskRCNN_ResNet50_FPN_V2_Weights.DEFAULT
+                self.seg_model = torchvision.models.detection.maskrcnn_resnet50_fpn_v2(weights=weights)
+                self.seg_model.to(self.device)
+                self.seg_model.eval()
+                print("Mask R-CNN initialized successfully.")
+            except Exception as e:
+                print(f"Warning: Failed to initialize Mask R-CNN. Running without dynamic masking. Error: {e}")
+                self.seg_model = None
+        else:
+            print("Segmentation masking disabled — skipping Mask R-CNN initialization.")
+            self.device = torch.device('cpu')
         
         # Transform for Mask R-CNN (It expects 0-1 float tensors)
         self.seg_transform = transforms.Compose([

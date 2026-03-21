@@ -41,6 +41,8 @@ def main():
                         help="Run analysis pipeline on event windows (slow)")
     parser.add_argument("--force-rerun", action="store_true",
                         help="Force re-run pipeline even if cached results exist")
+    parser.add_argument("--no-seg", action="store_true",
+                        help="Disable Mask R-CNN segmentation masking in visual odometry")
     parser.add_argument("--video-base", type=str, default=str(VIDEO_BASE),
                         help=f"Path to video folders (default: {VIDEO_BASE})")
     parser.add_argument("--output-dir", type=str, default=str(OUTPUT_DIR),
@@ -107,7 +109,7 @@ def main():
                       f"({len(labels)} videos)")
                 results = run_pipeline_for_trip(
                     trip, labels, force=args.force_rerun,
-                    global_progress=global_progress,
+                    global_progress=global_progress, no_seg=args.no_seg,
                 )
                 window_results.extend(results)
         elapsed = time.time() - pt0

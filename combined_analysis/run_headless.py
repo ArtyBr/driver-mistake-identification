@@ -70,6 +70,7 @@ def main():
     parser.add_argument("--models_dir", type=str, default=None, help="Path to custom gaze model directory (user calibration)")
     parser.add_argument("--start_seconds", type=float, default=0, help="Start time in seconds (default: 0)")
     parser.add_argument("--end_seconds", type=float, default=None, help="End time in seconds (default: None = end of video)")
+    parser.add_argument("--no-seg", action="store_true", help="Disable Mask R-CNN segmentation masking in visual odometry")
     args_cli = parser.parse_args()
 
     try:
@@ -114,7 +115,7 @@ def main():
         dummy_args.start_seconds = args_cli.start_seconds
         dummy_args.end_seconds = args_cli.end_seconds
         
-        processor = VideoProcessor(lane_wrapper, face_analyzer, dummy_args)
+        processor = VideoProcessor(lane_wrapper, face_analyzer, dummy_args, use_segmentation=not args_cli.no_seg)
         
         # Run
         custom_paths = {"road": args_cli.road, "face": args_cli.face}

@@ -40,7 +40,7 @@ def compute_windows(events, window=EVENT_WINDOW, max_dur=VIDEO_MAX_DURATION):
 
 
 def run_pipeline_on_windows(trip_path, video_id, events, force=False,
-                            global_progress=None):
+                            global_progress=None, no_seg=False):
     """
     Run run_headless.py on each merged window for the given video.
 
@@ -113,6 +113,8 @@ def run_pipeline_on_windows(trip_path, video_id, events, force=False,
             "--start_seconds", str(ws),
             "--end_seconds", str(we),
         ]
+        if no_seg:
+            cmd.append("--no-seg")
 
         # ~5 fps processing → ~6s per video-second, plus overhead; minimum 300s
         timeout = max(300, int(duration * 8) + 120)
@@ -221,7 +223,7 @@ def _find_video_file(trip_path, video_id):
     return None
 
 
-def run_pipeline_for_trip(trip, labels, force=False, global_progress=None):
+def run_pipeline_for_trip(trip, labels, force=False, global_progress=None, no_seg=False):
     """
     Run pipeline on all labeled videos in a trip.
 
@@ -236,7 +238,7 @@ def run_pipeline_for_trip(trip, labels, force=False, global_progress=None):
         try:
             window_results = run_pipeline_on_windows(
                 trip["path"], video_id, events, force=force,
-                global_progress=global_progress,
+                global_progress=global_progress, no_seg=no_seg,
             )
             all_results.extend(window_results)
         except OSError as e:
