@@ -1,0 +1,79 @@
+{
+  "n_frames": 105,
+  "svm": {
+    "accuracy": 0.9523809523809523,
+    "precision_macro": 0.9456521739130435,
+    "recall_macro": 0.9460227272727273,
+    "f1_macro": 0.9456264775413711,
+    "confusion_matrix": [
+      [
+        21,
+        0,
+        0,
+        3
+      ],
+      [
+        0,
+        33,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        26,
+        0
+      ],
+      [
+        2,
+        0,
+        0,
+        20
+      ]
+    ]
+  },
+  "kmeans": {
+    "accuracy": 0.7333333333333333,
+    "precision_macro": 0.625,
+    "recall_macro": 0.7004662004662006,
+    "f1_macro": 0.6405376344086021,
+    "cluster_mapping": {
+      "0": "Looking Ahead",
+      "1": "Rear Mirror",
+      "2": "Left Mirror",
+      "3": "Right Mirror"
+    },
+    "confusion_matrix": [
+      [
+        24,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        29,
+        0,
+        4
+      ],
+      [
+        2,
+        0,
+        24,
+        0
+      ],
+      [
+        22,
+        0,
+        0,
+        0
+      ]
+    ]
+  },
+  "class_names": [
+    "Left Mirror",
+    "Right Mirror",
+    "Looking Ahead",
+    "Rear Mirror"
+  ]
+}

@@ -149,7 +149,7 @@ class TurnDetector:
         return detected
 
 class VisualOdometry:
-    def __init__(self, video_path=None, start_seconds=0, fps=30.0, use_segmentation=True):
+    def __init__(self, video_path=None, start_seconds=0, fps=30.0):
         self.video_path = video_path
         self.fps = fps
         self.cap = None
@@ -211,24 +211,20 @@ class VisualOdometry:
         self.kf.kalman.statePost[:6] = init_meas
 
         # --- Mask R-CNN Setup ---
-        self.seg_model = None
-        if use_segmentation:
-            print("Initializing Mask R-CNN (ResNet50 FPN V2)...")
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print("Initializing Mask R-CNN (ResNet50 FPN V2)...")
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-            try:
-                # Load the model
-                weights = torchvision.models.detection.MaskRCNN_ResNet50_FPN_V2_Weights.DEFAULT
-                self.seg_model = torchvision.models.detection.maskrcnn_resnet50_fpn_v2(weights=weights)
-                self.seg_model.to(self.device)
-                self.seg_model.eval()
-                print("Mask R-CNN initialized successfully.")
-            except Exception as e:
-                print(f"Warning: Failed to initialize Mask R-CNN. Running without dynamic masking. Error: {e}")
-                self.seg_model = None
-        else:
-            print("Segmentation masking disabled — skipping Mask R-CNN initialization.")
-            self.device = torch.device('cpu')
+        self.seg_model = None
+        try:
+            # Load the model
+            weights = torchvision.models.detection.MaskRCNN_ResNet50_FPN_V2_Weights.DEFAULT
+            self.seg_model = torchvision.models.detection.maskrcnn_resnet50_fpn_v2(weights=weights)
+            self.seg_model.to(self.device)
+            self.seg_model.eval()
+            print("Mask R-CNN initialized successfully.")
+        except Exception as e:
+            print(f"Warning: Failed to initialize Mask R-CNN. Running without dynamic masking. Error: {e}")
+            self.seg_model = None
         
         # Transform for Mask R-CNN (It expects 0-1 float tensors)
         self.seg_transform = transforms.Compose([
@@ -243,9 +239,6 @@ class VisualOdometry:
         # Turn Detector
         # threshold 30 deg, moderate sharpness (0.6 deg/frame)
         self.turn_detector = TurnDetector(angle_threshold_degrees=30.0, cooldown_frames=60)
-        # Yaw integrated from per-frame R_rel (avoids euler decomposition sign-flip
-        # on large accumulated raw_R in long videos)
-        self.yaw_integrated = 0.0
         self.turn_pts_left_x = []
         self.turn_pts_left_y = []
         self.turn_pts_left_z = []
@@ -437,9 +430,6 @@ class VisualOdometry:
         if is_moving:
             self.raw_t = self.raw_t + self.raw_R.dot(t_rel)
             self.raw_R = self.raw_R.dot(R_rel)
-            # Integrate per-frame yaw directly from R_rel (index 1 = Y-rotation in ZYX convention)
-            # R_rel is always a small rotation so euler decomposition is well-behaved here
-            self.yaw_integrated += rotationMatrixToEulerAngles(R_rel)[1]
 
         # Kalman Filter Step
         self.kf.predict()
@@ -473,13 +463,11 @@ class VisualOdometry:
         else: status = "STATIONARY"
         
         # Turn Detection
-        # Use yaw_integrated (sum of per-frame R_rel Y-rotations) rather than est_state[4]
-        # (euler decomposition of accumulated raw_R). For long videos, raw_R can have a
-        # large accumulated rotation where atan2 can flip sign, causing LEFT/RIGHT confusion.
-        turn_event = self.turn_detector.update(self.yaw_integrated, self.frame_count)
-        
+        current_yaw = est_state[4].item() # Pitch(0), Yaw(1), Roll(2) -> Index 4 corresponds to Y-rot (Yaw)
+        turn_event = self.turn_detector.update(current_yaw, self.frame_count)
+
         log_msg = f"Frame {self.frame_count} | {status} | Flow: {avg_flow:.2f}px | Inlier: {inlier_ratio:.2f} | Pos: ({self.cur_t[0][0]:.2f}, {self.cur_t[1][0]:.2f}, {self.cur_t[2][0]:.2f})"
-        
+
         if turn_event:
             log_msg += f" | >>> {turn_event} DETECTED <<<"
             if "LEFT" in turn_event:
@@ -635,14 +623,94 @@ class VisualOdometry:
         cv2.destroyAllWindows()
 
 
+    def save_pose(self, path):
+        """Save all pose/trajectory data to a .npz file for later re-plotting."""
+        np.savez(
+            path,
+            traj_x=np.array(self.traj_x),
+            traj_y=np.array(self.traj_y),
+            traj_z=np.array(self.traj_z),
+            turn_pts_left_x=np.array(self.turn_pts_left_x),
+            turn_pts_left_y=np.array(self.turn_pts_left_y),
+            turn_pts_left_z=np.array(self.turn_pts_left_z),
+            turn_pts_right_x=np.array(self.turn_pts_right_x),
+            turn_pts_right_y=np.array(self.turn_pts_right_y),
+            turn_pts_right_z=np.array(self.turn_pts_right_z),
+        )
+        print(f"Pose data saved to: {path}")
+
+    @staticmethod
+    def save_trajectory_plot(path, traj_x, traj_z,
+                             turn_left_x=None, turn_left_z=None,
+                             turn_right_x=None, turn_right_z=None):
+        """Save X-Z trajectory plot as a PNG."""
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+
+        plt.rcParams.update({
+            'font.size': 16,
+            'axes.labelsize': 18,
+            'axes.titlesize': 20,
+            'legend.fontsize': 15,
+            'xtick.labelsize': 14,
+            'ytick.labelsize': 14,
+        })
+
+        fig, ax = plt.subplots(figsize=(10, 8))
+        ax.plot(traj_x, traj_z, color='cornflowerblue', linewidth=3, label='Trajectory')
+        if turn_left_x is not None and len(turn_left_x) > 0:
+            ax.plot(turn_left_x, turn_left_z, 'c*', markersize=22, label='Turn Left')
+        if turn_right_x is not None and len(turn_right_x) > 0:
+            ax.plot(turn_right_x, turn_right_z, 'm*', markersize=22, label='Turn Right')
+        ax.set_title("X-Z Trajectory (Top-Down View)")
+        ax.set_xlabel("X")
+        ax.set_ylabel("Z")
+        ax.legend()
+        ax.set_aspect('equal', adjustable='datalim')
+        ax.grid(True, linewidth=0.8)
+        fig.tight_layout()
+        fig.savefig(path, dpi=200)
+        plt.close(fig)
+        print(f"Trajectory plot saved to: {path}")
+
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Monocular Visual Odometry")
     parser.add_argument("video", help="Path to video file")
     parser.add_argument("--start", type=float, default=0.0, help="Start time in seconds")
+    parser.add_argument("--stop", type=float, default=None, help="Stop time in seconds")
     parser.add_argument("--show", action="store_true", help="Show live visualisation (trajectory + mask overlay)")
+    parser.add_argument("--no-save-plot", action="store_true", help="Disable saving trajectory PNG")
+    parser.add_argument("--no-save-pose", action="store_true", help="Disable saving pose .npz file")
+    parser.add_argument("--outdir", type=str, default=None,
+                        help="Output directory for plot/pose files (default: same directory as video)")
+    parser.add_argument("--from-pose", type=str, default=None,
+                        help="Re-create trajectory PNG from a previously saved .npz pose file (skips pipeline)")
     args = parser.parse_args()
 
+    # --- Re-plot from saved pose data ---
+    if args.from_pose:
+        if not os.path.exists(args.from_pose):
+            print(f"Error: Pose file '{args.from_pose}' not found.")
+            sys.exit(1)
+        data = np.load(args.from_pose)
+        out_dir = args.outdir or os.path.dirname(os.path.abspath(args.from_pose))
+        stem = os.path.splitext(os.path.basename(args.from_pose))[0]
+        # Strip _pose suffix if present to get clean name
+        if stem.endswith("_pose"):
+            stem = stem[:-5]
+        plot_path = os.path.join(out_dir, f"{stem}_trajectory_xz.png")
+        VisualOdometry.save_trajectory_plot(
+            plot_path,
+            data['traj_x'], data['traj_z'],
+            data.get('turn_pts_left_x'), data.get('turn_pts_left_z'),
+            data.get('turn_pts_right_x'), data.get('turn_pts_right_z'),
+        )
+        sys.exit(0)
+
+    # --- Normal pipeline ---
     if not os.path.exists(args.video):
         print(f"Error: File '{args.video}' not found.")
         sys.exit(1)
@@ -652,11 +720,39 @@ if __name__ == "__main__":
     if args.show:
         vo.run()
     else:
+        # Compute stop frame if --stop given
+        stop_frame = None
+        if args.stop is not None:
+            stop_frame = int((args.stop - args.start) * vo.fps)
+            print(f"Will stop after {stop_frame} frames ({args.stop - args.start:.1f}s of video)")
+
         # Console-only mode: just print per-frame logs
         while True:
             ret, _, _, _, _ = vo.process_frame()
             if not ret:
                 break
+            if stop_frame is not None and vo.frame_count >= stop_frame:
+                print(f"Reached stop time ({args.stop}s). Stopping.")
+                break
+
         print("Finished.")
         if vo.cap:
             vo.cap.release()
+
+        # Save outputs
+        if len(vo.traj_x) > 1:
+            out_dir = args.outdir or os.path.dirname(os.path.abspath(args.video))
+            video_stem = os.path.splitext(os.path.basename(args.video))[0]
+
+            if not args.no_save_pose:
+                pose_path = os.path.join(out_dir, f"{video_stem}_pose.npz")
+                vo.save_pose(pose_path)
+
+            if not args.no_save_plot:
+                plot_path = os.path.join(out_dir, f"{video_stem}_trajectory_xz.png")
+                VisualOdometry.save_trajectory_plot(
+                    plot_path,
+                    np.array(vo.traj_x), np.array(vo.traj_z),
+                    np.array(vo.turn_pts_left_x), np.array(vo.turn_pts_left_z),
+                    np.array(vo.turn_pts_right_x), np.array(vo.turn_pts_right_z),
+                )
