@@ -53,10 +53,11 @@ except ImportError:
     import config as config
 
 class DummyArgs:
-    def __init__(self, savedir, show=False, video_base=None):
+    def __init__(self, savedir, road=None, face=None, show=False):
         self.savedir = savedir
         self.show = show
-        self.video_base = video_base
+        self.road = road
+        self.face = face
         self.start_seconds = 0
         self.end_seconds = None
 
@@ -109,17 +110,15 @@ def main():
         
         # Initialize Processor
         output_dir = Path(args_cli.output).parent
-        dummy_args = DummyArgs(savedir=str(output_dir), video_base=args_cli.road)
-        
+        dummy_args = DummyArgs(savedir=str(output_dir), road=args_cli.road, face=args_cli.face)
+
         processor = VideoProcessor(lane_wrapper, face_analyzer, dummy_args, flip_face=args_cli.flip_face)
-        
+
         # Run
-        custom_paths = {"road": args_cli.road, "face": args_cli.face}
         logger.info("Running processing loop...")
         processor.run(
-            export_json=True, 
-            output_json_path=args_cli.output, 
-            custom_video_paths=custom_paths,
+            export_json=True,
+            output_json_path=args_cli.output,
             metadata={"road": road_meta, "face": face_meta}
         )
         

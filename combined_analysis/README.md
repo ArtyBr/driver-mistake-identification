@@ -10,7 +10,8 @@ This pipeline powers the web application at https://safedrive.dcs.warwick.ac.uk/
 
 ```bash
 python3 main.py <config> \
-    --video_base <path> \
+    --road <road.mp4> \
+    --face <face.mp4> \
     --load_from <weights> \
     --savedir <output_dir> \
     --show \
@@ -21,7 +22,8 @@ python3 main.py <config> \
 | Argument | Default | Description |
 |----------|---------|-------------|
 | `config` | *(required)* | Path to LaneAtt config (e.g., `../lane_detection/lanedet/configs/laneatt/resnet18_culane.py`) |
-| `--video_base` | *(required)* | Base video path; `_F.mp4` (face) and `_I.mp4` (road) are appended automatically |
+| `--road` | *(required)* | Path to road-facing video |
+| `--face` | *(required)* | Path to driver-facing video |
 | `--load_from` | `best.pth` | Path to lane detection model weights |
 | `--savedir` | `data/output` | Output directory for results |
 | `--show` | off | Display real-time visualisation window |

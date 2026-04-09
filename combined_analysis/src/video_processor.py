@@ -4,7 +4,7 @@ import config
 import json
 from tqdm import tqdm
 from pathlib import Path
-from utils import setup_video_paths, scale_lane_coeffs
+from utils import scale_lane_coeffs
 from visualization import VideoVisualizer
 from safety_monitor import ManeuverValidator
 import gc
@@ -53,12 +53,9 @@ class VideoProcessor:
             # Assuming 30 FPS default, will be updated in run() if possible
             self.vo = VisualOdometry(video_path=None, fps=30.0)
 
-    def run(self, export_json=False, output_json_path=None, custom_video_paths=None, metadata=None):
+    def run(self, export_json=False, output_json_path=None, metadata=None):
         # 1. Setup Video Capture
-        if custom_video_paths:
-             cap_road, cap_face, start_frame, end_frame, fps = self._setup_custom_video_capture(custom_video_paths)
-        else:
-             cap_road, cap_face, start_frame, end_frame, fps = self._setup_video_capture()
+        cap_road, cap_face, start_frame, end_frame, fps = self._setup_video_capture()
 
         if not cap_road: return
         
@@ -168,8 +165,8 @@ class VideoProcessor:
                     "meta": {
                         "duration": num_frames / fps,
                         "fps": fps,
-                        "road_file": Path(custom_video_paths.get('road')).name if custom_video_paths else "unknown",
-                        "face_file": Path(custom_video_paths.get('face')).name if custom_video_paths else "unknown",
+                        "road_file": Path(self.args.road).name,
+                        "face_file": Path(self.args.face).name,
                         "road_metadata": metadata.get('road') if metadata else None,
                         "face_metadata": metadata.get('face') if metadata else None
                     },
@@ -219,7 +216,8 @@ class VideoProcessor:
                 torch.cuda.empty_cache()
 
     def _setup_video_capture(self):
-        path_road, path_face = setup_video_paths(self.args.video_base)
+        path_road = self.args.road
+        path_face = self.args.face
         if not Path(path_road).exists() or not Path(path_face).exists():
             print(f"Error: Files not found.\n{path_road}\n{path_face}")
             return None, None, 0, 0, 0
@@ -264,7 +262,7 @@ class VideoProcessor:
         w, h = (w // 2) * 2, (h // 2) * 2
 
         Path(self.args.savedir).mkdir(parents=True, exist_ok=True)
-        out_path = str(Path(self.args.savedir) / (Path(self.args.video_base).name + "_combined.mp4"))
+        out_path = str(Path(self.args.savedir) / (Path(self.args.road).stem + "_combined.mp4"))
         
         out_writer = None
         for codec in ['mp4v', 'avc1', 'XVID']:
@@ -546,31 +544,6 @@ class VideoProcessor:
         # Prune
         self.state_history = [s for s in self.state_history if (current_time - s['timestamp']) <= config.HISTORY_DURATION]
         if not self.state_history: self.last_state = None
-
-    def _setup_custom_video_capture(self, custom_video_paths):
-        path_road = custom_video_paths.get('road')
-        path_face = custom_video_paths.get('face')
-        
-        cap_road = cv2.VideoCapture(path_road)
-        cap_face = cv2.VideoCapture(path_face)
-        
-        if not cap_road.isOpened():
-            raise Exception(f"Cannot open road video: {path_road}")
-        
-        fps = cap_road.get(cv2.CAP_PROP_FPS)
-        fps = 30.0 if not (1 < fps <= 120) else fps
-        total_frames = int(cap_road.get(cv2.CAP_PROP_FRAME_COUNT))
-
-        start_frame = max(0, int(self.args.start_seconds * fps))
-        if self.args.end_seconds is not None:
-            end_frame = min(total_frames, int(self.args.end_seconds * fps))
-        else:
-            end_frame = total_frames
-
-        cap_road.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
-        cap_face.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
-        
-        return cap_road, cap_face, start_frame, end_frame, fps
 
     def _process_single_frame_headless(self, frame_road, frame_face, current_time):
         # Lane Processing

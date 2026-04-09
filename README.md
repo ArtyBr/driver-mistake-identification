@@ -127,13 +127,12 @@ Interactive mode with live visualisation:
 ```bash
 python3 combined_analysis/main.py \
     lane_detection/lanedet/configs/laneatt/resnet18_culane.py \
-    --video_base /path/to/recording \
+    --road /path/to/road.mp4 \
+    --face /path/to/face.mp4 \
     --load_from lane_detection/lanedet/weights/laneatt_r18_culane.pth \
     --savedir ./output \
     --show
 ```
-
-The `--video_base` path is appended with `_F.mp4` (face) and `_I.mp4` (road) automatically.
 
 Headless mode (used by the web app):
 
