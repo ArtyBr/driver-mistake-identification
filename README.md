@@ -1,10 +1,10 @@
 # SafeDrive - Driver Mistake Identification System
 
-A multi-modal computer vision system that detects unsafe driving behaviours by correlating vehicle manoeuvres - lane changes and turns - with driver mirror-checking behaviour. It processes dual video streams (forward-facing dashcam + interior-facing camera) frame-by-frame, using deep learning for lane detection, visual odometry for turn detection, and head pose estimation for gaze classification. A rule-based safety monitor checks whether the driver looked at the appropriate mirror before each manoeuvre, flagging unsafe events (e.g., merging without checking mirrors).
+A computer vision system that detects driver errors by identifying vehicle manoeuvres (lane changes and turns), and checking for corresponding driver mirror checks. It processes two simultaneous videos (dash-cam and driver-facing camera), using [lanedet](https://github.com/Turoad/lanedet) ([laneatt](https://github.com/lucastabelini/LaneATT) was my choice) for lane detection, visual odometry for turn detection, and head pose estimation + SVM for gaze classification. Manoeuvre safety is determined using predefined rules (checking the corresponding mirror prior to a directional manoeuvre).
 
-Developed as a CS310 final-year project at the University of Warwick.
+Developed as my final-year dissertation project at the University of Warwick.
 
-**Live deployment:** https://safedrive.dcs.warwick.ac.uk/
+**Live deployment:** https://safedrive.dcs.warwick.ac.uk/ *(expired: no longer hosted)*
 
 ## Repository Structure
 
@@ -21,9 +21,9 @@ driver_mistake_identification/
 ## Prerequisites
 
 - Python 3.10+
-- CUDA-capable NVIDIA GPU (recommended for real-time inference)
-- Node.js 18+ and npm (for the web frontend)
-- FFmpeg (for video transcoding in the web app)
+- CUDA-capable NVIDIA GPU
+- Node.js 18+ and npm (optional: for the web frontend)
+- FFmpeg (optional: for video transcoding in the web app)
 
 ## Environment Setup
 
@@ -36,19 +36,19 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 # Install core analysis dependencies
 pip install opencv-python insightface scikit-learn numpy scipy tqdm matplotlib onnxruntime-gpu
 
-# Install web application backend dependencies
-pip install -r web_application/backend/requirements.txt
-
 # Install lane detection library
 cd lane_detection/lanedet
 pip install -r requirements.txt
 pip install -e .
 cd ../..
 
-# Install frontend dependencies
+# Optional: web app frontend dependencies
 cd web_application/frontend
 npm install
 cd ../..
+
+# Optional: web app backend dependencies
+pip install -r web_application/backend/requirements.txt
 ```
 
 ### Option B: conda
@@ -61,7 +61,6 @@ conda install pytorch torchvision pytorch-cuda=12.1 -c pytorch -c nvidia
 
 # Install remaining Python dependencies
 pip install opencv-python insightface scikit-learn numpy scipy tqdm matplotlib onnxruntime-gpu
-pip install -r web_application/backend/requirements.txt
 
 # Install lane detection library
 cd lane_detection/lanedet
@@ -69,10 +68,13 @@ pip install -r requirements.txt
 pip install -e .
 cd ../..
 
-# Install frontend dependencies
+# Optional: web app frontend dependencies
 cd web_application/frontend
 npm install
 cd ../..
+
+# Optional: web app backend dependencies
+pip install -r web_application/backend/requirements.txt 
 ```
 
 ## Architecture Overview
