@@ -6,6 +6,8 @@ Developed as my final-year dissertation project at the University of Warwick.
 
 **Live deployment:** https://safedrive.dcs.warwick.ac.uk/ *(expired: no longer hosted)*
 
+![SafeDrive demo](results/safedrive-demo.gif)
+
 ## Repository Structure
 
 ```
