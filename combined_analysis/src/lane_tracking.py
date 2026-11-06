@@ -123,10 +123,12 @@ class LaneTracker:
         self.cross_events = []
 
     def _get_x_values(self, coeffs):
+        # Evaluate the polynomial at predefined y points
         a, b, c = coeffs
         return a * self.y_eval_points**2 + b * self.y_eval_points + c
 
     def _calculate_cost_matrix(self, predictions, detections):
+        # Compute cost matrix based on mean absolute difference in x-values (distance)
         pred_x_vals = [self._get_x_values(p) for p in predictions]
         det_x_vals = [self._get_x_values(d) for d in detections]
         
@@ -137,15 +139,18 @@ class LaneTracker:
         return cost_matrix
 
     def _create_new_tracks(self, detections):
+        # Initialise new tracks for unmatched detections
         for det in detections:
             new_track = LaneTrack(det, self.next_id, self.img_height, self.img_width)
             self.tracks.append(new_track)
             self.next_id += 1
 
     def _prune_tracks(self):
+        # Remove tracks that have too many misses relative to their confidence
         self.tracks = [t for t in self.tracks if t.misses <= self.miss_threshold * t.confidence]
 
     def update(self, detections):
+        # Predict the next state for each track
         predicted_coeffs = [track.predict() for track in self.tracks]
 
         if not detections:
@@ -163,6 +168,8 @@ class LaneTracker:
             self._create_new_tracks(detections)
             return [(t.coeffs, t.id, t.confidence, t.age, t.lane_change_events) for t in self.tracks]
 
+
+        # Gate-based matching
         cost_matrix = self._calculate_cost_matrix(predicted_coeffs, detections)
         
         row_ind, col_ind = [], []
@@ -176,11 +183,13 @@ class LaneTracker:
             cost_matrix_copy[r, :] = np.inf
             cost_matrix_copy[:, c] = np.inf
 
+        # Matched lanes are updated
         matched_det_indices = set()
         for r, c in zip(row_ind, col_ind):
             self.tracks[r].update(detections[c])
             matched_det_indices.add(c)
         
+        # Unmatched detections start new tracks
         unmatched_det_indices = set(range(len(detections))) - matched_det_indices
         self._create_new_tracks([detections[i] for i in unmatched_det_indices])
 

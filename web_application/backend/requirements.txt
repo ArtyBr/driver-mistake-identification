@@ -1,8 +1,15 @@
 fastapi
 uvicorn
 python-multipart
-opencv-python
 numpy
-torch
+scikit-learn
+matplotlib
 tqdm
 sqlmodel
+paramiko
+pytest
+pytest-cov
+python-jose[cryptography]
+passlib[bcrypt]
+scipy
+imageio-ffmpeg

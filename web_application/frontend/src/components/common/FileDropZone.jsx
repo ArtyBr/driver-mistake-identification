@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import './FileDropZone.css';
 
 const FileDropZone = ({ label, files, setFiles, accept, helperText, multiple = false }) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -52,16 +53,7 @@ const FileDropZone = ({ label, files, setFiles, accept, helperText, multiple = f
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        style={{
-          border: `2px dashed ${isDragging ? 'var(--accent-primary)' : 'var(--border-color)'}`,
-          borderRadius: '6px',
-          padding: '30px 20px',
-          textAlign: 'center',
-          cursor: 'pointer',
-          backgroundColor: isDragging ? 'rgba(13, 110, 253, 0.1)' : 'var(--bg-panel-lighter)',
-          transition: 'all 0.2s ease',
-          color: 'var(--text-main)'
-        }}
+        className={`dropzone ${isDragging ? 'dragging' : ''}`}
       >
         <input
           type="file"

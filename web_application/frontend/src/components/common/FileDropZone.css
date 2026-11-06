@@ -1,0 +1,22 @@
+/* Dropzone */
+.dropzone {
+  border: 2px dashed var(--border-color);
+  border-radius: 6px;
+  padding: 30px 20px;
+  text-align: center;
+  cursor: pointer;
+  background-color: var(--bg-panel-lighter);
+  transition: all 0.2s ease;
+  color: var(--text-main);
+}
+
+.dropzone:hover, .dropzone.dragging {
+  border-color: var(--accent-primary);
+  background-color: rgba(13, 110, 253, 0.1);
+}
+
+@media (max-width: 576px) {
+  .dropzone {
+    padding: 20px 10px;
+  }
+}

@@ -1,41 +1,69 @@
-# Visual Odometry Module
+# Visual Odometry
 
-This module implements a Monocular Visual Odometry (VO) system using OpenCV and Python. It estimates the trajectory of a vehicle from a video feed using feature tracking (optical flow) and geometric pose estimation.
-
-## Prerequisites
-
-Ensure you have the following Python libraries installed. You can install them using pip:
-
-```bash
-pip install opencv-python numpy matplotlib
-```
-
-## Structure
-
-- `vo_main.py`: The main Python script containing the `VisualOdometry` class and execution logic.
-- `visual_odometry_plan.md`: The detailed implementation plan and architectural decisions.
-- `README.md`: This file.
+Monocular visual odometry system that estimates a vehicle's 3D trajectory from a single dashcam video. Combines Shi-Tomasi feature detection, Lucas-Kanade optical flow tracking, essential matrix decomposition, and Kalman filter smoothing. Uses Mask R-CNN (ResNet50-FPN-V2) to mask out dynamic objects (cars, pedestrians) before feature tracking. Detects turning events based on accumulated yaw changes.
 
 ## Usage
 
-To run the visual odometry on a video file, use the following command from the root of the project or the `visual_odometry` directory:
+### Console-only (no visualisation)
 
 ```bash
-python visual_odometry/vo_main.py <path_to_video_file>
+python3 vo_main.py <video_path> [--start <seconds>] [--stop <seconds>]
 ```
 
-### Example
+Prints per-frame logs to stdout. Saves trajectory plot and pose data on completion.
+
+### With live visualisation
 
 ```bash
-python3 visual_odometry/vo_main.py /media/arty/3A30-14F9/Videos/02_09_25_me_to_gym_day/2025_0902_152136_004634F.MP4
+python3 vo_main.py <video_path> --show [--start <seconds>] [--stop <seconds>]
 ```
 
-## Configuration
+Opens a matplotlib window with the camera frame (dynamic objects highlighted) and a 3D trajectory plot.
 
-The camera intrinsic parameters (Intrinsic Matrix `K` and Distortion Coefficients `D`) are hardcoded in `vo_main.py` based on the calibration data provided in `@camera_calibration/calibration_3.txt`. If you use a different camera, you must update these matrices in the `__init__` method of the `VisualOdometry` class.
+### Re-plot from saved pose data
 
-## Controls
+```bash
+python3 vo_main.py <video_path> --from-pose <pose_file.npz>
+```
 
-- The script opens a 3D Matplotlib window showing the car's trajectory in real-time.
-- Press **'q'** in the console or close the window to stop the execution (if video window is enabled).
-- The visualization updates every 5 frames for performance.
+### All arguments
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `video` | *(required)* | Path to dashcam video file |
+| `--start` | 0.0 | Start time in seconds |
+| `--stop` | None | Stop time in seconds |
+| `--show` | off | Live matplotlib visualisation |
+| `--outdir` | video directory | Output directory for plot/pose files |
+| `--no-save-plot` | off | Skip saving trajectory PNG |
+| `--no-save-pose` | off | Skip saving pose .npz file |
+| `--from-pose` | None | Re-create trajectory PNG from a saved .npz file |
+
+### As an imported module
+
+```python
+from visual_odometry.vo_main import VisualOdometry
+
+vo = VisualOdometry(video_path="/path/to/video.mp4", start_seconds=10, fps=30.0)
+while True:
+    success, frame_raw, frame_cropped, turn_event, dynamic_mask = vo.process_frame()
+    if not success:
+        break
+    if turn_event:
+        print(turn_event)  # "TURN_LEFT" or "TURN_RIGHT"
+```
+
+## Files
+
+| File | Description |
+|------|-------------|
+| `vo_main.py` | Full implementation: feature detection, optical flow, pose estimation, Kalman filter, turn detection, Mask R-CNN masking, visualisation |
+| `__init__.py` | Package init |
+
+## Dependencies
+
+```bash
+pip install opencv-python numpy torch torchvision matplotlib scipy
+```
+
+GPU recommended for Mask R-CNN inference. Falls back to CPU if CUDA is unavailable.

@@ -1,4 +1,5 @@
 import sys
+import os
 import argparse
 import json
 import logging
@@ -6,9 +7,14 @@ import traceback
 import warnings
 from pathlib import Path
 
+# Fix onnxruntime threading errors (must be set before importing insightface/onnxruntime)
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["ORT_THREAD_AFFINITY_POLICY"] = "0"
+
 # Suppress warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
+warnings.filterwarnings('ignore', category=RuntimeWarning, message='.*tarfile.*')
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -47,10 +53,11 @@ except ImportError:
     import config as config
 
 class DummyArgs:
-    def __init__(self, savedir, show=False, video_base=None):
+    def __init__(self, savedir, road=None, face=None, show=False):
         self.savedir = savedir
         self.show = show
-        self.video_base = video_base
+        self.road = road
+        self.face = face
         self.start_seconds = 0
         self.end_seconds = None
 
@@ -61,6 +68,8 @@ def main():
     parser.add_argument("--output", required=True)
     parser.add_argument("--road_meta", type=str, help="JSON string of road video metadata")
     parser.add_argument("--face_meta", type=str, help="JSON string of face video metadata")
+    parser.add_argument("--models_dir", type=str, default=None, help="Path to custom gaze model directory (user calibration)")
+    parser.add_argument("--flip_face", action="store_true", help="Horizontally flip the face video (for mirrored selfie cameras)")
     args_cli = parser.parse_args()
 
     try:
@@ -89,7 +98,11 @@ def main():
 
         # Initialize Models
         logger.info("Initializing FaceAnalyzer...")
-        face_model_path = project_root / 'face_analysis' / 'models'
+        if args_cli.models_dir:
+            face_model_path = Path(args_cli.models_dir)
+            logger.info(f"Using custom calibration models from: {face_model_path}")
+        else:
+            face_model_path = project_root / 'face_analysis' / 'models'
         face_analyzer = FaceAnalyzer(str(face_model_path))
         
         logger.info("Initializing LaneDetectorWrapper...")
@@ -97,17 +110,15 @@ def main():
         
         # Initialize Processor
         output_dir = Path(args_cli.output).parent
-        dummy_args = DummyArgs(savedir=str(output_dir), video_base=args_cli.road)
-        
-        processor = VideoProcessor(lane_wrapper, face_analyzer, dummy_args)
-        
+        dummy_args = DummyArgs(savedir=str(output_dir), road=args_cli.road, face=args_cli.face)
+
+        processor = VideoProcessor(lane_wrapper, face_analyzer, dummy_args, flip_face=args_cli.flip_face)
+
         # Run
-        custom_paths = {"road": args_cli.road, "face": args_cli.face}
         logger.info("Running processing loop...")
         processor.run(
-            export_json=True, 
-            output_json_path=args_cli.output, 
-            custom_video_paths=custom_paths,
+            export_json=True,
+            output_json_path=args_cli.output,
             metadata={"road": road_meta, "face": face_meta}
         )
         

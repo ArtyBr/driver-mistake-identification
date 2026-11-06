@@ -34,7 +34,6 @@ class Runner(object):
         self.optimizer = build_optimizer(self.cfg, self.net)
         self.scheduler = build_scheduler(self.cfg, self.optimizer)
         self.warmup_scheduler = None
-        # TODO(zhengtu): remove this hard code
         if self.cfg.optimizer.type == 'SGD':
             self.warmup_scheduler = warmup.LinearWarmup(
                 self.optimizer, warmup_period=5000)

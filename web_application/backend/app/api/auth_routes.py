@@ -1,0 +1,71 @@
+from datetime import timedelta
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlmodel import Session, select
+
+from ..db.database import get_session
+from ..models.user import User, UserCreate, UserResponse, Token
+from ..services.auth_service import (
+    get_password_hash,
+    verify_password,
+    create_access_token,
+    create_verification_token,
+    verify_email_token,
+    get_current_user,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+)
+from ..services.mail_service import mail_service
+
+router = APIRouter()
+
+@router.post("/signup", response_model=UserResponse)
+async def signup(user_in: UserCreate, session: Session = Depends(get_session)):
+    # Check if user already exists
+    statement = select(User).where(User.email == user_in.email)
+    existing_user = session.exec(statement).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered",
+        )
+    
+    # Create new user
+    hashed_pw = get_password_hash(user_in.password)
+    new_user = User(email=user_in.email, hashed_password=hashed_pw, is_verified=False)
+    session.add(new_user)
+    session.commit()
+    session.refresh(new_user)
+    
+    return new_user
+
+@router.post("/login", response_model=Token)
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)):
+    # Find user by email
+    statement = select(User).where(User.email == form_data.username)
+    user = session.exec(statement).first()
+    
+    # Verify credentials
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Check if verified
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account pending approval. Please contact an administrator to verify your account.",
+        )
+    
+    # Generate token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.email}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@router.get("/me", response_model=UserResponse)
+async def get_me(current_user: User = Depends(get_current_user)):
+    return current_user

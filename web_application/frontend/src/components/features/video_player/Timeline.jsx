@@ -1,8 +1,11 @@
 import React from 'react';
+import './Timeline.css';
+import { getColorForSeverity } from '../../../constants/videoConstants';
 
 const Timeline = ({
   currentTime,
   duration,
+  onSeek,
   events,
   faceSegments,
   history,
@@ -11,14 +14,43 @@ const Timeline = ({
   hoveredFaceSegmentIndex,
   setHoveredFaceSegmentIndex,
   hoveredLogIndex,
-  onSeek,
   getColorForState,
-  getLogIndexForSegment
+  bufferedRanges = []
 }) => {
   return (
     <div className="timeline-wrapper">
+      <input
+        type="range"
+        min="0"
+        max={duration}
+        step="0.01"
+        value={currentTime}
+        onChange={(e) => onSeek(parseFloat(e.target.value))}
+        className="timeline-slider"
+        aria-label="Video timeline"
+      />
+
       <div className="timeline-events-track">
-        {duration > 0 && events.map((event, i) => {
+        {/* Buffered Ranges Layer */}
+        {duration > 0 && bufferedRanges.map((range, i) => {
+           const startPct = (range.start / duration) * 100;
+           const widthPct = ((range.end - range.start) / duration) * 100;
+           return (
+             <div 
+               key={`buf-${i}`}
+               style={{
+                 position: 'absolute',
+                 left: `${startPct}%`,
+                 width: `${widthPct}%`,
+                 height: '100%',
+                 backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                 zIndex: 0
+               }}
+             />
+           );
+        })}
+
+        {duration > 0 && events && events.map((event, i) => {
           const startTime = Math.max(0, event.timestamp - 5)
           const endTime = event.timestamp
           const isTimeActive = currentTime >= startTime && currentTime <= endTime
@@ -27,10 +59,7 @@ const Timeline = ({
           const leftPct = (startTime / duration) * 100
           const widthPct = ((endTime - startTime) / duration) * 100
           
-          let color = '#ccc'
-          if (event.severity === 'CRITICAL') color = '#dc3545' // Danger Red
-          else if (event.severity === 'WARNING') color = '#ffc107' // Warning Amber
-          else if (event.severity === 'INFO') color = '#20c997' // Subtle Green
+          const color = getColorForSeverity(event.severity)
 
           return (
             <div
@@ -40,7 +69,7 @@ const Timeline = ({
                 left: `${leftPct}%`,
                 width: `${widthPct}%`,
                 backgroundColor: color,
-                zIndex: isHovered ? 6 : (isTimeActive ? 5 : 1)
+                zIndex: isHovered ? 20 : (isTimeActive ? 5 : 1)
               }}
               onMouseEnter={() => setHoveredEventIndex(i)}
               onMouseLeave={() => setHoveredEventIndex(null)}
@@ -57,10 +86,18 @@ const Timeline = ({
             left: `${(currentTime / duration) * 100}%`
           }}
         />
+
+        {/* Custom Handle (Synced with Cursor) */}
+        <div 
+          className="timeline-handle"
+          style={{
+            left: `${(currentTime / duration) * 100}%`
+          }}
+        />
       </div>
 
       <div className="timeline-face-track">
-        {duration > 0 && faceSegments.map((seg, i) => {
+        {duration > 0 && faceSegments && faceSegments.map((seg, i) => {
           const widthPct = ((seg.endTime - seg.startTime) / duration) * 100
           const leftPct = (seg.startTime / duration) * 100
           
@@ -83,7 +120,7 @@ const Timeline = ({
                 left: `${leftPct}%`,
                 width: `${widthPct}%`,
                 backgroundColor: color,
-                zIndex: (isHovered || isLogHovered) ? 6 : (isTimeActive ? 5 : 1)
+                zIndex: (isHovered || isLogHovered) ? 20 : (isTimeActive ? 5 : 1)
               }}
               onMouseEnter={() => setHoveredFaceSegmentIndex(i)}
               onMouseLeave={() => setHoveredFaceSegmentIndex(null)}
@@ -101,16 +138,6 @@ const Timeline = ({
         />
       </div>
 
-      <input
-        type="range"
-        min="0"
-        max={duration}
-        step="0.01"
-        value={currentTime}
-        onChange={(e) => onSeek(parseFloat(e.target.value))}
-        className="timeline-slider"
-      />
-      
       <span className="track-label events-label">Events</span>
       <span className="track-label gaze-label">Gaze</span>
     </div>

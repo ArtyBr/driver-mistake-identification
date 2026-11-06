@@ -1,2 +1,8 @@
 */weights/*
 *.mp4
+web_application/backend/jobs.db
+__pycache__/
+*.pyc
+logs/
+.coverage
+.claude/

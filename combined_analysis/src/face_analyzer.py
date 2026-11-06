@@ -28,14 +28,21 @@ class FaceAnalyzer:
         """
         Analyzes the frame for face and head pose.
         Returns:
-            frame: The original frame (untouched).
+            frame: The blurred frame (driver unblurred, others blurred).
             analysis_data: Dictionary containing pose and label info, plus raw detection data.
         """
         faces = self.app.get(frame)
         if not faces:
             return frame, None
 
-        face = faces[0]
+        # 1. Identify driver face
+        driver_face = self._identify_driver(faces, frame.shape)
+        
+        # 2. Apply blurring to other faces
+        blurred_frame = self._apply_blurring(frame, faces, driver_face)
+
+        # 3. Analyze driver face
+        face = driver_face
         pitch, yaw, roll = face.pose if hasattr(face, 'pose') and face.pose is not None else (0.0, 0.0, 0.0)
         
         # Keypoints processing
@@ -64,5 +71,68 @@ class FaceAnalyzer:
             'nose_2d': nose_2d
         }
 
-        # Note: We are NO LONGER drawing here.
-        return frame, analysis_data
+        # Return the blurred frame and analysis data
+        return blurred_frame, analysis_data
+
+    def _identify_driver(self, faces, frame_shape):
+        """
+        Logic for driver identification:
+        - If landscape (width > height):
+          - Largest face on the left side of the video.
+          - If no face on left, largest overall face.
+        - If portrait:
+          - Largest face overall.
+        """
+        if not faces:
+            return None
+
+        h, w = frame_shape[:2]
+        is_landscape = w > h
+
+        def face_area(f):
+            bbox = f.bbox
+            return (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
+
+        if is_landscape:
+            # InsightFace bboxes are [x1, y1, x2, y2]
+            # Use center of face to determine if it's on the left side
+            left_faces = [f for f in faces if (f.bbox[0] + f.bbox[2]) / 2 < w / 2]
+            if left_faces:
+                return max(left_faces, key=face_area)
+            else:
+                return max(faces, key=face_area)
+        else:
+            return max(faces, key=face_area)
+
+    def _apply_blurring(self, frame, faces, driver_face):
+        """
+        Blurs all faces except the driver_face.
+        """
+        if not faces:
+            return frame
+
+        blurred_frame = frame.copy()
+        for face in faces:
+            # Compare using object identity
+            if face is driver_face:
+                continue
+
+            bbox = face.bbox.astype(int)
+            x1, y1, x2, y2 = bbox
+            
+            # Clamp to frame boundaries
+            x1 = max(0, x1)
+            y1 = max(0, y1)
+            x2 = min(frame.shape[1], x2)
+            y2 = min(frame.shape[0], y2)
+
+            if x2 > x1 and y2 > y1:
+                roi = blurred_frame[y1:y2, x1:x2]
+                # Apply strong blur proportional to face size
+                ksize = int(max(x2-x1, y2-y1) / 3) | 1
+                if ksize < 3: ksize = 3
+                # print(f"DEBUG: Applying blur at {x1, y1, x2, y2}, ksize={ksize}")
+                roi_blurred = cv2.GaussianBlur(roi, (ksize, ksize), 30)
+                blurred_frame[y1:y2, x1:x2] = roi_blurred
+
+        return blurred_frame

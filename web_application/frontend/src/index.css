@@ -1,4 +1,79 @@
-/* Global resets handled in App.css */
 :root {
+  /* Professional Dark Theme Palette */
+  --bg-dark: #212529;
+  --bg-panel: #2c3034;
+  --bg-panel-lighter: #343a40;
+  
+  /* Accents - Professional but distinct */
+  --accent-primary: #0d6efd; /* Standard Blue */
+  --accent-info: #0dcaf0;    /* Cyan */
+  --accent-success: #198754; /* Green */
+  --accent-warning: #ffc107; /* Amber */
+  --accent-danger: #dc3545;  /* Red */
+
+  /* Highlight Accents (Video Player & decorative elements) */
+  --highlight-cyan: #00d2df;
+  --highlight-pink: #d63384;
+  --highlight-green: #20c997;
+
+  /* Extra background shade */
+  --bg-panel-darker: #1a1d21;
+  
+  --text-main: #f8f9fa;
+  --text-muted: #adb5bd;
+  --border-color: #495057;
+  --font-mono: "Consolas", "Monaco", "Courier New", monospace;
+
+  /* Base Typography */
+  font-size: 16px;
   color-scheme: dark;
+}
+
+@media (max-width: 1200px) {
+  :root { font-size: 15.5px; }
+}
+
+@media (max-width: 992px) {
+  :root { font-size: 15px; }
+}
+
+@media (max-width: 768px) {
+  :root { font-size: 14.5px; }
+  
+  .display-4 { font-size: 2.5rem !important; }
+  .lead { font-size: 1.15rem !important; }
+}
+
+@media (max-width: 576px) {
+  :root { font-size: 14px; }
+  
+  .display-4 { font-size: 2rem !important; }
+  .lead { font-size: 1rem !important; }
+  
+  h1 { font-size: 1.75rem !important; }
+  h2 { font-size: 1.5rem !important; }
+  h3 { font-size: 1.3rem !important; }
+}
+
+body {
+  background-color: var(--bg-dark) !important;
+  color: var(--text-main) !important;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  margin: 0;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }

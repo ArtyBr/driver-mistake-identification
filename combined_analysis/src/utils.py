@@ -1,23 +1,7 @@
 import cv2
-import re
 import os
 import numpy as np
 from config import FONT
-
-def setup_video_paths(base_path_str):
-    """Determines the paths for road (F) and face (I) videos."""
-    path_road = base_path_str + "F.mp4"
-    
-    # Logic to increment trailing number for the face video
-    match = re.search(r'(\d+)$', base_path_str)
-    if match:
-        num_str = match.group(1)
-        new_num_str = str(int(num_str) + 1).zfill(len(num_str))
-        path_face = base_path_str[:-len(num_str)] + new_num_str + "I.mp4"
-    else:
-        path_face = base_path_str + "I.mp4"
-        
-    return path_road, path_face
 
 def fix_anchor_path(heads_cfg, lanedet_dir):
     """Corrects relative paths in the lane detection config."""

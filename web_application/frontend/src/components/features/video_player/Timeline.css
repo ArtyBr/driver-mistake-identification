@@ -1,0 +1,264 @@
+/* Controls & Timeline */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 15px 20px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--highlight-cyan);
+  border-radius: 4px;
+  color: var(--text-main);
+}
+
+@media (max-width: 768px) {
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+    padding: 15px;
+  }
+}
+
+.play-button {
+  min-width: 45px;
+  height: 45px;
+  font-size: 1.2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-panel-lighter);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+@media (max-width: 768px) {
+  .play-button {
+    width: 100%;
+    height: 40px;
+  }
+}
+
+.play-button:hover {
+  background-color: var(--bg-panel-lighter);
+  border-color: var(--highlight-cyan);
+  color: var(--highlight-cyan);
+  transform: scale(1.05);
+}
+
+.jump-controls {
+  display: flex;
+  gap: 5px;
+}
+
+.jump-controls .btn-cyber {
+  padding: 0.4rem 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 45px;
+  min-width: 45px;
+}
+
+@media (max-width: 768px) {
+  .jump-controls {
+    justify-content: space-between;
+  }
+  .jump-controls .btn-cyber {
+    flex: 1;
+    height: 40px;
+  }
+}
+
+.timeline-wrapper {
+  flex-grow: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 80px;
+}
+
+@media (max-width: 576px) {
+  .timeline-wrapper {
+    height: 100px;
+  }
+}
+
+.timeline-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: calc(100% - 78px);
+  left: 64px;
+  margin: 0;
+  cursor: pointer; /* Ensure pointer cursor on the slider area */
+  z-index: 0;
+  position: absolute;
+  top: 0; /* Cover the area from top */
+  background: transparent;
+  height: 100%; /* Cover the full height of the wrapper */
+}
+
+@media (max-width: 576px) {
+  .timeline-slider {
+    width: calc(100% - 63px);
+    left: 49px;
+  }
+}
+
+/* Slider Thumb (Hidden but interactive) */
+.timeline-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px; /* Match handle size */
+  height: 16px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  margin-top: 0; /* Adjust if needed */
+  position: relative;
+  z-index: 10;
+  box-sizing: border-box;
+}
+.timeline-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+/* Custom Handle (Synced via JS) */
+.timeline-handle {
+  position: absolute;
+  width: 16px; /* Larger handle */
+  height: 16px; /* Larger handle */
+  background: var(--highlight-cyan);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(0,0,0,0.5);
+  transform: translateX(-50%); /* Center on the percentage point */
+  pointer-events: none; /* Allow clicks to pass through to the input */
+  z-index: 20;
+  top: -28px; /* Adjusted for larger size and position */
+  transition: transform 0.2s ease, background-color 0.2s; /* Smooth transition */
+}
+
+
+
+@media (max-width: 576px) {
+  .timeline-handle {
+    top: -35px; /* Aligns with slider top (40px - 5px) */
+  }
+}
+
+/* Tracks */
+.timeline-events-track, .timeline-face-track {
+  position: absolute;
+  left: 70px;
+  width: calc(100% - 90px);
+  height: 16px;
+  pointer-events: none;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@media (max-width: 576px) {
+  .timeline-events-track, .timeline-face-track {
+    left: 55px;
+    width: calc(100% - 75px);
+  }
+}
+
+.timeline-events-track { top: 32px; }
+.timeline-face-track { top: 58px; }
+
+@media (max-width: 576px) {
+  .timeline-events-track { top: 40px; }
+  .timeline-face-track { top: 75px; }
+}
+
+.track-label {
+  position: absolute;
+  left: 0;
+  width: 55px;
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+@media (max-width: 576px) {
+  .track-label {
+    width: 45px;
+    font-size: 10px;
+  }
+}
+
+.events-label { top: 34px; }
+.gaze-label { top: 60px; }
+
+@media (max-width: 576px) {
+  .events-label { top: 43px; }
+  .gaze-label { top: 78px; }
+}
+
+/* Event Bars on Timeline */
+.timeline-event-bar {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  opacity: 0.8;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  pointer-events: auto;
+  border-radius: 2px;
+}
+.timeline-event-bar:hover, .timeline-event-bar.hover-active {
+  opacity: 1;
+  box-shadow: 0 0 4px currentColor;
+  z-index: 100;
+}
+.timeline-event-bar.playback-active {
+  opacity: 1;
+  box-shadow: 0 0 6px #fff;
+  border: 1px solid #fff;
+}
+
+/* Cursor Line */
+.timeline-cursor {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 2px;
+  background-color: #fff;
+  z-index: 10;
+  transform: translateX(-50%);
+  pointer-events: none;
+  box-shadow: 0 0 4px rgba(0,0,0,0.5);
+}
+
+.time-display {
+  width: 150px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 1.1em;
+  color: var(--text-main);
+}
+
+@media (max-width: 768px) {
+  .time-display {
+    width: 100%;
+    text-align: center;
+    font-size: 1em;
+  }
+}

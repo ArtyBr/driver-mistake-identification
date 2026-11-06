@@ -1,75 +1,117 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import VideoPlayer from '../components/features/VideoPlayer';
 import MissingVideosUploader from '../components/features/MissingVideosUploader';
+import GazeCorrectionModal from '../components/GazeCorrectionModal';
+import { getJobStatus, getJobResults, getFileUrl } from '../services/api';
+import { listCalibrations, deleteCalibration, requestReanalysis } from '../services/calibrationService';
+import { useAuth } from '../hooks/useAuth';
 import '../App.css'; // Import the custom styles for VideoPlayer
-
-const API_BASE = 'http://localhost:8000';
 
 const ResultPage = () => {
   const { jobId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = !!user?.is_admin;
   const [results, setResults] = useState(null);
   const [jobData, setJobData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [correctionModal, setCorrectionModal] = useState(null);
+
+  // Re-analyze with calibration
+  const [calibrations, setCalibrations] = useState([]);
+  const [reanalyzeCalId, setReanalyzeCalId] = useState('');
+  const [reanalyzing, setReanalyzing] = useState(false);
 
   // Locally provided files if server files are missing
   const [localRoadFiles, setLocalRoadFiles] = useState([]);
   const [localFaceFiles, setLocalFaceFiles] = useState([]);
 
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(jobId).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      // Fetch status to get URLs and metadata
+      const statusData = await getJobStatus(jobId);
+      setJobData(statusData);
+
+      // Fetch results
+      const resultsData = await getJobResults(jobId);
+      setResults(resultsData);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError("Failed to load results. They might not be ready or the ID is invalid.");
+    } finally {
+      setLoading(false);
+    }
+  }, [jobId]);
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        // Fetch status to get URLs and metadata
-        const statusRes = await axios.get(`${API_BASE}/status/${jobId}`);
-        setJobData(statusRes.data);
-
-        // Fetch results
-        const resultRes = await axios.get(`${API_BASE}/results/${jobId}`);
-        setResults(resultRes.data);
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        setError("Failed to load results. They might not be ready or the ID is invalid.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (jobId) {
       fetchData();
     }
-  }, [jobId]);
+  }, [jobId, fetchData]);
+
+  useEffect(() => {
+    if (user) {
+      listCalibrations()
+        .then(data => setCalibrations(data.filter(c => c.is_trained)))
+        .catch(() => {});
+    }
+  }, [user]);
 
   const videoUrls = useMemo(() => {
       let rUrls = [];
       let fUrls = [];
 
       // Priority:
-      // 1. Manually provided local files in this page
-      // 2. Local files passed via navigation state (from Uploader)
-      // 3. Server URLs (spliced video)
+      // 1. Server URLs (spliced video) - Preferred to avoid CSP blob: issues
+      // 2. Manually provided local files in this page
+      // 3. Local files passed via navigation state (from Uploader)
 
-      if (localRoadFiles.length > 0) {
+      if (jobData?.road_url) {
+          rUrls = [getFileUrl(jobData.road_url)];
+      } else if (localRoadFiles.length > 0) {
           rUrls = localRoadFiles.map(f => URL.createObjectURL(f));
       } else if (location.state?.roadFiles && location.state.roadFiles.length > 0) {
           rUrls = location.state.roadFiles.map(f => URL.createObjectURL(f));
-      } else if (jobData?.road_url) {
-          rUrls = [`${API_BASE}${jobData.road_url}`];
       }
 
-      if (localFaceFiles.length > 0) {
+      if (jobData?.face_url) {
+          fUrls = [getFileUrl(jobData.face_url)];
+      } else if (localFaceFiles.length > 0) {
           fUrls = localFaceFiles.map(f => URL.createObjectURL(f));
       } else if (location.state?.faceFiles && location.state.faceFiles.length > 0) {
           fUrls = location.state.faceFiles.map(f => URL.createObjectURL(f));
-      } else if (jobData?.face_url) {
-          fUrls = [`${API_BASE}${jobData.face_url}`];
       }
 
       return { road: rUrls, face: fUrls };
   }, [jobData, location.state, localRoadFiles, localFaceFiles]);
+
+  // Quality-variant URL maps: { '1080p': [url], '720p': [url], '480p': [url] }
+  // Only populated when the server provides transcoded variants (REMOTE jobs).
+  const roadQualityUrls = useMemo(() => {
+      if (!jobData?.video_qualities?.road) return null;
+      return Object.fromEntries(
+          Object.entries(jobData.video_qualities.road).map(([q, url]) => [q, [getFileUrl(url)]])
+      );
+  }, [jobData]);
+
+  const faceQualityUrls = useMemo(() => {
+      if (!jobData?.video_qualities?.face) return null;
+      return Object.fromEntries(
+          Object.entries(jobData.video_qualities.face).map(([q, url]) => [q, [getFileUrl(url)]])
+      );
+  }, [jobData]);
 
   // Cleanup Blob URLs when unmounting or changing
   useEffect(() => {
@@ -108,37 +150,162 @@ const ResultPage = () => {
 
   if (error) {
     return (
-      <div className="alert alert-danger mt-5">
+      <div className="alert alert-cyber-danger mt-5">
         <h4>Error</h4>
         <p>{error}</p>
-        <Link to="/analyze" className="btn btn-outline-danger">Try Again</Link>
+        <Link to="/analyze" className="btn btn-cyber">Try Again</Link>
       </div>
     );
   }
 
   return (
     <div className="container-fluid">
-       <div className="d-flex justify-content-between align-items-center mb-4">
+      {/* Page header */}
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div className="d-flex align-items-center gap-3">
           <h2 className="mb-0 page-title">Analysis Results</h2>
-          <Link to="/analyze" className="btn btn-cyber">New Analysis</Link>
-       </div>
+          <div className="d-flex align-items-center gap-2 bg-panel-lighter px-3 py-1 border border-secondary rounded">
+            <small className="text-muted text-uppercase fw-bold" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>Job ID: {jobId}</small>
+            <button
+              className={`btn btn-sm p-0 border-0 ${copied ? 'text-success' : 'text-muted'}`}
+              onClick={copyToClipboard}
+              title="Copy Job ID"
+              style={{ background: 'transparent' }}
+            >
+              {copied ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              )}
+            </button>
+          </div>
+        </div>
+        <Link to="/analyze" className="btn btn-cyber">New Analysis</Link>
+      </div>
 
-       {results && !hasVideos && jobData && (
-         <MissingVideosUploader 
-            roadMeta={jobData.road_metadata}
-            faceMeta={jobData.face_metadata}
+      {results && !hasVideos && jobData && (
+        <MissingVideosUploader
+          roadMeta={jobData.road_metadata}
+          faceMeta={jobData.face_metadata}
+          results={results}
+          onFilesUploaded={handleMissingFiles}
+        />
+      )}
+
+      {results && hasVideos && (
+        <>
+          <VideoPlayer
             results={results}
-            onFilesUploaded={handleMissingFiles}
-         />
-       )}
-
-       {results && hasVideos && (
-          <VideoPlayer 
-            results={results} 
             roadUrls={videoUrls.road}
             faceUrls={videoUrls.face}
+            jobId={jobId}
+            roadQualityUrls={roadQualityUrls}
+            faceQualityUrls={faceQualityUrls}
+            isAdmin={isAdmin}
           />
-       )}
+
+          {!jobData?.is_demo && (
+            <div className="card card-cyber mt-4 shadow-sm">
+              <div className="card-header d-flex justify-content-between align-items-center">
+                <h6 className="mb-0 text-white fw-bold">
+                  <i className="bi bi-eye me-2"></i>Gaze Calibration
+                </h6>
+                <Link
+                  to="/calibrate"
+                  state={{ jobId, calibrationId: jobData?.calibration_id }}
+                  className="btn btn-outline-cyber btn-sm"
+                >
+                  <i className="bi bi-sliders me-1"></i>CALIBRATE
+                </Link>
+              </div>
+              <div className="card-body">
+                <p className="text-muted small mb-3">
+                  {jobData?.calibration_id ? (
+                    <>This analysis used calibration: <strong className="text-info">{jobData.calibration_name || 'Personal Model'}</strong>. You can re-run it with a different one.</>
+                  ) : (
+                    <>This analysis used the default gaze model. Re-analyze with a personal calibration for better accuracy.</>
+                  )}
+                </p>
+
+                {calibrations.length > 0 ? (
+                  <div className="d-flex align-items-end gap-2 flex-wrap">
+                    <div style={{ flex: '1 1 200px', minWidth: 160 }}>
+                      <label className="form-label text-muted small mb-1">Calibration</label>
+                      <select
+                        className="form-select form-select-sm form-control-cyber"
+                        value={reanalyzeCalId}
+                        onChange={(e) => setReanalyzeCalId(e.target.value)}
+                      >
+                        <option value="">Default (no calibration)</option>
+                        {calibrations.map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      className="btn btn-cyber-primary btn-sm fw-bold"
+                      disabled={reanalyzing}
+                      onClick={async () => {
+                        setReanalyzing(true);
+                        try {
+                          const res = await requestReanalysis(jobId, reanalyzeCalId || undefined);
+                          navigate(`/job/${res.job_id}`);
+                        } catch (e) {
+                          setError(e.response?.data?.detail || 'Re-analysis failed.');
+                          setReanalyzing(false);
+                        }
+                      }}
+                    >
+                      {reanalyzing ? (
+                        <><span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />Starting...</>
+                      ) : (<><i className="bi bi-arrow-repeat me-1"></i>RE-ANALYZE</>)}
+                    </button>
+                    {reanalyzeCalId && (
+                      <button
+                        className="btn btn-sm btn-outline-danger border-0"
+                        title="Delete this calibration"
+                        onClick={async () => {
+                          const cal = calibrations.find(c => c.id === reanalyzeCalId);
+                          if (!window.confirm('Delete calibration "' + (cal?.name || reanalyzeCalId) + '"? This cannot be undone.')) return;
+                          try {
+                            await deleteCalibration(reanalyzeCalId);
+                            setReanalyzeCalId('');
+                            const updated = await listCalibrations();
+                            setCalibrations(updated.filter(c => c.is_trained));
+                          } catch (e) {
+                            alert(e.response?.data?.detail || 'Delete failed.');
+                          }
+                        }}
+                      >
+                        <i className="bi bi-trash"></i>
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-muted small mb-0 fst-italic">
+                    No trained calibrations yet. <Link to="/calibrate" state={{ jobId }} className="text-info">Create one</Link> to improve accuracy.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {correctionModal && (
+        <GazeCorrectionModal
+          jobId={jobId}
+          detectedLabel={correctionModal.detectedLabel}
+          startTime={correctionModal.startTime}
+          endTime={correctionModal.endTime}
+          calibrationId={jobData?.calibration_id}
+          onClose={() => setCorrectionModal(null)}
+          onSuccess={() => {
+            setCorrectionModal(null);
+            fetchData();
+          }}
+        />
+      )}
     </div>
   );
 };

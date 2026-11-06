@@ -107,7 +107,7 @@ const MissingVideosUploader = ({ roadMeta, faceMeta, results, onFilesUploaded })
                 setFiles={setRoadFiles}
                 accept="video/*"
                 multiple={true}
-                helperText={effectiveRoadMeta ? `Expected: ${effectiveRoadMeta.filenames.join(', ')}` : "Select the original road video(s)."}
+                helperText={effectiveRoadMeta?.filenames ? `Expected: ${effectiveRoadMeta.filenames.join(', ')}` : "Select the original road video(s)."}
               />
             </div>
             <div className="col-md-6">
@@ -117,7 +117,7 @@ const MissingVideosUploader = ({ roadMeta, faceMeta, results, onFilesUploaded })
                 setFiles={setFaceFiles}
                 accept="video/*"
                 multiple={true}
-                helperText={effectiveFaceMeta ? `Expected: ${effectiveFaceMeta.filenames.join(', ')}` : "Select the original face video(s)."}
+                helperText={effectiveFaceMeta?.filenames ? `Expected: ${effectiveFaceMeta.filenames.join(', ')}` : "Select the original face video(s)."}
               />
             </div>
           </div>
